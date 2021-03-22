@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>PiedPiperS Bauteile</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="icon" href="data:,">
+	<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+	<h1>PiedPiperS Bauteile</h1>
+	<p>Materialbedarf f&uuml;r einen Zug mit WLAN-Steuerung</p>
+
+	<h2>Elektronik</h2>
+	 
+	<ul>
+		<li><b>Mikrocontroller mit WLAN</b>, z.B. ESP32 Node MCU DevKit V1, oder anderer</li>
+		<ul>
+			<li style="font-size: small;">2 PWM-Ausg&auml;nge f&uuml;r die Motor&shy;steuer&shy;ung mit TLE5206-2S und ESP32: GPIO&#x202F;32 und GPIO&#x202F;33</li>
+			<li style="font-size: small;">2 digital Ausg&auml;nge f&uuml;r die LED-Anzeigen, ESP32: GPIO&#x202F;2 und GPIO&#x202F;4</li>
+			<li style="font-size: small;">1 digitaler Eingang als Morse-Schalter, ESP32: Ber&uuml;hr&shy;ungs&shy;sensor GPIO&#x202F;13=TOUCH&#x202F;4</li>
+			<li style="font-size: small;">1 digitaler Eingang f&uuml;r Fehler&shy;anzeige des Motor-ICs, ESP32: GPIO&#x202F;25</li>
+		</ul>
+		<li><b>Step-up DC/DC-Konverter-Modul</b>, 5&#x202F;V auf 8&#x202F;V bis 16&#x202F;V</li>
+		<li><b>IC mit H-Br&uuml;cke zur Steuerung eines Gleichstrommotors</b>, z.B. TLE5206-2S</li>
+		<li>Kleine <b>USB-Powerbank</b> als 5&#x202F;V&#x202F;DC Stromquelle. Es ist gut, 2 davon zu haben, die 2. als Ersatz, wenn die 1. leer ist</li>
+		<li>Schrumpfschlauch, verschiedene Gr&ouml;&szlig;en, u.a. mit einem Durchmesser, um 2-Pol-IC-Kontakte aufzunehmen</li>
+		<li>USB-Kabel, ggf. alt und gebraucht, aber mit dicken Leitern und zuverl&auml;ssig f&uuml;r die Strom&shy;verbindung mit geringem Spannungs&shy;verlust</li>
+		<li>Nutzung von 2 on-board SMD-LEDs durch einl&ouml;ten eines 1,5&#x202F;k&Omega; Widerstands von GPIO&#x202F;4 
+		(alternativ zwei 3 mm LEDs: 1 blau, 1 rot,  plus 2 x 1,5&#x202F;K&Omega; Widerst&auml;nde) </li>
+		<li>1 k&Omega; SMD-Widerstand als k&uuml;nstliche Last nach dem Spannungs&shy;regler</li>
+		<li>2,7 k&Omega; Widerstand f&uumlr die &Uumlbertragung des Motro-IC Fehlersignals</li>
+		<li>TVS-Diode mit 5&#x202F;V-Arbeits&shy;spannung (reverse standoff voltage) zum Schutz des 5&#x202F;V Eingangs des Mikro&shy;prozessors vor Spannungs&shy;spitzen aus dem Step-up-Konverter</li>
+		<li>2-poliges Kabel, d&uuml;nn und flexibel, ca. 20&#x202F;cm, f&uuml;r die Verbindung zum Motor </li>
+		<li>2-poliges Kabel, dick, ca. 20&#x202F;cm, 0,25&#x202F;mm<sup>2</sup>, f&uumlr die Strom&shy;zufuhr von der USB-Powerbank mit wenig Spannungs&shy;verlust</li>
+	</ul>
+	
+	<div><a href="/viewer.html"><img src="/image/001.jpg" alt="Elektronik-Bauteile" style="width:100%"></a></div>
+
+	<h2>Weitere Materialien</h2>
+	<ul>
+	<li>Modellbahn-Lokomotive mit 12&#x202F;V ... 16&#x202F;V Gleich&shy;strom&shy;motor</li>
+	<li>Flachwagen f&uuml;r die elektronischen Bauteile</li>
+	<li>Eaos Hochbord offener G&uuml;terwagen f&uuml;r USB-Powerbank</li>
+	<li>Etwas wei&szlig;e Pappe f&uuml;r den QR-Code</li>
+	<li>Einfaches und doppelseitiges Klebeband</li>
+	<li>Etwas Klebstoff</li>
+	<li>Ein Haushaltsgummi</li>
+	</ul>
+
+	<h2>Werkzeuge</h2>
+	<ul>
+	<li>L&ouml;tkolben mit sehr feiner Spitze, feiner L&ouml;tdraht und Zubeh&ouml;r</li>
+	<li>Schneidmesser</li>
+	<li>Seitenschneider</li>
+	<li>Werkzeug zum Abisolieren</li>
+	<li>Feine Flachzange</li>
+	<li>Feine Spitzzange</li>
+	<li>Spitze Pinzette f&uuml;r SMD-L&ouml;tarbeiten</li>
+	<li>Lupe f&uuml;r SMD-L&ouml;tarbeiten</li>
+	<li>Elektronik-Steckbrett f&uuml;r einen Test-Aufbau oder f&uuml;r eine Umsetzung der Schaltung ohne L&ouml;ten. 
+	    Ein kleines Steckbrett mit 170 Kontakten passt auf einen HO Modell&shy;bahn&shy;wagon. 
+		Siehe hierzu das <a href='/PiedPiper.pdf'>PiedPiper-Projekt</a></li>
+	<li>Multimeter</li>
+	</ul>
+	
+	<p>Gesch&auml;tzte Materialkosten f&uuml;r Elektronik ca. 25&#x202F;&euro; ohne weitere Materialen und Werkzeuge</p>
+	<p>Die <b>Bauanleitung mit Fotos</b> f&uuml;r das PiedPiperS-Projekt liegt im Internet unter <a href='/github.html'>https://github.com/jorail</a></p> 
+	<div><a href="/"><img src="/lok.png" alt="Loksteuerung" style="width:100%"></a></div> <!--http://192.168.4.1/-->
+	
+	<!--
+	<h1>PiedPiper Parts</h1>
+	<p>Material demand for one train with WiFi control</p>
+
+	<h2>Electronics</h2>
+	 
+	<ul>
+		<li><b>Microcontroller with WiFi</b>, e.g. ESP32 DevKit V1, etc.</li>
+		<ul>
+			<li>2 PWM outputs for motor control , ESP32: GPIO32 und GPIO33</li>
+			<li>2 digital outputs for LED indicators, ESP32: GPIO 2 und GPIO 4</li>
+			<li>1 digital input for touch switch, ESP32: GPIO13=TOUCH4</li>
+			<li>1 digital input for motor IC error flag, ESP32: GPIO 25</li>
+		</ul>
+		<li><b>step-up DC/DC converter module</b>, 5 V to 8 V ... 16 V</li>
+		<li><b>H-Bridge DC motor control IC</b>, e.g. TLE5206-2S</li>
+		<li>small size <b>USB power bank</b> as 5 V DC power supply, it is good to have two, 2nd for replacement when 1st is empty</li>
+		<li>shrink tube with different diameters, including one for holding two IC pin contacts</li>
+		<li>USB cable, also old and used, but with thick conductor, reliable for power connection with small voltage drop</li>
+		<li>reuse of 2 on-board LEDs , by soldering 1.5 K&Omega; resistor from pin GPIO 4
+		(alternatively two 3 mm LEDs: 1 blue, 1 red,  plus 2 x 1.5 K&Omega; resistors) </li>
+		<li>1 k&Omega; SMD resistor as artificial load after LDO</li>
+		<li>2.7 k&Omega; resistor for transmission of motor IC error flag</li>
+		<li>TVS-diode, 5 V reverse working (standoff) voltage as protection of 5 V input from peak voltages of the Step-up converter</li>
+		<li>2 pole cable, thin and flexible, ca. 20 cm, for connection to motor </li>
+		<li>2 pole cable, thick, ca. 20 cm, 0.25 mm2, for power supply from USB power bank with small voltage drop</li>
+	</ul>
+
+	<h2>Other material</h2>
+	<ul>
+	<li>model train locomotive with 12V … 16 V DC motor</li>
+	<li>flat wagon for electronics equipment</li>
+	<li>Eaos high board open wagon for USB power bank</li>
+	<li>some white cardboard for QR code</li>
+	<li>single and double sided adhesive tape</li>
+	<li>some glue</li>
+	<li>one rubber band</li>
+	</ul>
+
+	<h2>Tools</h2>
+	<ul>
+	<li>very fine tip solder iron with equipment</li>
+	<li>cutter</li>
+	<li>wire cutter</li>
+	<li>fine flat pincers</li>
+	<li>tweezers for SMD soldering work</li>
+	<li>magnifier for SMD soldering work</>
+	<li>needle-nosed pincers</li>
+	<li>breadboard</>
+	<li>multi-meter tool</li>
+	</ul>
+	
+	<p>Estimated material cost ca. 20  € excl. other material and tools</p>
+
+	-->
+
+</body>
+</html>
+
+<!-- 
+Ä	&Auml;
+ä	&auml;
+Ö	&Ouml;
+ö	&ouml;
+Ü	&Uuml;
+ü	&uuml;
+ß	&szlig;
+    &Omega;
+-->

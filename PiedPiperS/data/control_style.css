@@ -1,0 +1,76 @@
+html {
+  font-family: Helvetica;
+  display: inline-block;
+  margin: 2% auto;
+  text-align: block;
+}
+h1{
+  font-size: 1.8rem;
+  margin: 2% auto;
+  text-align: center;
+}
+h2 {
+  font-size: 0.8rem;
+  text-align: left;
+  margin-left = 5%;
+}
+p{
+  font-size: 1.3rem;
+  text-align: center;
+  margin-left: 7%;
+  margin-right: 7%;
+}
+div{
+  text-align: center;
+  margin: 2%;
+}
+body {max-width: 380px; margin:2% auto; padding-bottom: 0px; text-align: center}
+    .slider { -webkit-appearance: none; margin: 14px; width: 92%; height: 25px; background: #FFD65C;
+      outline: none; -webkit-transition: .2s; transition: opacity .2s;}
+    .slider::-webkit-slider-thumb {-webkit-appearance: none; appearance: none; width: 35px; height: 35px; background: #008CBA; cursor: pointer;}
+    .slider::-moz-range-thumb { width: 35px; height: 35px; background: #003249; cursor: pointer; } 
+.button {
+  display: inline-block;
+  background-color: #008CBA;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  padding: 16px 5px;
+  width: 50%;
+  text-decoration: none;
+  font-size: 30px;
+  margin: 3px;
+  cursor: pointer;
+}
+.red4 {
+  background-color: #f44336;
+  width: 24%;
+}
+.red1 {
+  background-color: #f44336;
+  width: 18%;
+}
+.blue1 {
+  background-color: #008CBA;
+  width: 18%;
+}
+.blue4 {
+  background-color: #008CBA;
+  width: 24%;
+}
+.orange {
+  background-color: #e07425;
+  width: 18%;
+}
+.redlong {
+  background-color: #f44336;
+  width: 35%;
+}
+.darkred {
+  background-color: #a10800;
+  width: 35%;
+}
+.button6 {
+  background-color: #FFD65C;
+  width: 50%;
+}

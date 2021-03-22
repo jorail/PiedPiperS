@@ -1,0 +1,63 @@
+html {
+  font-family: Helvetica;
+  display: inline-block;
+  margin: 2% auto;
+  text-align: block;
+}
+h1{
+  font-size: 1.8rem;
+  text-align: center;
+}
+h2 {
+  font-size: 1.2rem;
+  text-align: left;
+}
+p{
+  font-size: 1.0rem;
+  text-align: left;
+}
+div{
+  text-align: center;
+  margin:2% auto; 
+}
+body{
+		max-width: 1024px; 
+		font-size: 1.0rem; 
+		font-family: Helvetica; 
+		display: left; 
+		padding:2%; 
+		margin:2% auto; 
+		text-align: left;
+} 
+.red4 {
+  background-color: #f44336;
+  width: 24%;
+}
+.red1 {
+  background-color: #f44336;
+  width: 18%;
+}
+.blue1 {
+  background-color: #008CBA;
+  width: 18%;
+}
+.blue4 {
+  background-color: #008CBA;
+  width: 24%;
+}
+.orange {
+  background-color: #e07425;
+  width: 18%;
+}
+.redlong {
+  background-color: #f44336;
+  width: 35%;
+}
+.darkred {
+  background-color: #a10800;
+  width: 35%;
+}
+.button6 {
+  background-color: #FFD65C;
+  width: 50%;
+}
