@@ -43,10 +43,10 @@ are stored in the sub-subfolder /PiedPiperS/data. This /data folder is ready for
 
 The transfer is accomplished with the Arduino IDE menue item >tools>ESP32 Sketch Data Upload. An introduction 
 to ESP32 Web Server and use of SPIFFS with the required structuring of the file system is illustrated in this tutorial: 
-https://randomnerdtutorials.com/esp32-web-server-spiffs-spi-flash-file-system/
+https://randomnerdtutorials.com/esp32-web-server-spiffs-spi-flash-file-system/ . 
 The principle of ESP32 serving as access point (AP) and the WebSocket protocol communication between the ESP32 as server and 
 multiple clients are explained here: 
-https://randomnerdtutorials.com/esp32-access-point-ap-web-server/
+https://randomnerdtutorials.com/esp32-access-point-ap-web-server/ and
 https://randomnerdtutorials.com/esp32-websocket-server-arduino/
 
 Note that the flash memory on ESP32 is very limited, so that the size of files in the /PiedPiperS/data folder has to be
