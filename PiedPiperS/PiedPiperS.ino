@@ -577,7 +577,7 @@ void setup() {
   pinMode(LIGHT_INPUT_PIN, INPUT);
   analogReadResolution(ANALOG_READ_RESOLUTION); 
   //analogReadAveraging(ANALOG_READ_AVERAGING);  //#####TODO test if adjustment to ESP analog input reading commands is functioning
-  analogSetCycles(ANALOG_READ_AVERAGING);        //#####TODO test if adjustment to ESP analog input reading commands is functioning
+  //analogSetCycles(ANALOG_READ_AVERAGING);      //#####TODO test if adjustment to ESP analog input reading commands is functioning
 
 #else  //mP not definied, defualt for Teensy 4.0
   // Set up serial port.
