@@ -9,7 +9,7 @@ b) Control by a whistle: Original PiedPiper whistle Morse code signals. Works wi
    analysis in a Teensy 4.0 microcontroller (in this version tone sampling is deactivated for ESP32 by commenting out):
    https://github.com/jorail/PiedPiper
 c) Switch or Touch-Pin Morse code input
-d) SerialMonitor input commands by typing letters, connection via USB
+d) SerialMonitor input commands by typing letters, requires connection via USB
 
 The project is inspired by the project 'free your model train' (FYMT) proposed by Frei Softwarefreunde
 at https://freie-software.org/free-your-model-train/
@@ -27,7 +27,7 @@ learning guide and examples at http://learn.adafruit.com/fft-fun-with-fourier-tr
 function headings are marked by 'MIT License'.
 
 Further explanations for the PiedPiperS project including the electrical layout and images of the resulting 
-circuit and wiring as well of its testing and application are provided in the /docs folder.
+circuit and wiring as well of its testing and application are provided in the [/docs](docs/) folder.
 
 The microprocessor functions and interaction with the integrated circuit (IC) used as motor driver (TLE5206-2S or L293D) are 
 modified or selectd by the initial #define statements. Corresponding sections of c++ code are used or omitted during compilation, 
@@ -39,7 +39,7 @@ Code sections between #ifdef ToneSampling ... #endif are not used, if ToneSampli
 
 The PiedPiperS c++ code is stored as PiedPiperS.ino file in a subfolder named PiedPiperS. So it is ready for use 
 with ESP32 and many other microcontrollers and for compilation with Arduino IDE. Additional files and .html websites for the Web Server 
-are stored in the sub-subfolder /PiedPiperS/data. This /data folder is ready for transfer to ESP32 SPIFFS with Arduinio IDE. 
+are stored in the sub-subfolder [/PiedPiperS/data](PiedPiperS/data/). This [/data](PiedPiperS/data/) folder is ready for transfer to ESP32 SPIFFS with Arduinio IDE. 
 
 The transfer is accomplished with the Arduino IDE menue item >tools>ESP32 Sketch Data Upload. An introduction 
 to ESP32 Web Server and use of SPIFFS with the required structuring of the file system is illustrated in this tutorial: 
@@ -49,16 +49,16 @@ multiple clients are explained here:
 https://randomnerdtutorials.com/esp32-access-point-ap-web-server/ and
 https://randomnerdtutorials.com/esp32-websocket-server-arduino/
 
-Note that the flash memory on ESP32 is very limited, so that the size of files in the /PiedPiperS/data folder has to be
-strictly limited, too. This especially applies to images stored in a sub-sub-subfolder /PiedPiperS/data/images. 
+Note that the flash memory on ESP32 is very limited, so that the size of files in the [/PiedPiperS/data](PiedPiperS/data/) folder has to be
+strictly limited, too. This especially applies to images stored in a sub-sub-subfolder [/PiedPiperS/data/images](PiedPiperS/data/images/). 
 Intentionally, the example images have very low resultion, in order to fit onto the ESP32 and in order to be available
 during outdoor applications (i.e. perhaps away from Github). If the file size is larger than the flash memory available 
-for SPIFFS on the ESP32, you can delete the last images in the /data/images folder, the .zip file or .pdf file in the /data folder
-for reducing the size of the SPIFFS upload without any significant impact on the structure and principle functioning of the 
-code and html websites.
+for SPIFFS on the ESP32, you can delete in your copy of the repository the last images in the [/images](PiedPiperS/data/images/) folder, 
+the .zip file or .pdf file in the [/data](PiedPiperS/data/) folder for reducing the size of the SPIFFS upload without any significant 
+impact on the structure and principle functioning of the code and html websites.
 
 After connecting to the Wifi you can always open the train control by typing the standard IP address:
-http://192.168.4.1 This address for the initial request is also provided as QR code in the /PiedPiperS/data folder. 
+http://192.168.4.1 This address for the initial request is also provided as QR code in the [/data](PiedPiperS/data/) folder. 
 
 Note in the c++ code that the order of the server.on events is relevant as client requests are assessed starting from the top. 
 Thus, in the middle of the c++ code you find the following order:
