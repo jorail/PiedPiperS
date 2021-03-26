@@ -4,16 +4,16 @@ Smartphone HTML control for model trains, using ESP32 microcontroller, WiFi acce
 The program purpose is to control a model train motor with independent power supply e.g. from USB power bank for outdoors. 
 Following options exist:
 
-a. Control from a smartphone: ESP32 Wifi WebServer for commands from a client browser via WebSocket connection:
+1. Control from a smartphone: ESP32 Wifi WebServer for commands from a client browser via WebSocket connection:
    https://github.com/jorail/PiedPiperS
    
-b. Control by a whistle: Original PiedPiper whistle Morse code signals. Works with microphone input and FFT tone 
+2. Control by a whistle: Original PiedPiper whistle Morse code signals. Works with microphone input and FFT tone 
    analysis in a Teensy 4.0 microcontroller (in this version tone sampling is deactivated for ESP32 by commenting out):
    https://github.com/jorail/PiedPiper
    
-c. Switch or Touch-Pin Morse code input
+3. Switch or Touch-Pin Morse code input
 
-d. SerialMonitor input commands by typing letters, requires connection via USB
+4. SerialMonitor input commands by typing letters, requires connection via USB
 
 The project is inspired by the project 'free your model train' (FYMT) proposed by Frei Softwarefreunde
 at https://freie-software.org/free-your-model-train/
