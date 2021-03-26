@@ -50,10 +50,10 @@ https://randomnerdtutorials.com/esp32-access-point-ap-web-server/ and
 https://randomnerdtutorials.com/esp32-websocket-server-arduino/
 
 Note that the flash memory on ESP32 is very limited, so that the size of files in the [/PiedPiperS/data](PiedPiperS/data/) folder has to be
-strictly limited, too. This especially applies to images stored in a sub-sub-subfolder [/PiedPiperS/data/images](PiedPiperS/data/images/). 
+strictly limited, too. This especially applies to images stored in a sub-sub-subfolder [/PiedPiperS/data/image](PiedPiperS/data/image/). 
 Intentionally, the example images have very low resultion, in order to fit onto the ESP32 and in order to be available
 during outdoor applications (i.e. perhaps away from Github). If the file size is larger than the flash memory available 
-for SPIFFS on the ESP32, you can delete in your copy of the repository the last images in the [/images](PiedPiperS/data/images/) folder, 
+for SPIFFS on the ESP32, you can delete in your copy of the repository the last images in the [/image](PiedPiperS/data/image/) folder, 
 the .zip file or .pdf file in the [/data](PiedPiperS/data/) folder for reducing the size of the SPIFFS upload without any significant 
 impact on the structure and principle functioning of the code and html websites.
 
