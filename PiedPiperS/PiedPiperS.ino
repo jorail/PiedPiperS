@@ -108,13 +108,14 @@
   099 2021-03-22 optimise numbers, units in /parts reformat /viewer, PiedPiper-Project link via github.html and QR
   100 2021-03-22 consolidated version, start for github
   101 2021-03-26 preventing false positve SignalActive readings, which resulted from spikes in the ESP32 TouchRead, by averaging valarray of multiple TouchRead
+  102 2021-03-26 add device width regulation to html websites in the code, add ESP modification detail img003 to parts.html
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 101, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-03-26";
+String SKETCH_INFO = "PiedPiperS.ino, Version 102, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-03-26";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -362,6 +363,7 @@ AsyncWebSocket ws("/ws");
 void captivePortalTarget(AsyncWebServerRequest *request) {
       AsyncResponseStream *response = request->beginResponseStream("text/html");
       response->print("<!DOCTYPE html><html><head><title>Infos zur Lokomotivsteuerung</title>");
+      response->print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
       response->print("<style>body{max-width: 1024px; font-size: 2.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:1% auto; text-align: left;}");
       response->print("</style></head><body>");
       response->printf("<h1>Startseite zur Loksteuerung</h1>");
@@ -389,6 +391,7 @@ class CaptiveRequestHandler : public AsyncWebHandler {
        //request->redirect("/portal");
       AsyncResponseStream *response = request->beginResponseStream("text/html");
       response->print("<!DOCTYPE html><html><head><title>Infos zur Lokomotivsteuerung</title>");
+      response->print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
       response->print("<style>body{max-width: 1024px; font-size: 2.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:1% auto; text-align: left;}");
       response->print("</style></head><body>");
       response->printf("<h1>Startseite zur Loksteuerung</h1>");
@@ -695,6 +698,7 @@ void setup() {
   server.on("/info", HTTP_GET, [](AsyncWebServerRequest *request){
     AsyncResponseStream *response = request->beginResponseStream("text/html");
       response->print("<!DOCTYPE html><html><head><title>Infos zur Lokomotivsteuerung</title>");
+      response->print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
       response->print("<style>body{max-width: 1024px; font-size: 2.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:1% auto; text-align: left;}");
       response->print("table, tr {vertical-align: top; padding: 1%; border-collapse: collapse; border-bottom: 2pt solid #ddd;} tr:last-child { border-bottom: none; } th, td {text-align: left; padding: 1%; }</style></head><body>");
       response->printf("<h1><a href='/project.html'>PiedPiperS-Projekt</a></h1>");
@@ -770,6 +774,7 @@ void setup() {
   server.on("/access", HTTP_GET, [](AsyncWebServerRequest *request){
     AsyncResponseStream *response = request->beginResponseStream("text/html");
       response->print("<!DOCTYPE html><html><head><title>WLAN-Zugang</title>");
+      response->print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
       response->print("<style>p, td {font-size: 1.5em;} body{max-width: 1024px; font-size: 2.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:1% auto; text-align: left;}");
       response->print("table, tr {vertical-align: top; padding: 1%; border-collapse: collapse; border-bottom: 2pt solid #ddd;} tr:last-child { border-bottom: none; } th, td {text-align: left; padding: 1%; }</style></head><body>");
       response->printf("<h1>WLAN-Zugang zur Loksteuerung</h2>");
@@ -789,6 +794,7 @@ void setup() {
       Serial.println("Monitor called. Send status via speed_command '?' to adjustSpeed()");
       speed_command = '?'; //Send info on status from controller via serial monitor and indicate by flashing LEDs, executed via adjustSpeed(), additionally notifyClients() and JASON message (alternative to update via processor)
       response->print("<!DOCTYPE html><html><head><title>Programmvariablen</title>");
+      response->print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
       response->print("<style>body{max-width: 1024px; font-size: 2.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:1% auto; text-align: left;}");
       response->print("table, tr {vertical-align: top; padding: 1%; border-collapse: collapse; border-bottom: 2pt solid #ddd;} tr:last-child { border-bottom: none; } th, td {text-align: left; padding: 1%; }</style></head><body>");
       response->printf("<h1>Programmvariablen</h1>");

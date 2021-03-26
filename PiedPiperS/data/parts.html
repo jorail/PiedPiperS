@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>PiedPiperS Bauteile</title>
+	<title>PiedPiperS-Bauteile</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="icon" href="data:,">
 	<link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-	<h1>PiedPiperS Bauteile</h1>
+	<h1>PiedPiperS-Bauteile</h1>
 	<p>Materialbedarf f&uuml;r einen Zug mit WLAN-Steuerung</p>
 
 	<h2>Elektronik</h2>
@@ -15,26 +15,37 @@
 	<ul>
 		<li><b>Mikrocontroller mit WLAN</b>, z.B. ESP32 Node MCU DevKit V1, oder anderer</li>
 		<ul>
-			<li style="font-size: small;">2 PWM-Ausg&auml;nge f&uuml;r die Motor&shy;steuer&shy;ung mit TLE5206-2S und ESP32: GPIO&#x202F;32 und GPIO&#x202F;33</li>
-			<li style="font-size: small;">2 digital Ausg&auml;nge f&uuml;r die LED-Anzeigen, ESP32: GPIO&#x202F;2 und GPIO&#x202F;4</li>
-			<li style="font-size: small;">1 digitaler Eingang als Morse-Schalter, ESP32: Ber&uuml;hr&shy;ungs&shy;sensor GPIO&#x202F;13=TOUCH&#x202F;4</li>
-			<li style="font-size: small;">1 digitaler Eingang f&uuml;r Fehler&shy;anzeige des Motor-ICs, ESP32: GPIO&#x202F;25</li>
+			<li style="font-size: small;">2 PWM-Ausg&auml;nge f&uuml;r die Motor&shy;steuer&shy;ung mit TLE5206-2S und ESP32: 
+			GPIO&#x202F;32 und GPIO&#x202F;33</li>
+			<li style="font-size: small;">2 digital Ausg&auml;nge f&uuml;r die LED-Anzeigen, ESP32: 
+			GPIO&#x202F;2 und GPIO&#x202F;4</li>
+			<li style="font-size: small;">1 digitaler Eingang als Morse-Schalter, ESP32: 
+			Ber&uuml;hr&shy;ungs&shy;sensor GPIO&#x202F;13=TOUCH&#x202F;4</li>
+			<li style="font-size: small;">1 digitaler Eingang f&uuml;r Fehler&shy;anzeige des Motor-ICs, ESP32: 
+			GPIO&#x202F;25</li>
 		</ul>
 		<li><b>Step-up DC/DC-Konverter-Modul</b>, 5&#x202F;V auf 8&#x202F;V bis 16&#x202F;V</li>
 		<li><b>IC mit H-Br&uuml;cke zur Steuerung eines Gleichstrommotors</b>, z.B. TLE5206-2S</li>
-		<li>Kleine <b>USB-Powerbank</b> als 5&#x202F;V&#x202F;DC Stromquelle. Es ist gut, 2 davon zu haben, die 2. als Ersatz, wenn die 1. leer ist</li>
+		<li>Kleine <b>USB-Powerbank</b> als 5&#x202F;V&#x202F;DC Stromquelle. Es ist gut, 2 davon zu haben, die 2. als Ersatz, 
+		wenn die 1. leer ist</li>
     </ul>
 	<div><a href="/viewer.html"><img src="/image/001.jpg" alt="Elektronik-Bauteile" style="width:100%"></a></div>
     <ul>
-		<li>Schrumpfschlauch, verschiedene Gr&ouml;&szlig;en, u.a. mit einem Durchmesser, um 2-Pol-IC-Kontakte aufzunehmen</li>
-		<li>USB-Kabel, ggf. alt und gebraucht, aber mit dicken Leitern und zuverl&auml;ssig f&uuml;r die Strom&shy;verbindung mit geringem Spannungs&shy;verlust</li>
+		<li>TVS-Diode mit 5&#x202F;V-Arbeits&shy;spannung (reverse standoff voltage) zum Schutz des 5&#x202F;V Eingangs des 
+		Mikro&shy;prozessors vor Spannungs&shy;spitzen aus dem Step-up-Konverter</li>
+		<li>1 k&Omega; SMD-Widerstand als k&uuml;nstliche Last nach dem Spannungs&shy;regler</li>
 		<li>Nutzung von 2 on-board SMD-LEDs durch einl&ouml;ten eines 1,5&#x202F;k&Omega; Widerstands von GPIO&#x202F;4 
 		(alternativ zwei 3 mm LEDs: 1 blau, 1 rot,  plus 2 x 1,5&#x202F;k&Omega; Widerst&auml;nde) </li>
-		<li>1 k&Omega; SMD-Widerstand als k&uuml;nstliche Last nach dem Spannungs&shy;regler</li>
+    </ul>
+	<div><a href="/viewer.html"><img src="/image/003.jpg" alt="ESP32-Modifikation" style="width:100%"></a></div>
+    <ul>
 		<li>2,7 k&Omega; Widerstand f&uumlr die &Uumlbertragung des Motro-IC Fehlersignals</li>
-		<li>TVS-Diode mit 5&#x202F;V-Arbeits&shy;spannung (reverse standoff voltage) zum Schutz des 5&#x202F;V Eingangs des Mikro&shy;prozessors vor Spannungs&shy;spitzen aus dem Step-up-Konverter</li>
+		<li>USB-Kabel, ggf. alt und gebraucht, aber mit dicken Leitern und zuverl&auml;ssig f&uuml;r die 
+		Strom&shy;verbindung mit geringem Spannungs&shy;verlust</li>
+		<li>2-poliges Kabel, dick, ca. 20&#x202F;cm, 0,25&#x202F;mm<sup>2</sup>, f&uumlr die 
+		Strom&shy;zufuhr von der USB-Powerbank mit wenig Spannungs&shy;verlust</li>
 		<li>2-poliges Kabel, d&uuml;nn und flexibel, ca. 20&#x202F;cm, f&uuml;r die Verbindung zum Motor </li>
-		<li>2-poliges Kabel, dick, ca. 20&#x202F;cm, 0,25&#x202F;mm<sup>2</sup>, f&uumlr die Strom&shy;zufuhr von der USB-Powerbank mit wenig Spannungs&shy;verlust</li>
+		<li>Schrumpfschlauch, verschiedene Gr&ouml;&szlig;en, u.a. mit einem Durchmesser, um 2-Pol-IC-Kontakte aufzunehmen</li>
 	</ul>
 	
 	<h2>Weitere Materialien</h2>
@@ -65,7 +76,8 @@
 	</ul>
 	
 	<p>Gesch&auml;tzte Materialkosten f&uuml;r Elektronik ca. 25&#x202F;&euro; ohne weitere Materialen und Werkzeuge</p>
-	<p>Die <b>Bauanleitung mit Fotos</b> f&uuml;r das PiedPiperS-Projekt liegt im Internet unter <a href='/github.html'>https://github.com/jorail</a></p> 
+	<p>Die <b>Bauanleitung mit Fotos</b> f&uuml;r das PiedPiperS-Projekt liegt im Internet unter 
+	<a href='/github.html'>https://github.com/jorail</a></p> 
 	<div><a href="/"><img src="/lok.png" alt="Loksteuerung" style="width:100%"></a></div> <!--http://192.168.4.1/-->
 	
 	<!--
