@@ -24,7 +24,7 @@ body{
 		max-width: 1024px; 
 		font-size: 1.0rem; 
 		font-family: Helvetica; 
-		display: left; 
+		display: inline-block; 
 		padding:2%; 
 		margin:2% auto; 
 		text-align: left;
