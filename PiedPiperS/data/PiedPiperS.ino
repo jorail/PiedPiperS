@@ -107,13 +107,14 @@
   098 2021-03-22 optimise high level links and PWM description on /info /parts /viewer    
   099 2021-03-22 optimise numbers, units in /parts reformat /viewer, PiedPiper-Project link via github.html and QR
   100 2021-03-22 consolidated version, start for github
+  101 2021-03-26 preventing false positve SignalActive readings, which resulted from spikes in the ESP32 TouchRead, by averaging valarray of multiple TouchRead
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS_100.ino, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-03";
+String SKETCH_INFO = "PiedPiperS.ino, Version 101, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-03-26";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -131,13 +132,17 @@ String SKETCH_INFO = "PiedPiperS_100.ino, GNU General Public License Version 3, 
 // Select libraries
 ////////////////////////////////////////////////////////////////////////////////                       
 
-// Import libraries for WebServerControl module
-#include <WiFi.h> // already includes libraries #include <WiFiClient.h> and #include <WiFiAP.h>
-#include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <SPIFFS.h>
-#include <DNSServer.h>
-#include <ArduinoJson.h>
+#ifdef ESP32
+  #include <valarray>
+  
+  // Import libraries for WebServerControl module
+  #include <WiFi.h> // already includes libraries #include <WiFiClient.h> and #include <WiFiAP.h>
+  #include <AsyncTCP.h>
+  #include <ESPAsyncWebServer.h>
+  #include <SPIFFS.h>
+  #include <DNSServer.h>
+  #include <ArduinoJson.h>
+#endif
 
 #ifdef ToneSampling
   // ###### comment out libraries for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
@@ -209,7 +214,7 @@ const float speedoffset = 0.6;                      // offset of pulse width mod
 
 //MorseCodeDecoder
 const int dotMinLength   =  200; //dots are more than 100ms long and shorter than dashMinLength
-const int dashMinLength  = 1000; //dashes are more than 300ms long
+const int dashMinLength  =  800; //dashes are more than 300ms long
 const int TerminalLength = 1500; //wait after last dash/dot for termination of command
 const int   morsecode_size = 12;
 const char *morsecode[morsecode_size] = {".",  "..",       "...",                              "....", ".....", ".-", ".--",       ".---",             "-", "--", "---", "?"};
@@ -233,8 +238,8 @@ const int MAX_CHARS     = 65;          // Max size of the input command buffer
   const int FFT_SIZE = 256;              // Size of the FFT.  Realistically can only be at most 256 = default: Frequency bin siez (Hz) = SAMPLE_RATE_HZ/FFT_SIZE
   float TONE_THRESHOLD1_DB = 11.0;       // <=########## Sensitivity threshold (in decibels) for energy in tone window, which must be above energy in other frequencies for successful detection, default 10.0. in quite room, default 12.0 with speach in the environment
   std::valarray<int> tone_array(8);      // <=########## setting room for gliding average of tones detected in tone loop, default tone_array size = 10, lower values for faster response time
-  float TONE_THRESHOLD2_DB = 9.0;       // <=########## Sensitivity threshold (in decibels) for the gliding average of tones, which must be above other frequencies for successful, default 15.0 in quite room, default 14.0 in noisy environment
-  int  LIGHT_THRESHOLD = 20;            // <=######## if below threshold then the light signal is active, choose analog input threshold value between 1 and 1023
+  float TONE_THRESHOLD2_DB = 9.0;        // <=########## Sensitivity threshold (in decibels) for the gliding average of tones, which must be above other frequencies for successful, default 15.0 in quite room, default 14.0 in noisy environment
+  int  LIGHT_THRESHOLD = 20;             // <=######## if below threshold then the light signal is active, choose analog input threshold value between 1 and 1023
   int TONE_FREQ_OFFSET = int(200/(SAMPLE_RATE_HZ/FFT_SIZE)); // Default 200 Hz converted into number of low frequency bins to be skipped for 'windowMean' evaluation and difference of energy in window vs. in other frequencies
   const int TONE_LOWS[] = {              // <=########## Lower bound (in hz) of each tone in the input tone window (or sequence). Default single tone = h'' = 988 Hz. Default tone sequence: 1723, 1934, 1512, 738, 1125. 
     988
@@ -286,7 +291,7 @@ Tone Hertz      Tone Hertz      Tone Hertz        Tone    Hertz       Tone   Her
 #ifdef ToneSampling
   //###### comment out tone sampling, will be needed for FFT tone signal analysis in PiedPiper
   //toneLoop
-  IntervalTimer samplingTimer;      //###TODO correct for ESP32
+  IntervalTimer samplingTimer;  //###TODO correct for use of code with ESP32
   float samples[FFT_SIZE * 2];
   float magnitudes[FFT_SIZE];
   
@@ -317,6 +322,12 @@ int motor_ok = HIGH;           // motor ic error flag (not used in version 030 t
 int sound = 0;
 
 // variables from MorseCodeDecoder
+
+#ifdef ESP32
+  // ESP touch sensor multiple reading for robust results, preventing false positive switch_signals
+  std::valarray<int> touch_array(5);      // for assessment of gliding average of touch readings in Morse signal detection loop, default touch_array size = 10, lower values for faster response time
+#endif
+
 bool switch_signal = HIGH;
 bool tone_signal = false;
 bool light_signal = false;
@@ -1051,8 +1062,10 @@ void MorseCodeDecoder() {
   //use alternative inputs (light detection, tone detection together with the switch_signal by logical OR combination '||'
 
 #ifdef ESP32 
-    // switch_signal = !digitalRead(input_switch);      //for use with connected normally closed micro switch connected to HIGH and pull-down 10 kOhm resistor
-    switch_signal = (touchRead(input_switch) < input_switch_level);      //for ESP32 touch sensor reading
+    // Touch input multiple sampling and averaging, necessary due to spikes in the touchRead, for preventing false positive switch_signals
+    touch_array = touch_array.shift(-1);
+    touch_array[0] = touchRead(input_switch); 
+    switch_signal = (touch_array.sum()/touch_array.size() < input_switch_level);      //for robust ESP32 touch sensor reading
   
 #else  // uP = Teensy and normally closed microswitch connected to input_switch
     switch_signal = !digitalRead(input_switch);         //for use with connected normally closed micro switch connected to HIGH and pull-down 10 kOhm resistor
@@ -1098,6 +1111,8 @@ void MorseCodeDecoder() {
   else {
     //evaluate length of last signal
     if (SignalActive) {
+      //Serial.print("##### Monitor false positive SignalActive readings ##### millis() - SignalTimer = ");
+      //Serial.println(millis() - SignalTimer);
       SignalTimer = millis();
       SignalActive = false;
       if (longSignalActive) {
@@ -1114,8 +1129,6 @@ void MorseCodeDecoder() {
       }
     }
     else {
-        //Serial.print("##### Monitor Point Signal Terminated 2 ##### ");
-        //Serial.println(SignalTerminated);
       if (SignalTerminated == false) {
         SignalDuration = int (millis() - SignalTimer);
         if ((SignalDuration > TerminalLength)) {
@@ -1590,18 +1603,10 @@ void monitor_global_variables() {
    motor_ok = digitalRead(error_motoric);
   #endif
   
-  Serial.print("switch_ok= ");
+  Serial.print(" | switch_ok= ");
   Serial.print(switch_ok);
   Serial.print(" | motor_ok= ");
   Serial.print(motor_ok);
-  Serial.print(" | tone_signal= ");
-  Serial.print(tone_signal);
-  Serial.print(" | Tone_loop_count= ");
-  Serial.print(TONE_LOOP_COUNT);
-  TONE_LOOP_COUNT =0; 
-  Serial.print(" | Tone_signal_activ= ");
-  Serial.print(TONE_ACTIVE_COUNT);
-  TONE_ACTIVE_COUNT =0;   
   
   //disabled light_level reading
   //Serial.print(analogRead(LIGHT_INPUT_PIN));  
@@ -1617,7 +1622,20 @@ void monitor_global_variables() {
     Serial.print(" TOUCH read= ");
     Serial.print(touchRead(input_switch));
   #endif
-  
+
+  #ifdef ToneSampling
+    Serial.print(" | tone_signal= ");
+    Serial.print(tone_signal);
+    Serial.print(" | Tone_loop_count= ");
+    Serial.print(TONE_LOOP_COUNT);
+    TONE_LOOP_COUNT =0; 
+    Serial.print(" | Tone_signal_activ= ");
+    Serial.print(TONE_ACTIVE_COUNT);
+    TONE_ACTIVE_COUNT =0;
+  #endif
+
+  Serial.print(" | SignalActive= ");
+  Serial.print(SignalActive);     
   Serial.println( " | send '?' for info");
 
   /*
