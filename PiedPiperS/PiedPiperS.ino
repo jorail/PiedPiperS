@@ -109,13 +109,14 @@
   100 2021-03-22 consolidated version, start for github
   101 2021-03-26 preventing false positve SignalActive readings, which resulted from spikes in the ESP32 TouchRead, by averaging valarray of multiple TouchRead
   102 2021-03-26 add device width regulation to html websites in the code, add ESP modification detail img003 to parts.html
+  103 2021-03-27 consolidated version, prepare for lok.ini branch and further development
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 102, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-03-26";
+String SKETCH_INFO = "PiedPiperS.ino, Version 103, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-03-26";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -716,7 +717,7 @@ void setup() {
       response->printf("<p>Die Stromversorgung der Lok erfolgt nicht durch die Schiene sondern aus einer mitgef&uuml;hrten Batterie oder USB-Powerbank. ");
       response->printf("Aus 5 Volt Gleichspannung wird in einem Step-up-Konverter eine Gleichspannung von etwa %.1f Volt erzeugt.</p>", motor_voltage_supply);      
       response->printf("<p>Eine Puls&shy;weiten&shy;modulierung (PWM) im ESP32-Mikro&shy;controller mit %i Geschwindig&shy;keits&shy;stufen dient zur Steuerung der Lok. ",max_speed_level); 
-      response->printf("Dabei wird das PWM-Signal in einem integrierten Schaltkreis, IC TLE5206-2S, mit einer H-Br&uuml;cke verst&auml;rkt, um den Gleich&shy;strom&shy;motor per PWM zu regeln. ");
+      response->printf("Dabei wird das PWM-Signal in einem integrierten Schaltkreis (IC) mit einer H-Br&uuml;cke verst&auml;rkt, um den Gleich&shy;strom&shy;motor per PWM zu regeln. ");
       response->printf("Die erste Geschwindig&shy;keits&shy;stufe entspricht einer PWM von %.0f %%. </p>", ((static_cast<float>(1)/max_speed_level) * (1 - speedoffset) + speedoffset)*100); 
 
       if(speed_level>0){
