@@ -173,31 +173,31 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 103, GNU General Public License Ve
 
 #ifdef ESP32 
   // input output defintions
-  const int AUDIO_INPUT_PIN = 14;        // Input D14 = ADC16 pin for audio signal.
-  const int LIGHT_INPUT_PIN = 27;        // Input D27 = ADC17 pin for light signal.
-  const int ANALOG_READ_RESOLUTION = 10; // Bits of resolution for the ADC.
-  const int ANALOG_READ_AVERAGING = 8;  // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
-  const int POWER_LED_PIN = 4;          // optional output pin for power LED (use ESP32 GPIO pin D15 next to D02 onboard LED pin), alternatively, if no seperate power LED is attached, redLED pin can be used with only minor interference
+
+  const int POWER_LED_PIN = 4;           // optional output pin for power LED (use ESP32 GPIO pin D15 next to D02 onboard LED pin), alternatively, if no seperate power LED is attached, redLED pin can be used with only minor interference
   const int greenLED      = 2;           // PIN of on-board blue LED for simple digitalWrite, D02 pin
   const int redLED        = 4;           // PIN of on-board red LED for simple digitalWrite, after hardware modification by connection via 1kOhm resistero to D04 pin
   const int error_motoric = 25;          // motor H-bridge ic error flag, for TLE5206 on pin 25 must be defined as input, alternatively: D12 
   const int input_switch  = 13;          // D13 (touch switch input: HIGH=steady state; LOW < 60 = activated, Pin 13 = Touch4 = T4 => if((touchRead(input_switch) < 60)
   const int input_switch_level = 60 ;    // Set high sensitivity at 60 with very short wire at Touch-Input pin, LOW value < 60 = activated (default with some longer cable at Touch-Input pin: LOW < 50 = activated)
-  #define LEDC_TIMER_BITS   8            // PWM properties, use 8 bit precission for LEDC timer with 256 levels
-  #define LEDC_BASE_FREQ    5000         // PWM properties, use 5000 Hz as a LEDC base frequency
-  const int pwmChannel1    = 0;          // required for ESP32 in combination with either L293D or TLE5206 motor ic
-  const int pwmChannel2    = 1;          // only required in combination of ESP32 and TLE5206 motor ic
-  int dutyCycle           = 200;
   const int motor2        = 32;          // D32 digital output to motor H-bridge ic input 2 setting motor direction4
   const int motor1        = 33;          // D33 digital output to motor H-bridge ic input 1 setting motor direction
   const int motor_enable  = 25;          // D32 PWM output to motor H-bridge ic enable setting motor speed
 
+  #define LEDC_TIMER_BITS   8            // PWM properties, use 8 bit precission for LEDC timer with 256 levels
+  #define LEDC_BASE_FREQ    5000         // PWM properties, use 5000 Hz as a LEDC base frequency
+  const int pwmChannel1   = 0;           // required for ESP32 in combination with either L293D or TLE5206 motor ic
+  const int pwmChannel2   = 1;           // only required in combination of ESP32 and TLE5206 motor ic
+  int dutyCycle           = 200;
+
+  const int AUDIO_INPUT_PIN = 14;        // Input D14 = ADC16 pin for audio signal.
+  const int LIGHT_INPUT_PIN = 27;        // Input D27 = ADC17 pin for light signal.
+  const int ANALOG_READ_RESOLUTION = 10; // Bits of resolution for the ADC.
+  const int ANALOG_READ_AVERAGING = 8;   // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
+
+
 #else  //uP not definied, defualt for Teensy 4.0
   // input output defintions
-  const int AUDIO_INPUT_PIN = 21;        // Input ADC pin for audio signal.
-  const int LIGHT_INPUT_PIN = 20;        // Input ADC pin for light signal.
-  const int ANALOG_READ_RESOLUTION = 10; // Bits of resolution for the ADC.
-  const int ANALOG_READ_AVERAGING = 16 ; // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
   const int POWER_LED_PIN = 13;          // Output pin for power LED (pin 13 to use Teensy 4.0's onboard LED).
   const int error_motoric =  4;          // motor H-bridge ic error flag
   const int input_switch  =  5;          // manual switch input: HIGH=steady state, LOW=activated
@@ -205,6 +205,11 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 103, GNU General Public License Ve
   const int motor2        = 10;          // PWM output to motor H-bridge ic input 2
   const int greenLED      = 11;          // PIN of LED for simple digitalWrite
   const int redLED        = 12;          // PIN of LED for simple digitalWrite
+
+  const int AUDIO_INPUT_PIN = 21;        // Input ADC pin for audio signal.
+  const int LIGHT_INPUT_PIN = 20;        // Input ADC pin for light signal.
+  const int ANALOG_READ_RESOLUTION = 10; // Bits of resolution for the ADC.
+  const int ANALOG_READ_AVERAGING = 16 ; // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
 
 #endif
 
@@ -338,18 +343,18 @@ int sound = 0;
   std::valarray<int> touch_array(5);      // for assessment of gliding average of touch readings in Morse signal detection loop, default touch_array size = 10, lower values for faster response time
 #endif
 
-bool switch_signal = HIGH;
-bool tone_signal = false;
-bool light_signal = false;
-// int  light_level = 0;       //disabled light level reading
-unsigned long SignalTimer = 0; //for recording the time how long the button was pressed
-int SignalDuration = 0;
-bool SignalActive = false;
-bool shortSignalActive = false;
-bool longSignalActive = false;
+bool switch_signal        = HIGH;
+bool tone_signal          = false;
+bool light_signal         = false;
+// int  light_level       = 0;    //disabled light level reading
+unsigned long SignalTimer = 0;    //for recording the time how long the button was pressed
+int SignalDuration        = 0;
+bool SignalActive         = false;
+bool shortSignalActive    = false;
+bool longSignalActive     = false;
 bool verylongSignalActive = false; //2xlongSignal as additional signal for emergency brake
-bool SignalTerminated = true;
-String currentSignal = ""; //string to hold what is currently being signalled, complete Morse command after termination
+bool SignalTerminated     = true;
+String currentSignal      = ""; //string to hold what is currently being signalled, complete Morse command after termination
 
 ////////////////////////////////////////////////////////////////////////////////
 // .ini file handling, according to https://github.com/yurilopes/SPIFFSIniFile, GNU GPL v3
@@ -553,16 +558,6 @@ void notifyClients() {
   Serial.println((char*)data);
 }
 
-// Adjust index.html variables at start or reload
-String processor(const String& var){
-    Serial.print("processor working on: ");
-    Serial.println(var);
-    //variables will here not by replaced by processor but by notifyClients() after a short delay
-    return "Starte...";
-  }
-#endif
-
-
 #ifdef ESP32
   //define buffer length for .ini file readings
   const char *filename = "/lok.ini";
@@ -574,11 +569,26 @@ String processor(const String& var){
   char password[bufferLen] = {0};
  
 #endif 
+
+// Adjust index.html variables at start or reload
+String processor(const String& var){
+    Serial.print("processor working on: ");
+    Serial.println(var);
+
+    if(var == "LOCONAME"){
+      return String(loconame); // send loconame for replacement of the header variable in index.html
+    }
+   
+    //other variables will not by replaced here by processor but by notifyClients() and  
+    //sending a JSON message after a short delay
+    return "Starte...";
+  }
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // SETUP 
 ////////////////////////////////////////////////////////////////////////////////
 void setup() {
-
 
 #ifdef ESP32 
   setCpuFrequencyMhz(80); //reduce CPU frequency for power saving
@@ -589,7 +599,6 @@ void setup() {
 ////////////////////////////////////////////////////////////////////////////////
 
   // Initialize SPIFFS
-  //if(!SPIFFS.begin()){
   if(!SPIFFS.begin(true)){
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
@@ -601,9 +610,6 @@ void setup() {
     Serial.print("Ini file ");
     Serial.print(filename);
     Serial.println(" does not exist");
-    // Cannot do anything else
-    //while (1)
-    //  ;
   }
   Serial.println("Ini file exists");
 
@@ -613,9 +619,6 @@ void setup() {
     Serial.print(ini.getFilename());
     Serial.print(" not valid: ");
     printErrorMessage(ini.getError());
-    // Cannot do anything else
-    //while (1)
-    //  ;
   }
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -628,29 +631,15 @@ void setup() {
   const char* password_default = "freifahrt";
 
   //loco name from .ini
-  if (ini.getValue("loco", "name", buffer, bufferLen)) {
-    //Serial.print("ini loco name = ");
-    //Serial.println(buffer);
-    strncpy(loconame,buffer,bufferLen);
-    //Serial.print("new loco name = ");
-    //Serial.println(loconame);
-  }
+  if (ini.getValue("loco", "name", buffer, bufferLen)) {strncpy(loconame,buffer,bufferLen);}
   else {
     Serial.print("ini no loconame! ");
     printErrorMessage(ini.getError());
     strncpy (loconame,loconame_default,bufferLen);
-    //Serial.print("loconame default = ");
-    //Serial.println(loconame);
   }
 
   //wifi ssid from .ini
-  if (ini.getValue("wifi", "ssid", buffer, bufferLen)) {
-    //Serial.print("ini wifi ssid = ");
-    //Serial.println(buffer);
-    strncpy(ssid,buffer,bufferLen);
-    //Serial.print("new ssid = ");
-    //Serial.println(ssid);
-  }
+  if (ini.getValue("wifi", "ssid", buffer, bufferLen)) {strncpy(ssid,buffer,bufferLen);}
   else {
     Serial.print("ini no wifi ssid! ");
     printErrorMessage(ini.getError());
@@ -660,19 +649,11 @@ void setup() {
   }
 
   //wifi password from .ini
-  if (ini.getValue("wifi", "password", buffer, bufferLen)) {
-    //Serial.print("ini wifi password = ");
-    //Serial.println(buffer);
-    strncpy(password,buffer,bufferLen);
-    //Serial.print("new password = ");
-    //Serial.println(password);
-  }
+  if (ini.getValue("wifi", "password", buffer, bufferLen)) {strncpy(password,buffer,bufferLen);}
   else {
     Serial.print("ini no wifi password! ");
     printErrorMessage(ini.getError());
     strncpy (password,password_default,bufferLen);
-    //Serial.print("password default = ");
-    //Serial.println(password);
   }
 
   Serial.print("loco name: "); Serial.println(loconame);
@@ -894,7 +875,7 @@ void setup() {
       response->printf("<p>Eine Puls&shy;weiten&shy;modulierung (PWM) im ESP32-Mikro&shy;controller mit %i Geschwindig&shy;keits&shy;stufen dient zur Steuerung der Lok. ",max_speed_level); 
       response->printf("Dabei wird das PWM-Signal in einem integrierten Schaltkreis (IC) mit einer H-Br&uuml;cke verst&auml;rkt, um den Gleich&shy;strom&shy;motor per PWM zu regeln. ");
       response->printf("Die erste Geschwindig&shy;keits&shy;stufe entspricht einer PWM von %.0f %%. </p>", ((static_cast<float>(1)/max_speed_level) * (1 - speedoffset) + speedoffset)*100); 
-
+      
       if(speed_level>0){
         response->printf("<p>PWM derzeit <b>%.0f %% bei Geschwindig&shy;keits&shy;stufe %i</b>. ", ((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)*100, speed_level); 
         response->printf("Das entspricht einem elektrischen Strom durch den Lokmotor, der bei etwa %.1f Volt flie&szlig;en w&uuml;rde.</p>",((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)* motor_voltage_supply);  
