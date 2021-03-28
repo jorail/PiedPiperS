@@ -141,9 +141,17 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 103, GNU General Public License Ve
   #include <WiFi.h> // already includes libraries #include <WiFiClient.h> and #include <WiFiAP.h>
   #include <AsyncTCP.h>
   #include <ESPAsyncWebServer.h>
-  #include <SPIFFS.h>
   #include <DNSServer.h>
   #include <ArduinoJson.h>
+
+  //libraries for ini file handling https://github.com/yurilopes/SPIFFSIniFile
+
+  #include "FS.h"  //################### double chekc if really needed
+  #include <SPIFFS.h>
+  #include <SPIFFSIniFile.h>  
+
+
+  
 #endif
 
 #ifdef ToneSampling
@@ -344,13 +352,59 @@ bool SignalTerminated = true;
 String currentSignal = ""; //string to hold what is currently being signalled, complete Morse command after termination
 
 ////////////////////////////////////////////////////////////////////////////////
+// .ini file handling, according to https://github.com/yurilopes/SPIFFSIniFile, GNU GPL v3
+////////////////////////////////////////////////////////////////////////////////
+#ifdef ESP32 
+
+//for debugging .ini file reading errors
+void printErrorMessage(uint8_t e, bool eol = true)
+{
+  switch (e) {
+  case SPIFFSIniFile::errorNoError:
+    Serial.print("no error");
+    break;
+  case SPIFFSIniFile::errorFileNotFound:
+    Serial.print("file not found");
+    break;
+  case SPIFFSIniFile::errorFileNotOpen:
+    Serial.print("file not open");
+    break;
+  case SPIFFSIniFile::errorBufferTooSmall:
+    Serial.print("buffer too small");
+    break;
+  case SPIFFSIniFile::errorSeekError:
+    Serial.print("seek error");
+    break;
+  case SPIFFSIniFile::errorSectionNotFound:
+    Serial.print("section not found");
+    break;
+  case SPIFFSIniFile::errorKeyNotFound:
+    Serial.print("key not found");
+    break;
+  case SPIFFSIniFile::errorEndOfFile:
+    Serial.print("end of file");
+    break;
+  case SPIFFSIniFile::errorUnknownError:
+    Serial.print("unknown error");
+    break;
+  default:
+    Serial.print("unknown error value");
+    break;
+  }
+  if (eol)
+    Serial.println();
+}
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 // Create Server Module for ESP32
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef ESP32 
 
 // Define network credentials
-const char* ssid = "rote_Diesellok";
-const char* password = "freifahrt";
+char* ssid = "rote_Diesellok";
+char* password = "freifahrt";
 
 //Create DNS Server on port 53
 const byte DNS_PORT = 53;
@@ -512,15 +566,100 @@ String processor(const String& var){
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// SETUP MAIN FUNCTIONS
+// SETUP 
 ////////////////////////////////////////////////////////////////////////////////
-
 void setup() {
+
+////////////////////////////////////////////////////////////////////////////////
+// Read .ini file, according to https://github.com/yurilopes/SPIFFSIniFile, GNU GPL v3
+////////////////////////////////////////////////////////////////////////////////
+#ifdef ESP32 
+
+  setCpuFrequencyMhz(80); //reduce CPU frequency for power saving
+  Serial.begin(115200);   // Set up serial port.
+
+  const size_t bufferLen = 42;  //maximum .ini file line length
+  char buffer[bufferLen];
+  const char *filename = "/lok.ini";
+
+  /*  
+  Serial.begin(9600);
+  //Mount the SPIFFS  
+  if (!SPIFFS.begin())
+    while (1)
+      Serial.println("SPIFFS.begin() failed");
+  */
+
+  // Initialize SPIFFS
+  //if(!SPIFFS.begin()){
+  if(!SPIFFS.begin(true)){
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    return;
+  }
+
+  SPIFFSIniFile ini(filename);
+  if (!ini.open()) {
+    Serial.print("Ini file ");
+    Serial.print(filename);
+    Serial.println(" does not exist");
+    // Cannot do anything else
+    //while (1)
+    //  ;
+  }
+  Serial.println("Ini file exists");
+
+  // Check the file is valid. This can be used to warn if any lines
+  // are longer than the buffer.
+  if (!ini.validate(buffer, bufferLen)) {
+    Serial.print("ini file ");
+    Serial.print(ini.getFilename());
+    Serial.print(" not valid: ");
+    printErrorMessage(ini.getError());
+    // Cannot do anything else
+    //while (1)
+    //  ;
+  }
+  
+  // Fetch a value from a key which is present
+  if (ini.getValue("wifi", "ssid", buffer, bufferLen)) {
+    Serial.print("ini wifi ssid = ");
+    Serial.println(buffer);
+    char *ssid = buffer;
+  }
+  else {
+    Serial.print("ini no wifi ssid! ");
+    printErrorMessage(ini.getError());
+  }
+
+    // Fetch a value from a key which is present
+  if (ini.getValue("wifi", "password", buffer, bufferLen)) {
+    Serial.print("ini wifi password = ");
+    Serial.println(buffer);
+    char *password = buffer;
+  }
+  else {
+    Serial.print("ini no wifi password! ");
+    printErrorMessage(ini.getError());
+  }
+  
+  // Try fetching a value from a missing key (but section is present)
+  if (ini.getValue("wifi", "nosuchkey", buffer, bufferLen)) {
+    Serial.print("section 'wifi' has an entry 'nosuchkey' with value ");
+    Serial.println(buffer);
+  }
+  else {
+    Serial.print("Could not read 'nosuchkey' from section 'wifi', error was ");
+    printErrorMessage(ini.getError());
+  }
+  
+#endif
+////////////////////////////////////////////////////////////////////////////////
+// SETUP Main Functions, check for brownout
+////////////////////////////////////////////////////////////////////////////////
+  
   pinMode(input_switch, INPUT);  
  
 #ifdef ESP32 
-  setCpuFrequencyMhz(80); //reduce CPU frequency for power saving
-  Serial.begin(115200);   // Set up serial port.
 
   // check for brownout or other startup reason
   esp_reset_reason_t reset_reason = esp_reset_reason();
@@ -654,12 +793,6 @@ void setup() {
 // Setup WiFi WebServer and CaptivePortal redirects
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef ESP32
-
-  // Initialize SPIFFS
-  if(!SPIFFS.begin(true)){
-    Serial.println("An Error has occurred while mounting SPIFFS");
-    return;
-  }
 
   // Open WiFi Access Point with SSID and password
   Serial.print("Setting WiFi Access Point…");
