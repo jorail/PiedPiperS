@@ -370,7 +370,8 @@ void printErrorMessage(uint8_t e, bool eol = true)
     Serial.print("file not open");
     break;
   case SPIFFSIniFile::errorBufferTooSmall:
-    Serial.print("buffer too small");
+    Serial.print("buffer too small => ");
+    Serial.print("limit .ini line length to bufferLen (default 40 characters!)");
     break;
   case SPIFFSIniFile::errorSeekError:
     Serial.print("seek error");
@@ -401,10 +402,6 @@ void printErrorMessage(uint8_t e, bool eol = true)
 // Create Server Module for ESP32
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef ESP32 
-
-// Define network credentials
-char* ssid = "rote_Diesellok";
-char* password = "freifahrt";
 
 //Create DNS Server on port 53
 const byte DNS_PORT = 53;
@@ -565,30 +562,31 @@ String processor(const String& var){
   }
 #endif
 
+
+#ifdef ESP32
+  //define buffer length for .ini file readings
+  const char *filename = "/lok.ini";
+  const size_t bufferLen = 41;  //maximum .ini file line length of 40 characters plus '\0' character
+  char buffer[bufferLen];
+
+  char loconame[bufferLen] = {0};
+  char ssid[bufferLen]     = {0};
+  char password[bufferLen] = {0};
+ 
+#endif 
 ////////////////////////////////////////////////////////////////////////////////
 // SETUP 
 ////////////////////////////////////////////////////////////////////////////////
 void setup() {
 
-////////////////////////////////////////////////////////////////////////////////
-// Read .ini file, according to https://github.com/yurilopes/SPIFFSIniFile, GNU GPL v3
-////////////////////////////////////////////////////////////////////////////////
-#ifdef ESP32 
 
+#ifdef ESP32 
   setCpuFrequencyMhz(80); //reduce CPU frequency for power saving
   Serial.begin(115200);   // Set up serial port.
 
-  const size_t bufferLen = 42;  //maximum .ini file line length
-  char buffer[bufferLen];
-  const char *filename = "/lok.ini";
-
-  /*  
-  Serial.begin(9600);
-  //Mount the SPIFFS  
-  if (!SPIFFS.begin())
-    while (1)
-      Serial.println("SPIFFS.begin() failed");
-  */
+////////////////////////////////////////////////////////////////////////////////
+// Open .ini file, according to https://github.com/yurilopes/SPIFFSIniFile, GNU GPL v3
+////////////////////////////////////////////////////////////////////////////////
 
   // Initialize SPIFFS
   //if(!SPIFFS.begin()){
@@ -597,6 +595,7 @@ void setup() {
     return;
   }
 
+  // open .ini file
   SPIFFSIniFile ini(filename);
   if (!ini.open()) {
     Serial.print("Ini file ");
@@ -608,8 +607,7 @@ void setup() {
   }
   Serial.println("Ini file exists");
 
-  // Check the file is valid. This can be used to warn if any lines
-  // are longer than the buffer.
+  // Check if the file is valid. This can be used to warn if any lines are longer than the buffer.
   if (!ini.validate(buffer, bufferLen)) {
     Serial.print("ini file ");
     Serial.print(ini.getFilename());
@@ -619,30 +617,70 @@ void setup() {
     //while (1)
     //  ;
   }
-  
-  // Fetch a value from a key which is present
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+// Read values from the .ini file > section > key, when the key is present
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+  // Define defaultnetwork credentials and name
+  const char* loconame_default = "Loksteuerung";
+  const char* ssid_default = "Lok_wlan";
+  const char* password_default = "freifahrt";
+
+  //loco name from .ini
+  if (ini.getValue("loco", "name", buffer, bufferLen)) {
+    //Serial.print("ini loco name = ");
+    //Serial.println(buffer);
+    strncpy(loconame,buffer,bufferLen);
+    //Serial.print("new loco name = ");
+    //Serial.println(loconame);
+  }
+  else {
+    Serial.print("ini no loconame! ");
+    printErrorMessage(ini.getError());
+    strncpy (loconame,loconame_default,bufferLen);
+    //Serial.print("loconame default = ");
+    //Serial.println(loconame);
+  }
+
+  //wifi ssid from .ini
   if (ini.getValue("wifi", "ssid", buffer, bufferLen)) {
-    Serial.print("ini wifi ssid = ");
-    Serial.println(buffer);
-    char *ssid = buffer;
+    //Serial.print("ini wifi ssid = ");
+    //Serial.println(buffer);
+    strncpy(ssid,buffer,bufferLen);
+    //Serial.print("new ssid = ");
+    //Serial.println(ssid);
   }
   else {
     Serial.print("ini no wifi ssid! ");
     printErrorMessage(ini.getError());
+    strncpy (ssid,ssid_default,bufferLen);
+    //Serial.print("ssid default = ");
+    //Serial.println(ssid);
   }
 
-    // Fetch a value from a key which is present
+  //wifi password from .ini
   if (ini.getValue("wifi", "password", buffer, bufferLen)) {
-    Serial.print("ini wifi password = ");
-    Serial.println(buffer);
-    char *password = buffer;
+    //Serial.print("ini wifi password = ");
+    //Serial.println(buffer);
+    strncpy(password,buffer,bufferLen);
+    //Serial.print("new password = ");
+    //Serial.println(password);
   }
   else {
     Serial.print("ini no wifi password! ");
     printErrorMessage(ini.getError());
+    strncpy (password,password_default,bufferLen);
+    //Serial.print("password default = ");
+    //Serial.println(password);
   }
+
+  Serial.print("loco name: "); Serial.println(loconame);
+  Serial.print("ssid: "); Serial.println(ssid);
+  Serial.print("password: "); Serial.println(password);
+
   
-  // Try fetching a value from a missing key (but section is present)
+  // Just testing reading: Try fetching a value from a missing key (but .ini section is present)
   if (ini.getValue("wifi", "nosuchkey", buffer, bufferLen)) {
     Serial.print("section 'wifi' has an entry 'nosuchkey' with value ");
     Serial.println(buffer);
@@ -651,8 +689,8 @@ void setup() {
     Serial.print("Could not read 'nosuchkey' from section 'wifi', error was ");
     printErrorMessage(ini.getError());
   }
-  
 #endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // SETUP Main Functions, check for brownout
 ////////////////////////////////////////////////////////////////////////////////
@@ -795,7 +833,11 @@ void setup() {
 #ifdef ESP32
 
   // Open WiFi Access Point with SSID and password
-  Serial.print("Setting WiFi Access Point…");
+  Serial.println("Setting WiFi Access Point…");
+  Serial.print("SSID = ");
+  Serial.println(ssid);
+  Serial.print("password = ");
+  Serial.println(password);
   // Remove the password parameter, if you want the AP (Access Point) to open unprotected
   WiFi.softAP(ssid, password,1,0,2); //chanel=1, broadcastID=0, max_connections=2 //changed from 1 to two clients in version 083
   IPAddress IP = WiFi.softAPIP();
