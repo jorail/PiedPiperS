@@ -110,13 +110,15 @@
   101 2021-03-26 preventing false positve SignalActive readings, which resulted from spikes in the ESP32 TouchRead, by averaging valarray of multiple TouchRead
   102 2021-03-26 add device width regulation to html websites in the code, add ESP modification detail img003 to parts.html
   103 2021-03-27 consolidated version, prepare for lok.ini branch and further development
+  104 2021-03-28 .ini reading for variable loco name in index.html, ssid and password
+  105 2021-03-29 .ini evaluation for speed_adjustment setting and fine tuning speed settings for 32 speed levels
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 103, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-03-26";
+String SKETCH_INFO = "PiedPiperS.ino, Version 105, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-03-29";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -174,15 +176,15 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 103, GNU General Public License Ve
 #ifdef ESP32 
   // input output defintions
 
-  const int POWER_LED_PIN = 4;           // optional output pin for power LED (use ESP32 GPIO pin D15 next to D02 onboard LED pin), alternatively, if no seperate power LED is attached, redLED pin can be used with only minor interference
-  const int greenLED      = 2;           // PIN of on-board blue LED for simple digitalWrite, D02 pin
-  const int redLED        = 4;           // PIN of on-board red LED for simple digitalWrite, after hardware modification by connection via 1kOhm resistero to D04 pin
-  const int error_motoric = 25;          // motor H-bridge ic error flag, for TLE5206 on pin 25 must be defined as input, alternatively: D12 
-  const int input_switch  = 13;          // D13 (touch switch input: HIGH=steady state; LOW < 60 = activated, Pin 13 = Touch4 = T4 => if((touchRead(input_switch) < 60)
-  const int input_switch_level = 60 ;    // Set high sensitivity at 60 with very short wire at Touch-Input pin, LOW value < 60 = activated (default with some longer cable at Touch-Input pin: LOW < 50 = activated)
-  const int motor2        = 32;          // D32 digital output to motor H-bridge ic input 2 setting motor direction4
-  const int motor1        = 33;          // D33 digital output to motor H-bridge ic input 1 setting motor direction
-  const int motor_enable  = 25;          // D32 PWM output to motor H-bridge ic enable setting motor speed
+  int input_switch  = 13;          // D13 (touch switch input: HIGH=steady state; LOW < 60 = activated, Pin 13 = Touch4 = T4 => if((touchRead(input_switch) < 60)
+  int input_switch_level = 60 ;    // Set high sensitivity at 60 with very short wire at Touch-Input pin, LOW value < 60 = activated (default with some longer cable at Touch-Input pin: LOW < 50 = activated)
+  int POWER_LED_PIN = 4;           // optional output pin for power LED (use ESP32 GPIO pin D15 next to D02 onboard LED pin), alternatively, if no seperate power LED is attached, redLED pin can be used with only minor interference
+  int greenLED      = 2;           // PIN of on-board blue LED for simple digitalWrite, D02 pin
+  int redLED        = 4;           // PIN of on-board red LED for simple digitalWrite, after hardware modification by connection via 1kOhm resistero to D04 pin
+  int motor2        = 32;          // D32 digital output to motor H-bridge ic input 2 setting motor direction4
+  int motor1        = 33;          // D33 digital output to motor H-bridge ic input 1 setting motor direction
+  int motor_enable  = 25;          // D32 PWM output to motor H-bridge ic enable setting motor speed
+  int error_motoric = 25;          // motor H-bridge ic error flag, for TLE5206 on pin 25 must be defined as input, alternatively: D12 
 
   #define LEDC_TIMER_BITS   8            // PWM properties, use 8 bit precission for LEDC timer with 256 levels
   #define LEDC_BASE_FREQ    5000         // PWM properties, use 5000 Hz as a LEDC base frequency
@@ -190,26 +192,26 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 103, GNU General Public License Ve
   const int pwmChannel2   = 1;           // only required in combination of ESP32 and TLE5206 motor ic
   int dutyCycle           = 200;
 
-  const int AUDIO_INPUT_PIN = 14;        // Input D14 = ADC16 pin for audio signal.
-  const int LIGHT_INPUT_PIN = 27;        // Input D27 = ADC17 pin for light signal.
-  const int ANALOG_READ_RESOLUTION = 10; // Bits of resolution for the ADC.
-  const int ANALOG_READ_AVERAGING = 8;   // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
+  int AUDIO_INPUT_PIN = 14;        // Input D14 = ADC16 pin for audio signal.
+  int LIGHT_INPUT_PIN = 27;        // Input D27 = ADC17 pin for light signal.
+  int ANALOG_READ_RESOLUTION = 10; // Bits of resolution for the ADC.
+  int ANALOG_READ_AVERAGING = 8;   // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
 
 
 #else  //uP not definied, defualt for Teensy 4.0
   // input output defintions
-  const int POWER_LED_PIN = 13;          // Output pin for power LED (pin 13 to use Teensy 4.0's onboard LED).
-  const int error_motoric =  4;          // motor H-bridge ic error flag
-  const int input_switch  =  5;          // manual switch input: HIGH=steady state, LOW=activated
-  const int motor1        =  9;          // PWM output to motor H-bridge ic input 1
-  const int motor2        = 10;          // PWM output to motor H-bridge ic input 2
-  const int greenLED      = 11;          // PIN of LED for simple digitalWrite
-  const int redLED        = 12;          // PIN of LED for simple digitalWrite
+  int input_switch  =  5;          // manual switch input: HIGH=steady state, LOW=activated
+  int POWER_LED_PIN = 13;          // Output pin for power LED (pin 13 to use Teensy 4.0's onboard LED).
+  int greenLED      = 11;          // PIN of LED for simple digitalWrite
+  int redLED        = 12;          // PIN of LED for simple digitalWrite
+  int motor1        =  9;          // PWM output to motor H-bridge ic input 1
+  int motor2        = 10;          // PWM output to motor H-bridge ic input 2
+  int error_motoric =  4;          // motor H-bridge ic error flag
 
-  const int AUDIO_INPUT_PIN = 21;        // Input ADC pin for audio signal.
-  const int LIGHT_INPUT_PIN = 20;        // Input ADC pin for light signal.
-  const int ANALOG_READ_RESOLUTION = 10; // Bits of resolution for the ADC.
-  const int ANALOG_READ_AVERAGING = 16 ; // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
+  int AUDIO_INPUT_PIN = 21;        // Input ADC pin for audio signal.
+  int LIGHT_INPUT_PIN = 20;        // Input ADC pin for light signal.
+  int ANALOG_READ_RESOLUTION = 10; // Bits of resolution for the ADC.
+  int ANALOG_READ_AVERAGING = 16 ; // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
 
 #endif
 
@@ -220,12 +222,7 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 103, GNU General Public License Ve
 // mainloop and monitoring
 const int MONITOR_FREQ =   10;                      // Frequency of monitoring switch Morse signal input (ca. 10 Hz or 0.1 second, defined by division of main LOOP COUNT)
 const int FLASH_FREQ   =   2*5584;                  // Frequency for power LED flashes while void loop running (ca. 1 to 2 seconds, defined by value for main LOOP_COUNT), default 18815 on ESP32 without WebServer, 5584 on ESP with WebServer v72
-const int FLASH_FREQ_DARK = int(FLASH_FREQ * 0.98); // flash frequency period with unlit power LED, use number close to 1.00, when redLED is used as alternative powerLED
-
-//speedAdjustment
-const int speed_wait_loops = FLASH_FREQ * 0.125;    // Number of loops for delay of next step of speed adjustment, default = ca. 0.5 seconds
-const float motor_voltage_supply = 9.5;             // indicate motor voltage supply level in Vdc, as adjusted at step-up converter output
-const float speedoffset = 0.6;                      // offset of pulse width modulation (PWM) for speed_level 1 as ratio of maximum pulse width, default 0.60 @ 9.5 V dc, 0.50 @ 10 Vdc, 0.30 @ 12Vdc, default 0.25 @ 16Vdc
+const int FLASH_FREQ_DARK = int(FLASH_FREQ * 0.99); // flash frequency period with unlit power LED, use number close to 1.00, when redLED is used as alternative powerLED
 
 //MorseCodeDecoder
 const int dotMinLength   =  200; //dots are more than 100ms long and shorter than dashMinLength
@@ -233,12 +230,12 @@ const int dashMinLength  =  800; //dashes are more than 300ms long
 const int TerminalLength = 1500; //wait after last dash/dot for termination of command
 const int   morsecode_size = 12;
 const char *morsecode[morsecode_size] = {".",  "..",       "...",                              "....", ".....", ".-", ".--",       ".---",             "-", "--", "---", "?"};
-const char *commands[morsecode_size]  = {"--", "--------", "--------------------------------", "0",    "00<",   "++",  "++++++++", "++++++++++++++++", "0", "00", "?",   "?"};
+const char *commands[morsecode_size]  = {"--", "--------", "--------------------------------", "0",    "0<",   "++",  "++++++++", "++++++++++++++++", "0", "00", "?",   "?"};
 const char *meaning[morsecode_size]   = {"decrease speed", "slow down", "break to halt", "fast brake and stop", "fast brake, stop, reverse direction", "increase speed", "speed up", "go fast", "fast brake and stop", "fast brake and stop", "info?", "info?"};
 //acceleration is limited to half full speed, i.e. 8x '+' character, while full break is from max and any speed to halt, i.e. 16x '-' character
 //use fast brake to immediatly stop the motor by command charcter '0',
 //'<'   stands for reverse of direction, which can only be done after a safe full halt, thus multiple leading '0' characters are introduced in front for train inertia
-const int MAX_CHARS     = 65;          // Max size of the input command buffer
+const int MAX_CHARS      = 65;   // Max size of the input command buffer
 
 #ifdef ToneSampling
 ////////////////////////////////////////////////////////////////////////////////
@@ -329,7 +326,15 @@ int max_speed_level = 32;      // maximum speed level, default =32 in odrder to 
                                // (max_speed_level=16 as simplified method up to version 028 with half the number of command symbols)
 bool speed_direction = true;   // true=forward, false=backward
 
-// variables from whistle004.ino
+//speed adjustment, defined as variables for later adjustment of following default values by reading values from .ini in setup()
+float motor_voltage_supply   = 9.5;                 // indicate motor voltage supply level in Vdc, as adjusted at step-up converter output
+float motor_voltage_start = 6.0;                    // equivalent voltage for first speed level PWM setting
+float speedoffset = 1- ((motor_voltage_supply - motor_voltage_start)/(max_speed_level - 1) * max_speed_level / motor_voltage_supply) ; 
+// offset of pulse width modulation (PWM) for speed_level "0" as ratio of maximum pulse width, default 0.60 @ 9.5 V dc, 0.50 @ 10 Vdc, 0.30 @ 12Vdc, default 0.25 @ 16Vdc
+int speed_frequency = 16;                            // frequency of speed adjustment per FLASH_FREQ in main loop
+int speed_wait_loops = FLASH_FREQ / speed_frequency; // Number of loops for delay of next step of speed adjustment, default = ca. 0.5 seconds
+
+// variables from whistle004.ino, partially obsolete?
 int Intensity = 0;
 int IntensityStep = 8;
 int switch_ok = HIGH;          // (not used in version 030)
@@ -633,7 +638,7 @@ void setup() {
   //loco name from .ini
   if (ini.getValue("loco", "name", buffer, bufferLen)) {strncpy(loconame,buffer,bufferLen);}
   else {
-    Serial.print("ini no loconame! ");
+    Serial.print(".ini no loconame! ");
     printErrorMessage(ini.getError());
     strncpy (loconame,loconame_default,bufferLen);
   }
@@ -641,7 +646,7 @@ void setup() {
   //wifi ssid from .ini
   if (ini.getValue("wifi", "ssid", buffer, bufferLen)) {strncpy(ssid,buffer,bufferLen);}
   else {
-    Serial.print("ini no wifi ssid! ");
+    Serial.print(".ini no wifi ssid! ");
     printErrorMessage(ini.getError());
     strncpy (ssid,ssid_default,bufferLen);
     //Serial.print("ssid default = ");
@@ -651,7 +656,7 @@ void setup() {
   //wifi password from .ini
   if (ini.getValue("wifi", "password", buffer, bufferLen)) {strncpy(password,buffer,bufferLen);}
   else {
-    Serial.print("ini no wifi password! ");
+    Serial.print(".ini no wifi password! ");
     printErrorMessage(ini.getError());
     strncpy (password,password_default,bufferLen);
   }
@@ -660,16 +665,25 @@ void setup() {
   Serial.print("ssid: "); Serial.println(ssid);
   Serial.print("password: "); Serial.println(password);
 
-  
-  // Just testing reading: Try fetching a value from a missing key (but .ini section is present)
-  if (ini.getValue("wifi", "nosuchkey", buffer, bufferLen)) {
-    Serial.print("section 'wifi' has an entry 'nosuchkey' with value ");
-    Serial.println(buffer);
+  //voltage settings, adjustment of default values by reading values from .ini
+  if (ini.getValue("voltage", "supply", buffer, bufferLen)) {motor_voltage_supply = atof(buffer);}
+  else {Serial.println(".ino default voltage supply");}
+  if (ini.getValue("voltage", "start", buffer, bufferLen)) {motor_voltage_start = atof(buffer);}
+  else {Serial.println(".ino default voltage start");}
+  speedoffset = 1- ((motor_voltage_supply - motor_voltage_start)/(max_speed_level - 1) * max_speed_level / motor_voltage_supply) ; 
+  // offset of pulse width modulation (PWM) for speed_level "0" as ratio of maximum pulse width, default 0.60 @ 9.5 V dc, 0.50 @ 10 Vdc, 0.30 @ 12Vdc, default 0.25 @ 16Vdc
+
+  //speed adjustment, adjustment of default values by reading values from .ini
+  if (ini.getValue("speed", "adjustment_frequency", buffer, bufferLen)) {
+    speed_frequency = atoi(buffer);
+    Serial.print(".ini speed_frequency = ");
+    Serial.println(speed_frequency);
   }
-  else {
-    Serial.print("Could not read 'nosuchkey' from section 'wifi', error was ");
-    printErrorMessage(ini.getError());
-  }
+  else {Serial.println(".ino default speed adjustment frequency");}
+  speed_wait_loops = FLASH_FREQ / speed_frequency; // Number of loops for delay of next step of speed adjustment, default = ca. 0.5 seconds
+
+  // add reading pinout from .ini here ###########
+
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -889,14 +903,14 @@ void setup() {
       response->printf("<table style=\"width:100%%\">");
       response->printf("<tr><th>STEU&shy;ER&shy;UNG</th><th>BE&shy;SCHLEU&shy;NIGUNG</th><th>BEDEUTUNG</th></tr>");  
       response->printf("<tr><td>Schiebe&shy;regler</td>  <td> +/- x Stufen</td>  <td>auf neue Geschwindigkeit einstellen</td></tr>");        
-      response->printf("<tr><td>----</td>     <td>- 8 Stufen</td>    <td>bremsen </td></tr>");    
-      response->printf("<tr><td> - </td>      <td>- 2 Stufen</td>    <td>etwas langsamer </td></tr>");    
-      response->printf("<tr><td> + </td>      <td>+ 2 Stufen</td>    <td>etwas schneller </td></tr>");    
-      response->printf("<tr><td>++++ </td>    <td>+ 8 Stufen</td>    <td>beschleunigen </td></tr>"); 
-      response->printf("<tr><td> < > </td>    <td>00 < ></td>        <td>Stop und Richtung wechseln </td></tr>");    
-      response->printf("<tr><td>Halten</td>   <td>- 32 Stufen</td>   <td>abbremsen bis zum Halt </td></tr>");    
-      response->printf("<tr><td>Stopp!</td>   <td>00</td>            <td>Schnellbremsung zum Notstopp</td></tr>"); 
-      response->printf("<tr><td>Info?</td>    <td>?</td>             <td>Status der Programmvariablen</td></tr>"); 
+      response->printf("<tr><td>----</td>     <td>- 8 Stufen</td>            <td>bremsen </td></tr>");    
+      response->printf("<tr><td> - </td>      <td>- 2 Stufen</td>            <td>etwas langsamer </td></tr>");    
+      response->printf("<tr><td> + </td>      <td>+ 2 Stufen</td>            <td>etwas schneller </td></tr>");    
+      response->printf("<tr><td>++++ </td>    <td>+ 8 Stufen</td>            <td>beschleunigen </td></tr>"); 
+      response->printf("<tr><td> <&nbsp;> </td>    <td>0&nbsp;<&nbsp;></td>  <td>Stop und Richtung wechseln </td></tr>");    
+      response->printf("<tr><td>Halten</td>   <td>- 32 Stufen</td>           <td>abbremsen bis zum Halt </td></tr>");    
+      response->printf("<tr><td>Stopp!</td>   <td>00</td>                    <td>Schnellbremsung zum Notstopp</td></tr>"); 
+      response->printf("<tr><td>Info?</td>    <td>?</td>                     <td>Status der Programmvariablen</td></tr>"); 
       response->printf("</table>");     
       response->printf("<p> </p>"); 
       response->printf("<p> </p>");   
@@ -1004,6 +1018,7 @@ void setup() {
       response->printf("</table>");     
       response->printf("<p> </p>");      
       response->printf("<h2><a href='/monitor'>Aktualisieren: Sende '?'</a></h2>");
+      response->printf("<h2><a href='/lok.ini'>Einstellung des Programms: lok.ini</a></h2>");
       response->printf("<div><a href='/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>");
       response->printf("<p> </p>");
       response->print("</body></html>");
@@ -1404,7 +1419,7 @@ void adjustSpeed() {
         }
         digitalWrite(redLED, HIGH);
         Serial.print("speed level decreased - | ");
-        delay(300);
+        delay(200);
         break;
       case '+':        //increase speed
         ++speed_level;
@@ -1414,7 +1429,7 @@ void adjustSpeed() {
         }
         digitalWrite(greenLED, HIGH);
         Serial.print("speed level increased + | ");
-        delay(300);
+        delay(200);
         break;
       case '<':        //reverse direction
         speed_direction = !speed_direction;
