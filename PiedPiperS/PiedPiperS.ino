@@ -112,13 +112,15 @@
   103 2021-03-27 consolidated version, prepare for lok.ini branch and further development
   104 2021-03-28 .ini reading for variable loco name in index.html, ssid and password
   105 2021-03-29 .ini evaluation for speed_adjustment setting and fine tuning speed settings for 32 speed levels
+  106 2021-03-30 .ini editing via html textarea and saving new lok.ini in SPIFFS with backup of previous version 
+  107 2021-03-31 .ini reading for textbox
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 105, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-03-29";
+String SKETCH_INFO = "PiedPiperS.ino, Version 107, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-03-30";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -221,8 +223,8 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 105, GNU General Public License Ve
 
 // mainloop and monitoring
 const int MONITOR_FREQ =   10;                      // Frequency of monitoring switch Morse signal input (ca. 10 Hz or 0.1 second, defined by division of main LOOP COUNT)
-const int FLASH_FREQ   =   2*5584;                  // Frequency for power LED flashes while void loop running (ca. 1 to 2 seconds, defined by value for main LOOP_COUNT), default 18815 on ESP32 without WebServer, 5584 on ESP with WebServer v72
-const int FLASH_FREQ_DARK = int(FLASH_FREQ * 0.99); // flash frequency period with unlit power LED, use number close to 1.00, when redLED is used as alternative powerLED
+const int FLASH_FREQ   =   2*5059;                  // Frequency for power LED flashes while void loop running (ca. 1 to 2 seconds, defined by value for main LOOP_COUNT), default 18815 on ESP32 without WebServer, 5059 on ESP with WebServer v106
+const int FLASH_FREQ_DARK = int(FLASH_FREQ * 0.99); // flash frequency period with unlit power LED, use number close to 1.00, when redLED is used as alternative powerLEDdefault 0.99
 
 //MorseCodeDecoder
 const int dotMinLength   =  200; //dots are more than 100ms long and shorter than dashMinLength
@@ -515,11 +517,21 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
         data[len] = 0;
         client_message = (char*)data;
         Serial.println(client_message); //echo received message for test and monitoring
-        //ws.textAll(client_message); //echo received message for test only
-
-        CLIENT_COMMAND(client_message.c_str()); //compilation type problem solved by .c_str()     
+        if (client_message[1]='i') {
+          writeIni (client_message);
+        }
+        else {
+          //ws.textAll(client_message); //echo received message for test only
+          CLIENT_COMMAND(client_message.c_str()); //compilation type problem solved by .c_str()   
+        }  
     }
 }
+
+void writeIni (String newinitxt)  {
+   Serial.println("write Ini : "); 
+   Serial.println(newinitxt); //echo received message for test and monitoring
+}
+
 
 // Send WebSocket Message as JSON Document
 void notifyClients() {
@@ -1020,11 +1032,120 @@ void setup() {
       response->printf("<h2><a href='/monitor'>Aktualisieren: Sende '?'</a></h2>");
       response->printf("<h2><a href='/lok.ini'>Einstellung des Programms: lok.ini</a></h2>");
       response->printf("<div><a href='/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>");
+      response->printf("<p> </p>");      
+      response->printf("<h2 style=\"color: grey;\"><a href='ini'>Programmeinstellungen in der lok.ini Datei ver&auml;ndern</a></h2>");
       response->printf("<p> </p>");
       response->print("</body></html>");
       request->send(response);
       request->send(SPIFFS, "/lok.png", "image/png");
   });
+
+  // Route to load status info and instruction
+  server.on("/ini", HTTP_GET, [](AsyncWebServerRequest *request){
+    String iniorig;
+    Serial.println("+ .ini editor called. Opening lok.ini from SPIFFS. Saved new version will only be used at next microprocessor stratup");
+
+    // open SPIFFS
+    File file = SPIFFS.open("/lok.ini", "r");
+    delay (10);
+    if(!file){
+      // File not found
+      Serial.println("- Failed to open file lok.ini for reading!");
+      return;
+    } 
+    else {
+      Serial.println("+ lok.ini opened for reading.");
+      while(file.available()){
+        iniorig += String((char)file.read());
+//        Serial.println( (char*) file.read());
+      }
+      Serial.println("iniorig = ");
+      Serial.println(iniorig);
+      file.close();
+    }
+    Serial.println("+ lok.ini closed after reading");
+    AsyncResponseStream *response = request->beginResponseStream("text/html");
+
+      // cange to textarea
+      response->print("<!DOCTYPE html><html><head><title>Programmvariablen</title>");
+      response->print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
+      response->print("<style>body{max-width: 1024px; font-size: 1.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:2% auto; text-align: left;}");
+      response->print("table, tr {vertical-align: top; padding: 1%; border-collapse: collapse; border-bottom: 2pt solid #ddd;} tr:last-child { border-bottom: none; }");
+      response->print("th, td {font-size: 0.8rem; text-align: left; padding: 1%; } h1 {font-size: 1.8rem;} h2 {font-size: 1.2rem;}</style></head><body>");
+      response->printf("<h1>Programmeinstellungen</h1>");
+//      response->printf("<form action=\"/get\">");
+//      response->printf("input1: <input type=\"text\" name=\"input1\">");
+//      response->printf("<input type=\"submit\" value=\"Submit\">");
+//      response->printf("</form>"); 
+      response->printf("  <form onSubmit=\"event.preventDefault(); formToJson(this);\">  "); 
+//      response->printf("    <input type=\"text\" name=\"iniedit2\"/>  "); 
+      response->printf("    <label>Programmeinstellungen in lok.ini anpassen:</label>  "); 
+      response->printf("    <textarea style=\"font-size: 1.0rem; width:96%%;\" rows = \"20\" cols = \"40\" name = \"iniedit\"> %s </textarea><br>  ", iniorig.c_str());
+      response->printf("    <input type=\"submit\" value=\"Submit\">  ");
+      response->printf("  </form>  ");
+      response->printf("<p> </p>");      
+      response->printf("<h2 ><a href='/lok.ini'>Einstellung des Programms: lok.ini</a></h2>");
+      response->printf("<div><a href='/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>");
+      response->printf("<p> </p>");
+      response->printf("</body></html>");
+      response->printf("  <script language=\"JavaScript\">  ");
+      response->printf("    function formToJson(form){  ");
+      response->printf("      var iniedit3=form.iniedit.value;  ");
+      response->printf("      var jsonIniEdit=JSON.stringify({i:iniedit3});  ");
+      response->printf("      window.alert(jsonIniEdit);  ");
+      response->printf("      websocket.send(jsonIniEdit);  ");
+      response->printf("      console.log('sent iniedit to Server via WebSocket');  ");
+//      response->printf("      var xhr  = new XMLHttpRequest()  ");
+//      response->printf("      xmlHttp.open('PUT', '/put', jsonIniEdit);  ");  
+//      response->printf("      xmlHttp.setRequestHeader('Content-Type', \"text/plain\");  ");  //(alternatively \"application/json\")
+//      response->printf("      xmlHttp.send(null);  "); 
+      response->printf("    }  ");
+      response->printf("  </script>  ");     
+      request->send(response);
+      request->send(SPIFFS, "/lok.png", "image/png");
+  });
+/*
+  // evaluate textarea input and write lok.ini to SPIFFS, with backup of former version
+  // Send a GET request to <ESP_IP>/get?input1=<inputMessage>
+  server.on("/put", HTTP_PUT, [] (AsyncWebServerRequest *request) {},
+    NULL,
+    [](AsyncWebServerRequest * request, uint8_t *ininew, size_t len, size_t index, size_t total) {
+    String iniwrite; 
+    char * iniwrite2;
+    Serial.println(); 
+    Serial.println("Data received: ");
+    iniwrite2 = (char*)ininew;
+    Serial.println(iniwrite2); //echo received message for test and monitoring
+    
+    String iniwrite; 
+    for(int i=0; i < len; i++) {
+        Serial.print((char) ininew[i]);
+        Serial.print(ininew[i]);
+        iniwrite += (char) ininew[i]; 
+    }
+    Serial.println();
+    Serial.println();
+    request->send(200);
+
+    File file = SPIFFS.open("/data/lok.ini", "w");
+    if(!file){
+      // File not found
+      Serial.println("Failed to open file lok.ini for writing!");
+      return;
+    } 
+    else {
+      if(file.print(iniwrite)){
+        Serial.println("- lok.ini file written");
+      } 
+      else {
+        Serial.println("- lok.ini write failed!");
+      }
+      file.close();
+    }
+
+    
+  });
+*/  
 
   // Serve files in directory "/data/" when request url starts with "/"
   // Request to the root or none existing files will try to server the defualt
