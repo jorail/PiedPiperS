@@ -142,6 +142,7 @@
   148 2021-04-18 cleanup, consolidation, fine tuning, amend code comments
   149 2021-04-18 consolidated code version prepared for github branch lok.ini
   150 2021-04-18 lok.ini branch upload: https://github.com/jorail/PiedPiperS/tree/lok.ini
+  151 2021-04-18 additional explanation on ini.html, explain .ini save problems due to limited size of ESP32 flash memory
 */
   // ###### ADDITIONAL IDEA for continuing the project #############################################################################
   // define GPIO pin 26 as input for monitoring motor current on a 1 Ohm resistor between ground and motor IC grounding,
@@ -153,7 +154,7 @@
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 150, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-18";
+String SKETCH_INFO = "PiedPiperS.ino, Version 151, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-18";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -1240,17 +1241,37 @@ void setup() {
       response->printf("    <input type=\"submit\" style=\"font-size: 1.0rem\" value=\"&nbsp;&nbsp;&nbsp;&nbsp;Programmeinstellung anpassen &nbsp;&nbsp;&nbsp;&nbsp;\"> </b>  ");
       response->printf("  </form>  ");
       response->printf("<p> </p>");      
-      response->printf("<div><a href='/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>");
+      response->printf("<div><a href='/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>  ");
       response->printf("<p> </p>");
-      response->printf("<p><b>Neu laden</b> nutzt die Funktion <i>inisetup()</i> um die Programmeinstellung der Variablen aus der angegebenen Datei durchzuf&uuml;hren. ");
-      response->printf("Die Festlegung der Zugangsdaten zum WLAN und die Pinbelegung des Mikroprozessors werden dadurch jedoch zunächst nicht ge&auml;ndert. ");
-      response->printf("Eine &Uuml;bernahme der Programmeinstellungen aus der lok.ini mit neuen WLAN Zugangsdaten (und ge&auml;nderter Pinbelegung, wenn implementiert) "); 
-      response->printf("erfordert einen Neustart.</p>  "); 
-      response->printf("<p>Ein <b>Neustart</b> kann durch Auswahl aus dem Programm heraus oder durch den Reset-Knopf am Mikroprozesser ausgel&ouml;st werden. "); 
-      response->printf("Nach dem Neustart wird des Mikroprozessors wird die gesamte Funktion <i>setup()</i> durchlaufen und WLAN-Zugang und Pinbelegung neu festgelegt.</p>  ");
-      response->printf("<p>Nach erfolgreiche Speichern oder Laden der neuen Programmeinstellung wird mit dreimaligem langen <b>Aufleuchten der blauen LED</b> best&auml;tigt. ");
-      response->printf("Unterschiedliche Datei-Fehler beim Speichern und Laden werden durch Aufleuchten der roten LED angezeigt. Debugging ist mit der Ausgaben auf der seriellen Schnittstelle mouml;glich.</p>");
-      response->printf("<p>Die meisten kleine Fehlfunktionen k&ouml;nnen durch ein erneutes Laden der ini.html Webseite behoben werden. Hierzu den Reload-Knopf im Browser nutzen</p>  ");
+      response->printf("<h2>Anleitung</h2>");
+      response->printf("<p>Die L&auml;nge der Zeilen in der .ini-Datei ist mit maximal 40 Zeichen auf die ");
+      response->printf("Puffergr&ouml;&szlig;e im Programm begrenzt. # dient als Zeichen für Kommentare.</p> "); 
+      response->printf("<p>Neue <b>Abschnitte</b> werden durch Bezeichnung in eckiger Klammer [xxx] eingeleitet.</p> ");
+      response->printf("<p>Den einzelnen bezeichneten <b>Parametern</b> wird durch = ein Wert zugewiesen.</p> "); 
+      response->printf("<p>&Auml;nderungen in der Textbox werden durch <b>Speichern</b> in eine .ini-Datei geschrieben. "); 
+      response->printf("Der ge&auml;nderte Inhalt wird als JSON-Message &uuml;ber WLAN und WebSocket &uuml;bertragen");
+      response->printf("und auf den Flash-Speicher des Mikroprozessers geschrieben. F&uuml;r diesen Schreibvorgang "); 
+      response->printf("muss jedoch extra Platz auf dem Flash-Speicher frei sein. Insgesamt wird deutlich mehr freier ");
+      response->printf("Platz ben&ouml;tigt, als die sehr kleine .ini-Datei selbst gro&szlig; ist (ca. 600 Byte). ");  
+      response->printf("Bereits ab 1 MB genutztem Speicherplatz kann es zu Fehlern beim Schreiben kommen, ");    
+      response->printf("die einen Absturtz des Programms ausl&ouml;sen. Die neu geschriebene Datei ist dann meist leer. "); 
+      response->printf("Die einzelnen Dateien und die Nutzung des Flash-Speichers (TOTAL SIZE in Byte) werden im "); 
+      response->printf("<b>Dateiindex</b> angezeigt. </p>  ");   
+      response->printf("<p><b>Neu laden</b> nutzt die Funktion <i>inisetup()</i>, um die Variablen im Programm "); 
+      response->printf("entsprechend der Parameter in der angegebenen .ini-Datei durchzuf&uuml;hren. ");
+      response->printf("Die Festlegung der Zugangsdaten zum WLAN und die Pinbelegung des Mikroprozessors "); 
+      response->printf("werden dabei jedoch zunächst nicht ge&auml;ndert. ");
+      response->printf("Eine &Uuml;bernahme der WLAN-Zugangsdaten (und ge&auml;nderter Pinbelegung, wenn implementiert)");  
+      response->printf("aus der lok.ini erfordert einen Neustart.</p>  "); 
+      response->printf("<p>Ein <b>Neustart</b> kann durch Auswahl aus dem Programm heraus oder durch den Reset-Knopf "); 
+      response->printf("am Mikroprozesser ausgel&ouml;st werden. Nach dem Neustart des Mikroprozessors wird die Funktion "); 
+      response->printf("<i>setup()</i> vollst&auml;ndig durchlaufen und der WLAN-Zugang und die Pinbelegung werden neu festgelegt.</p> ");
+      response->printf("<p>Dreimaliges <b>Aufleuchten der blauen LED</b> best&auml;tigt ein erfolgreiches Speichern oder Laden "); 
+      response->printf("der neuen Programmeinstellung. Datei-Fehler beim Speichern und Laden werden durch Aufleuchten ");
+      response->printf("der roten LED angezeigt. Für ein Debugging werden einzelne Programmschritte in der <i>inisetup()</i> "); 
+      response->printf("auf der seriellen Schnittstelle wiedergegeben. </p>");
+      response->printf("<p>Kleine <b>Fehlfunktionen der ini.html-Webseite nach R&uuml;ckkehr von anderen Anzeigen</b> k&ouml;nnen "); 
+      response->printf("meist durch ein erneutes Laden behoben werden. Hierzu einfach den <b>Reload-Knopf im Browser</b> nutzen.</p> ");
       response->printf("  <script>  ");
       response->printf("    console.log('Trying to open a WebSocket connection...');  ");
       response->printf("    var gateway = \'ws://%s/ws\';  ",WiFi.softAPIP().toString().c_str() );  
@@ -1316,7 +1337,7 @@ void setup() {
     Serial.print("\nTOTAL SIZE = \t\t"); Serial.println(totalfilesize);
     fileindex += "\nTOTAL SIZE = \t\t";  fileindex +=   totalfilesize; fileindex += "\n";
     request->send(200, "text/plain", fileindex);
-    Serial.println("+ send fileindex to client");
+    Serial.println("+ send fileindex to client\n");
     speed_command = "ggg";  // three green/blue very long flashes  
   });  
 
