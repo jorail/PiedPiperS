@@ -1,6 +1,6 @@
 /* PiedPiperS
   This code is published with GNU General Public License GPL v3, 
-  Copyright (c) J. Ruppert, 2021-03, jorail [at] gmx.de
+  Copyright (c) J. Ruppert, 2021-04, jorail [at] gmx.de
   
   The program purpose is to control a model train motor with independent power supply
   e.g. from USB power bank for outdoors. Following options exist:
@@ -108,24 +108,63 @@
   099 2021-03-22 optimise numbers, units in /parts reformat /viewer, PiedPiper-Project link via github.html and QR
   100 2021-03-22 consolidated version, start for github
   101 2021-03-26 preventing false positve SignalActive readings, which resulted from spikes in the ESP32 TouchRead, by averaging valarray of multiple TouchRead
+  102 2021-03-26 add device width regulation to html websites in the code, add ESP modification detail img003 to parts.html
+  103 2021-03-27 consolidated version, prepare for lok.ini branch and further development
+  
+  lok.ini branch in github: https://github.com/jorail/PiedPiperS/tree/lok.ini
+  104 2021-03-28 .ini reading for variable loco name in index.html, ssid and password
+  105 2021-03-29 .ini evaluation for speed_adjustment setting and fine tuning speed settings for 32 speed levels
+  106 2021-03-30 .ini editing via html textarea and saving new lok.ini in SPIFFS with backup of previous version 
+  107 2021-03-31 .ini reading for textbox
+  108 2021-03-31 modify websocket
+  113 2021-04-01 solve websocket gateway connection by soft.WifiAPIP
+  114 2021-04-02 interpretation of websocket JSON message for writing lok.ini files
+  115 2021-04-02 adding file management to /iniedit
+  118 2021-04-02 save spiffs
+  119 2021-04-02 test spiff writing
+  124 2021-04-04 adressing save inifile problems
+  127 2021-04-15 use Sting to solve json_message interpretation problems
+  131 2021-04-16 iphone access to ini.html solved by avoiding specification "java-script", inipath with "/" instead of "\" works
+  132 2021-04-17 optimise ini.html
+  134 2021-04-17 move variable declaration of iniSetup in dedicated function, which can be called for reaload
+  135 2021-04-17 ini.html problem fixed
+  136 2021-04-17 re-introduce some alert messages, working very well
+  137 2021-04-17 optimize ini.html switches
+  138 2021-04-17 clean up ini.html
+  139 2021-04-17 consolidate
+  140 2021-04-17 add LED indication for successful writing of .ini file
+  141 2021-04-17 add LED indication for loading of .ini file
+  142 2021-04-17 on /dir command output fileindex as plain text, not working
+  143 2021-04-17 on GET /dir command output fileindex as plain text   
+  145 2021-04-17 fileindex display optimised, small fixes necessary
+  146 2021-04-18 consolidated, working well
+  147 2021-04-18 add location.reload() to ini.html, add LED and debugging infor to ini.html
+  148 2021-04-18 cleanup, consolidation, fine tuning, amend code comments
+  149 2021-04-18 consolidated code version prepared for github branch lok.ini
+  150 2021-04-18 lok.ini branch upload: https://github.com/jorail/PiedPiperS/tree/lok.ini
 */
+  // ###### ADDITIONAL IDEA for continuing the project #############################################################################
+  // define GPIO pin 26 as input for monitoring motor current on a 1 Ohm resistor between ground and motor IC grounding,
+  // display and moinitor its voltage of approximatly up to 1 V, which is proportional to motor current as number on control panel 
+  // and its change over time recorded in a buffer and displayed in an extra website, which also allows for speed adjustments, 
+  // so that their effect can be monitored online. Let me know if you like to go for it together: jorail [at] gmx.de  
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 101, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-03-26";
+String SKETCH_INFO = "PiedPiperS.ino, Version 150, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-18";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
 #define TLE5206        //option to adjust code for interaction with different type of MotorIC        
                        //(default or comment out or empty, i.e. the else option in the if statement = L293D)
-//#define ToneSampling //###### comment out tone sampling, will be needed for FFT tone signal analysis in PiedPiper
-                       //option to adjust code for tone sampling, for use together with microphone on analogue input, 
+//#define ToneSampling //###### comment out, conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
+                       //this option adjusts code for tone sampling, for use with additional electret microphone on analogue input, 
                        //sound sampling, FFT analysis and tone signal identification 
-                       //this optional code originates unchanged from PiedPiper project, version 056:
+                       //this optional code sections originate unchanged from PiedPiper project, version 056:
                        //https://github.com/jorail/PiedPiper
-                       //it has not been thoroughly tested in combination with PiedPiperS, version 60 through 100 and later
+                       //it has not been thoroughly tested in combination with PiedPiperS, version 60 through version 148 and later
                        //https://github.com/jorail/PiedPiperS
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -139,13 +178,21 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 101, GNU General Public License Ve
   #include <WiFi.h> // already includes libraries #include <WiFiClient.h> and #include <WiFiAP.h>
   #include <AsyncTCP.h>
   #include <ESPAsyncWebServer.h>
-  #include <SPIFFS.h>
   #include <DNSServer.h>
   #include <ArduinoJson.h>
+
+  //libraries for ini file handling https://github.com/yurilopes/SPIFFSIniFile
+
+  #include "FS.h"  //################### double chekc if really needed
+  #include <SPIFFS.h>
+  #include <SPIFFSIniFile.h>  
+
+
+  
 #endif
 
 #ifdef ToneSampling
-  // ###### comment out libraries for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
+  // ###### libraries conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
   // Import libraries for TrainMotorDriver module
   #define ARM_MATH_CM4
   #include <valarray>
@@ -163,38 +210,43 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 101, GNU General Public License Ve
 
 #ifdef ESP32 
   // input output defintions
-  const int AUDIO_INPUT_PIN = 14;        // Input D14 = ADC16 pin for audio signal.
-  const int LIGHT_INPUT_PIN = 27;        // Input D27 = ADC17 pin for light signal.
-  const int ANALOG_READ_RESOLUTION = 10; // Bits of resolution for the ADC.
-  const int ANALOG_READ_AVERAGING = 8;  // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
-  const int POWER_LED_PIN = 4;          // optional output pin for power LED (use ESP32 GPIO pin D15 next to D02 onboard LED pin), alternatively, if no seperate power LED is attached, redLED pin can be used with only minor interference
-  const int greenLED      = 2;           // PIN of on-board blue LED for simple digitalWrite, D02 pin
-  const int redLED        = 4;           // PIN of on-board red LED for simple digitalWrite, after hardware modification by connection via 1kOhm resistero to D04 pin
-  const int error_motoric = 25;          // motor H-bridge ic error flag, for TLE5206 on pin 25 must be defined as input, alternatively: D12 
-  const int input_switch  = 13;          // D13 (touch switch input: HIGH=steady state; LOW < 60 = activated, Pin 13 = Touch4 = T4 => if((touchRead(input_switch) < 60)
-  const int input_switch_level = 60 ;    // Set high sensitivity at 60 with very short wire at Touch-Input pin, LOW value < 60 = activated (default with some longer cable at Touch-Input pin: LOW < 50 = activated)
+
+  int input_switch  = 13;          // D13 (touch switch input: HIGH=steady state; LOW < 60 = activated, Pin 13 = Touch4 = T4 => if((touchRead(input_switch) < 60)
+  int input_switch_level = 60 ;    // Set high sensitivity at 60 with very short wire at Touch-Input pin, LOW value < 60 = activated (default with some longer cable at Touch-Input pin: LOW < 50 = activated)
+  int POWER_LED_PIN = 4;           // optional output pin for power LED (use ESP32 GPIO pin D15 next to D02 onboard LED pin), alternatively, if no seperate power LED is attached, redLED pin can be used with only minor interference
+  int greenLED      = 2;           // PIN of on-board blue LED for simple digitalWrite, D02 pin
+  int redLED        = 4;           // PIN of on-board red LED for simple digitalWrite, after hardware modification by connection via 1kOhm resistero to D04 pin
+  int motor2        = 32;          // D32 digital output to motor H-bridge ic input 2 setting motor direction4
+  int motor1        = 33;          // D33 digital output to motor H-bridge ic input 1 setting motor direction
+  int motor_enable  = 25;          // D32 PWM output to motor H-bridge ic enable setting motor speed
+  int error_motoric = 25;          // motor H-bridge ic error flag, for TLE5206 on pin 25 must be defined as input, alternatively: D12 
+
   #define LEDC_TIMER_BITS   8            // PWM properties, use 8 bit precission for LEDC timer with 256 levels
   #define LEDC_BASE_FREQ    5000         // PWM properties, use 5000 Hz as a LEDC base frequency
-  const int pwmChannel1    = 0;          // required for ESP32 in combination with either L293D or TLE5206 motor ic
-  const int pwmChannel2    = 1;          // only required in combination of ESP32 and TLE5206 motor ic
+  const int pwmChannel1   = 0;           // required for ESP32 in combination with either L293D or TLE5206 motor ic
+  const int pwmChannel2   = 1;           // only required in combination of ESP32 and TLE5206 motor ic
   int dutyCycle           = 200;
-  const int motor2        = 32;          // D32 digital output to motor H-bridge ic input 2 setting motor direction4
-  const int motor1        = 33;          // D33 digital output to motor H-bridge ic input 1 setting motor direction
-  const int motor_enable  = 25;          // D32 PWM output to motor H-bridge ic enable setting motor speed
+
+  int AUDIO_INPUT_PIN = 14;        // Input D14 = ADC16 pin for audio signal.
+  int LIGHT_INPUT_PIN = 27;        // Input D27 = ADC17 pin for light signal.
+  int ANALOG_READ_RESOLUTION = 10; // Bits of resolution for the ADC.
+  int ANALOG_READ_AVERAGING = 8;   // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
+
 
 #else  //uP not definied, defualt for Teensy 4.0
   // input output defintions
-  const int AUDIO_INPUT_PIN = 21;        // Input ADC pin for audio signal.
-  const int LIGHT_INPUT_PIN = 20;        // Input ADC pin for light signal.
-  const int ANALOG_READ_RESOLUTION = 10; // Bits of resolution for the ADC.
-  const int ANALOG_READ_AVERAGING = 16 ; // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
-  const int POWER_LED_PIN = 13;          // Output pin for power LED (pin 13 to use Teensy 4.0's onboard LED).
-  const int error_motoric =  4;          // motor H-bridge ic error flag
-  const int input_switch  =  5;          // manual switch input: HIGH=steady state, LOW=activated
-  const int motor1        =  9;          // PWM output to motor H-bridge ic input 1
-  const int motor2        = 10;          // PWM output to motor H-bridge ic input 2
-  const int greenLED      = 11;          // PIN of LED for simple digitalWrite
-  const int redLED        = 12;          // PIN of LED for simple digitalWrite
+  int input_switch  =  5;          // manual switch input: HIGH=steady state, LOW=activated
+  int POWER_LED_PIN = 13;          // Output pin for power LED (pin 13 to use Teensy 4.0's onboard LED).
+  int greenLED      = 11;          // PIN of LED for simple digitalWrite
+  int redLED        = 12;          // PIN of LED for simple digitalWrite
+  int motor1        =  9;          // PWM output to motor H-bridge ic input 1
+  int motor2        = 10;          // PWM output to motor H-bridge ic input 2
+  int error_motoric =  4;          // motor H-bridge ic error flag
+
+  int AUDIO_INPUT_PIN = 21;        // Input ADC pin for audio signal.
+  int LIGHT_INPUT_PIN = 20;        // Input ADC pin for light signal.
+  int ANALOG_READ_RESOLUTION = 10; // Bits of resolution for the ADC.
+  int ANALOG_READ_AVERAGING = 16 ; // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
 
 #endif
 
@@ -204,13 +256,8 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 101, GNU General Public License Ve
 
 // mainloop and monitoring
 const int MONITOR_FREQ =   10;                      // Frequency of monitoring switch Morse signal input (ca. 10 Hz or 0.1 second, defined by division of main LOOP COUNT)
-const int FLASH_FREQ   =   2*5584;                  // Frequency for power LED flashes while void loop running (ca. 1 to 2 seconds, defined by value for main LOOP_COUNT), default 18815 on ESP32 without WebServer, 5584 on ESP with WebServer v72
-const int FLASH_FREQ_DARK = int(FLASH_FREQ * 0.98); // flash frequency period with unlit power LED, use number close to 1.00, when redLED is used as alternative powerLED
-
-//speedAdjustment
-const int speed_wait_loops = FLASH_FREQ * 0.125;    // Number of loops for delay of next step of speed adjustment, default = ca. 0.5 seconds
-const float motor_voltage_supply = 9.5;             // indicate motor voltage supply level in Vdc, as adjusted at step-up converter output
-const float speedoffset = 0.6;                      // offset of pulse width modulation (PWM) for speed_level 1 as ratio of maximum pulse width, default 0.60 @ 9.5 V dc, 0.50 @ 10 Vdc, 0.30 @ 12Vdc, default 0.25 @ 16Vdc
+const int FLASH_FREQ   =   2*5059;                  // Frequency for power LED flashes while void loop running (ca. 1 to 2 seconds, defined by value for main LOOP_COUNT), default 18815 on ESP32 without WebServer, 5059 on ESP with WebServer v106
+const int FLASH_FREQ_DARK = int(FLASH_FREQ * 0.99); // flash frequency period with unlit power LED, use number close to 1.00, when redLED is used as alternative powerLEDdefault 0.99
 
 //MorseCodeDecoder
 const int dotMinLength   =  200; //dots are more than 100ms long and shorter than dashMinLength
@@ -218,17 +265,17 @@ const int dashMinLength  =  800; //dashes are more than 300ms long
 const int TerminalLength = 1500; //wait after last dash/dot for termination of command
 const int   morsecode_size = 12;
 const char *morsecode[morsecode_size] = {".",  "..",       "...",                              "....", ".....", ".-", ".--",       ".---",             "-", "--", "---", "?"};
-const char *commands[morsecode_size]  = {"--", "--------", "--------------------------------", "0",    "00<",   "++",  "++++++++", "++++++++++++++++", "0", "00", "?",   "?"};
+const char *commands[morsecode_size]  = {"--", "--------", "--------------------------------", "0",    "0<",   "++",  "++++++++", "++++++++++++++++", "0", "00", "?",   "?"};
 const char *meaning[morsecode_size]   = {"decrease speed", "slow down", "break to halt", "fast brake and stop", "fast brake, stop, reverse direction", "increase speed", "speed up", "go fast", "fast brake and stop", "fast brake and stop", "info?", "info?"};
 //acceleration is limited to half full speed, i.e. 8x '+' character, while full break is from max and any speed to halt, i.e. 16x '-' character
 //use fast brake to immediatly stop the motor by command charcter '0',
 //'<'   stands for reverse of direction, which can only be done after a safe full halt, thus multiple leading '0' characters are introduced in front for train inertia
-const int MAX_CHARS     = 65;          // Max size of the input command buffer
+const int MAX_CHARS      = 65;   // Max size of the input command buffer
 
 #ifdef ToneSampling
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION tone signal analysis
-// ###### comment out tone sampling, will be needed for FFT tone signal analysis in PiedPiper
+// ###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
 // <=######## These values can be changed to alter the behavior of the FFT tone analysis.
 // Some values relate to the spectrum display. 
 // ////////////////////////////////////////////////////////////////////////////////
@@ -289,7 +336,7 @@ Tone Hertz      Tone Hertz      Tone Hertz        Tone    Hertz       Tone   Her
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef ToneSampling
-  //###### comment out tone sampling, will be needed for FFT tone signal analysis in PiedPiper
+  //###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
   //toneLoop
   IntervalTimer samplingTimer;  //###TODO correct for use of code with ESP32
   float samples[FFT_SIZE * 2];
@@ -314,7 +361,15 @@ int max_speed_level = 32;      // maximum speed level, default =32 in odrder to 
                                // (max_speed_level=16 as simplified method up to version 028 with half the number of command symbols)
 bool speed_direction = true;   // true=forward, false=backward
 
-// variables from whistle004.ino
+//speed adjustment, defined as variables for later adjustment of following default values by reading values from .ini in setup()
+float motor_voltage_supply   = 9.5;                 // indicate motor voltage supply level in Vdc, as adjusted at step-up converter output
+float motor_voltage_start = 6.0;                    // equivalent voltage for first speed level PWM setting
+float speedoffset = 1- ((motor_voltage_supply - motor_voltage_start)/(max_speed_level - 1) * max_speed_level / motor_voltage_supply) ; 
+// offset of pulse width modulation (PWM) for speed_level "0" as ratio of maximum pulse width, default 0.60 @ 9.5 V dc, 0.50 @ 10 Vdc, 0.30 @ 12Vdc, default 0.25 @ 16Vdc
+int speed_frequency = 16;                            // frequency of speed adjustment per FLASH_FREQ in main loop
+int speed_wait_loops = FLASH_FREQ / speed_frequency; // Number of loops for delay of next step of speed adjustment, default = ca. 0.5 seconds
+
+// variables from whistle004.ino, partially obsolete?
 int Intensity = 0;
 int IntensityStep = 8;
 int switch_ok = HIGH;          // (not used in version 030)
@@ -328,27 +383,79 @@ int sound = 0;
   std::valarray<int> touch_array(5);      // for assessment of gliding average of touch readings in Morse signal detection loop, default touch_array size = 10, lower values for faster response time
 #endif
 
-bool switch_signal = HIGH;
-bool tone_signal = false;
-bool light_signal = false;
-// int  light_level = 0;       //disabled light level reading
-unsigned long SignalTimer = 0; //for recording the time how long the button was pressed
-int SignalDuration = 0;
-bool SignalActive = false;
-bool shortSignalActive = false;
-bool longSignalActive = false;
+bool switch_signal        = HIGH;
+bool tone_signal          = false;
+bool light_signal         = false;
+// int  light_level       = 0;    //disabled light level reading
+unsigned long SignalTimer = 0;    //for recording the time how long the button was pressed
+int SignalDuration        = 0;
+bool SignalActive         = false;
+bool shortSignalActive    = false;
+bool longSignalActive     = false;
 bool verylongSignalActive = false; //2xlongSignal as additional signal for emergency brake
-bool SignalTerminated = true;
-String currentSignal = ""; //string to hold what is currently being signalled, complete Morse command after termination
+bool SignalTerminated     = true;
+String currentSignal      = ""; //string to hold what is currently being signalled, complete Morse command after termination
+
+////////////////////////////////////////////////////////////////////////////////
+// .ini file handling, according to https://github.com/yurilopes/SPIFFSIniFile, GNU GPL v3
+////////////////////////////////////////////////////////////////////////////////
+#ifdef ESP32 
+
+  //initialize ini file variables, path to .ini file and buffer length for .ini file line readings
+  //const size_t pathLen     = 41;   //maximum .ini file path length of 15 characters plus '\0' character  
+  String inipath           = "";   //initialize pointer to inipath with maximum path length
+  const size_t bufferLen   = 41;   //maximum .ini file line length of 40 characters plus '\0' character
+  char buffer[bufferLen];
+  char loconame[bufferLen] = {0};
+  char ssid[bufferLen]     = {0};
+  char password[bufferLen] = {0};
+
+
+//for debugging .ini file reading errors
+void printErrorMessage(uint8_t e, bool eol = true) {
+  switch (e) {
+  case SPIFFSIniFile::errorNoError:
+    Serial.print("no error");
+    break;
+  case SPIFFSIniFile::errorFileNotFound:
+    Serial.print("file not found");
+    break;
+  case SPIFFSIniFile::errorFileNotOpen:
+    Serial.print("file not open");
+    break;
+  case SPIFFSIniFile::errorBufferTooSmall:
+    Serial.print("buffer too small => ");
+    Serial.print("limit .ini line length to bufferLen (default 40 characters!)");
+    break;
+  case SPIFFSIniFile::errorSeekError:
+    Serial.print("seek error");
+    break;
+  case SPIFFSIniFile::errorSectionNotFound:
+    Serial.print("section not found");
+    break;
+  case SPIFFSIniFile::errorKeyNotFound:
+    Serial.print("key not found");
+    break;
+  case SPIFFSIniFile::errorEndOfFile:
+    Serial.print("end of file");
+    break;
+  case SPIFFSIniFile::errorUnknownError:
+    Serial.print("unknown error");
+    break;
+  default:
+    Serial.print("unknown error value");
+    break;
+  }
+  if (eol)
+    Serial.println();
+}
+
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Create Server Module for ESP32
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef ESP32 
-
-// Define network credentials
-const char* ssid = "rote_Diesellok";
-const char* password = "freifahrt";
 
 //Create DNS Server on port 53
 const byte DNS_PORT = 53;
@@ -362,8 +469,9 @@ AsyncWebSocket ws("/ws");
 void captivePortalTarget(AsyncWebServerRequest *request) {
       AsyncResponseStream *response = request->beginResponseStream("text/html");
       response->print("<!DOCTYPE html><html><head><title>Infos zur Lokomotivsteuerung</title>");
-      response->print("<style>body{max-width: 1024px; font-size: 2.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:1% auto; text-align: left;}");
-      response->print("</style></head><body>");
+      response->print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" charset=\"utf-8\"/>");
+      response->print("<style>body{max-width: 1024px; font-size: 1.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:2% auto; text-align: left;}");
+      response->print("h1 {font-size: 1.6rem;} h2 {font-size: 1.2rem;}</style></head><body>");
       response->printf("<h1>Startseite zur Loksteuerung</h1>");
       response->printf("<p>Dies ist die automatische Startseite des ESP32 WLAN-Servers (CaptivePortalTarget). ");
       response->printf("Du hast versucht folgende Seite zu erreichen und bist zur Startseite geleitet worden:</p>");
@@ -372,7 +480,7 @@ void captivePortalTarget(AsyncWebServerRequest *request) {
       response->printf("Es k&ouml;nnen immer nur zwei Nutzer (Clients) gleichzeitig mit dem WLAN-Server Verbindung aufnehmen. </p>"); 
       response->printf("<h2><a href='http://%s/'>Loksteuerung</a> &nbsp;&nbsp; <a href='http://%s/info'>weitere Informationen</a></h2>", WiFi.softAPIP().toString().c_str(), WiFi.softAPIP().toString().c_str());
       response->printf("<div><a href='http://%s/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>", WiFi.softAPIP().toString().c_str());      
-      response->printf("<p>Viel Spa&szlig; beim Ausprobieren, Jo</p>");      
+      response->printf("<p>Viel Spa&szlig; beim Ausprobieren, Jo</p>");
       response->print("</body></html>");
       request->send(response);
 };
@@ -389,17 +497,18 @@ class CaptiveRequestHandler : public AsyncWebHandler {
        //request->redirect("/portal");
       AsyncResponseStream *response = request->beginResponseStream("text/html");
       response->print("<!DOCTYPE html><html><head><title>Infos zur Lokomotivsteuerung</title>");
-      response->print("<style>body{max-width: 1024px; font-size: 2.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:1% auto; text-align: left;}");
-      response->print("</style></head><body>");
+      response->print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" charset=\"utf-8\"/>");
+      response->print("<style>max-width: 1024px; body{font-size: 1.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:2% auto; text-align: left;}");
+      response->print("h1 {font-size: 1.6rem;} h2 {font-size: 1.2rem;}</style></head><body>");
       response->printf("<h1>Startseite zur Loksteuerung</h1>");
-      response->printf("<p>Dies ist die automatische Startseite des ESP32 WLAN-Servers (CaptiveRequestHandlter). ");
+      response->printf("<p>Dies ist die automatische Startseite des ESP32 WLAN-Servers (CaptiveRequestHandler). ");
       response->printf("Du hast versucht folgende Seite zu erreichen und bist zur Startseite geleitet worden:</p>");
       response->printf("<p>http://%s%s</p>" , request->host().c_str(), request->url().c_str());
       response->printf("<p>Der ESP32 hat keinen Internetzugang. Du kannst aber &uuml;ber die Verbindung von deinen Browser zum ESP32 WLAN-Server eine Lokomotive steuern. ");
       response->printf("Es k&ouml;nnen immer nur zwei Nutzer (Clients) gleichzeitig mit dem WLAN-Server Verbindung aufnehmen. </p>"); 
       response->printf("<h2><a href='http://%s/'>Loksteuerung</a> &nbsp;&nbsp; <a href='http://%s/info'>weitere Informationen</a></h2>", WiFi.softAPIP().toString().c_str(), WiFi.softAPIP().toString().c_str());
       response->printf("<div><a href='http://%s/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>", WiFi.softAPIP().toString().c_str());      
-      response->printf("<p>Viel Spa&szlig; beim Ausprobieren, Jo</p>");      
+      response->printf("<p>Viel Spa&szlig; beim Ausprobieren, Jo</p>");
       response->print("</body></html>");
       request->send(response);
     }
@@ -445,18 +554,123 @@ String client_message ="Bereit..."; //intial command message on index.html
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
     AwsFrameInfo *info = (AwsFrameInfo*)arg;
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-
-        Serial.print("WebSocket message received: ");
-        data[len] = 0;
+        Serial.println("+ WebSocket message received with following data in client_message: "); //echo received message for test and monitoring
+        data[len] = 0; // null termination for char data
         client_message = (char*)data;
         Serial.println(client_message); //echo received message for test and monitoring
-        //ws.textAll(client_message); //echo received message for test only
-
-        CLIENT_COMMAND(client_message.c_str()); //compilation type problem solved by .c_str()     
+        //ws.textAll(client_message);   //echo websocket received message for test and debugging
+        
+        if (client_message[0]=='=' || client_message[0]=='+' || client_message[0]=='-' || client_message[0]=='0' || client_message[0]=='?' || client_message[0]=='<') {
+          CLIENT_COMMAND(client_message.c_str()); //compilation type problem solved by .c_str()       
+        }
+        else if (client_message[0]=='{') {
+          Serial.println("+ { at start of client_message indicates JSON syntax for interpretation in function INI_ACTION()" ); //echo received message for test and monitoring 
+//          AsyncResponseStream *response = request->beginResponseStream("application/javascript");
+//          response->printf("      window.alert(\'JSON client_message identified: %s\');  ", client_message.c_str());
+//          request->send(response);
+            INI_ACTION(data);
+        }
+//          writeIni (&client_message.c_str());
+        
+        else if (client_message[0]=='#') {
+          Serial.println("+ sign '#' identified comment in client_message: ");
+          Serial.println(client_message);
+          Serial.println();
+//          AsyncResponseStream *response = request->beginResponseStream("application/javascript");
+//          response->printf("      window.alert(\'comment with # character at start of client_message identified: %s\');  ", client_message.c_str());
+//          request->send(response);
+        }
+        else {
+          Serial.println("charcter at start of client_message not identified :" ); //echo received message for test and monitoring 
+//          AsyncResponseStream *response = request->beginResponseStream("application/javascript");
+//          response->printf("      window.alert(\'character at start of client_message not identified: %s\');  ", client_message.c_str());
+//          request->send(response);
+        }       
     }
 }
 
-// Send WebSocket Message as JSON Document
+// manage action on .ini file
+void INI_ACTION(uint8_t *data) {
+  String json_message = (char*)data;
+  const size_t capacity = JSON_OBJECT_SIZE(3) + json_message.length();
+  Serial.print("+ sizeof JSON message, capacity of jsondoc: ");  
+  Serial.print(sizeof(json_message));   
+  Serial.print(" : ");   
+  Serial.println(capacity); 
+  Serial.print(" : ");   
+  Serial.println(json_message); 
+  DynamicJsonDocument jsondoc(capacity);
+  deserializeJson(jsondoc, json_message);
+
+  const char* iniaction = jsondoc["iniaction"]; // "save"
+  String inifilestring  = jsondoc["inifile"];   // default "lok.ini"
+  inifilestring.toLowerCase();
+  inipath = "/"; 
+  inipath += inifilestring;
+  String iniedit = jsondoc["iniedit"]; // "# lok.ini max line length = buffer = 40\n[loco]\nname = grüne ELok BR 151\n ...
+  //Serial.println(jsondoc);
+  Serial.print("+ iniaction: ");  
+  Serial.println(iniaction); 
+  Serial.print("+ inipath: ");  
+  Serial.println(inipath); 
+  Serial.print("+ iniedit: ");  
+  Serial.println(iniedit); 
+
+  if (strcmp(iniaction,"save")==0) {
+    Serial.print("+ save ini file: ");  
+    writeFile(SPIFFS, inipath.c_str() , iniedit.c_str());
+    return;
+  }
+  
+  else if (strcmp(iniaction,"load")==0) {
+    Serial.print("+ select .ini file ");
+    Serial.println(inipath);  
+    Serial.print("+ setup program and load with new .ini file ...");
+    delay (1000);
+    iniSetup(); //does not work for re-loading wifi settings and pinout, use restart for that
+    speed_command = "ggg";  // three green/blue very long flashes 
+    return;
+  }
+
+  else if (strcmp(iniaction,"start")==0) {
+    Serial.print("+ restart with .ini file ");
+    Serial.println(inipath);  
+    Serial.print("+ restart program and load with new .ini file ...");
+    delay (1000);
+    ESP.restart(); // LED flash indication at restart
+    return;
+  }
+
+  else {
+    Serial.println("- iniaction could not be interpreted!");
+  }
+}
+
+// write .ini file
+void writeFile(fs::FS &fs, const char * path, const char * message){
+    Serial.printf("+ Writing .ini file: %s\r\n", path);
+
+    File file = fs.open(path, FILE_WRITE);
+    if(!file){
+        Serial.print("- failed to open file for writing: ");
+        Serial.println(path);
+        speed_command = "rrr";  // three red very long flashes  
+        return;
+    }
+    if(file.print(message)){
+        Serial.print("+ file written: ");
+        Serial.println(path);
+        speed_command = "ggg";  // three green/blue very long flashes 
+    } 
+    else {
+        Serial.print("- file write failed: ");
+        speed_command = "ggr";  // two green/blue and one red very long flashes
+        Serial.println(path);
+    }
+    file.close();
+}
+
+// Send WebSocket Message as JSON Document to all clients
 void notifyClients() {
   Serial.print ("Notify clients! ");
   // Compute the capacity for the JSON document,
@@ -500,23 +714,142 @@ void notifyClients() {
 
 // Adjust index.html variables at start or reload
 String processor(const String& var){
-    Serial.print("processor working on: ");
+    Serial.print("+ processor working on: ");
     Serial.println(var);
-    //variables will here not by replaced by processor but by notifyClients() after a short delay
+
+    if(var == "LOCONAME"){
+      return String(loconame); // send loconame for replacement of the header variable in index.html
+    }
+   
+    //other variables in index.html will not by replaced by processor here
+    //but by notifyClients() and by sending a JSON message after a short delay indicated by "Starte..."
     return "Starte...";
   }
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// SETUP MAIN FUNCTIONS
+// iniSetup function, called at startup and when reloading a new .ini file
 ////////////////////////////////////////////////////////////////////////////////
 
+void iniSetup() { 
+#ifdef ESP32 
+
+  // Define default network credentials and name
+  const char* loconame_default = "Loksteuerung";
+  const char* ssid_default = "Lok_wlan";
+  const char* password_default = "freifahrt";
+  Serial.println();
+  Serial.println("+ iniSetup(): Reading paramerters from .ini file");
+
+  // Open .ini file, according to https://github.com/yurilopes/SPIFFSIniFile, GNU GPL v3
+  // Initialize SPIFFS
+  if(!SPIFFS.begin(true)){
+    Serial.println("- An Error has occurred while mounting SPIFFS");
+    return;
+  }
+
+  if (inipath=="") {                 //if path is empty after reboot of microprocessor
+    inipath = "/lok.ini";            //define startup path to lok.ini file    
+  }
+
+  // open .ini file
+  SPIFFSIniFile ini(inipath.c_str());
+  if (!ini.open()) {
+    Serial.print("- .ini file ");
+    Serial.print(inipath);
+    Serial.println(" does not exist!");
+  }
+  Serial.print("+ .ini file ");
+  Serial.print(inipath);
+  Serial.println(" opened for reading program setup");
+
+  // Check if the file is valid. This can be used to warn if any lines are longer than the buffer.
+  if (!ini.validate(buffer, bufferLen)) {
+    Serial.print("- ini file ");
+    Serial.print(ini.getFilename());
+    Serial.print(" not valid: ");
+    printErrorMessage(ini.getError());  //detailed .ini file reading debugging available via error message on serial port
+  }
+
+  // Read values from the .ini file > section > key, when the key is present
+  //loco name from .ini
+  if (ini.getValue("loco", "name", buffer, bufferLen)) {strncpy(loconame,buffer,bufferLen);}
+  else {
+    Serial.print("note: .ini no loconame! ");
+    printErrorMessage(ini.getError());
+    strncpy (loconame,loconame_default,bufferLen);
+  }
+
+  //wifi ssid from .ini
+  if (ini.getValue("wifi", "ssid", buffer, bufferLen)) {strncpy(ssid,buffer,bufferLen);}
+  else {
+    Serial.print("note: .ini no wifi ssid! ");
+    printErrorMessage(ini.getError());
+    strncpy (ssid,ssid_default,bufferLen);
+    //Serial.print("ssid default = ");
+    //Serial.println(ssid);
+  }
+
+  //wifi password from .ini
+  if (ini.getValue("wifi", "password", buffer, bufferLen)) {strncpy(password,buffer,bufferLen);}
+  else {
+    Serial.print("note: .ini no wifi password! ");
+    printErrorMessage(ini.getError());
+    strncpy (password,password_default,bufferLen);
+  }
+
+  Serial.print("loco name: "); Serial.println(loconame);
+  Serial.print("ssid: "); Serial.println(ssid);
+  Serial.print("password: "); Serial.println(password);
+
+  //voltage settings, adjustment of default values by reading values from .ini
+  if (ini.getValue("voltage", "supply", buffer, bufferLen)) {motor_voltage_supply = atof(buffer);}
+  else {Serial.println("note: .ino default voltage supply");}
+  if (ini.getValue("voltage", "start", buffer, bufferLen)) {motor_voltage_start = atof(buffer);}
+  else {Serial.println("note: .ino default voltage start");}
+  speedoffset = 1- ((motor_voltage_supply - motor_voltage_start)/(max_speed_level - 1) * max_speed_level / motor_voltage_supply) ; 
+  // offset of pulse width modulation (PWM) for speed_level "0" as ratio of maximum pulse width, default 0.60 @ 9.5 V dc, 0.50 @ 10 Vdc, 0.30 @ 12Vdc, default 0.25 @ 16Vdc
+
+  //speed adjustment, adjustment of default values by reading values from .ini
+  if (ini.getValue("speed", "adjustment_frequency", buffer, bufferLen)) {
+    speed_frequency = atoi(buffer);
+    Serial.print("+ .ini speed_frequency = ");
+    Serial.println(speed_frequency);
+  }
+  else {Serial.println("note: .ino default speed adjustment frequency");}
+  speed_wait_loops = FLASH_FREQ / speed_frequency; // Number of loops for delay of next step of speed adjustment, default = ca. 0.5 seconds
+
+  // add reading pinout definition from .ini file belwo here ###################
+
+  Serial.println("+ end of .ini program setup");
+  Serial.println();
+  ini.close(); // close .ini file after reading
+
+//end of iniSetup()
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+// SETUP main function
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 void setup() {
-  pinMode(input_switch, INPUT);  
- 
+
 #ifdef ESP32 
   setCpuFrequencyMhz(80); //reduce CPU frequency for power saving
   Serial.begin(115200);   // Set up serial port.
+  delay(3000); //wait 3 seconds at startup in order to alliviate start-up brown-out cycle in case of power supply problems
+  iniSetup();  //reading principal parameters from lok.ini file at start-up
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+// SETUP check for brownout
+////////////////////////////////////////////////////////////////////////////////
+  
+  pinMode(input_switch, INPUT);  
+ 
+#ifdef ESP32 
 
   // check for brownout or other startup reason
   esp_reset_reason_t reset_reason = esp_reset_reason();
@@ -547,7 +880,7 @@ void setup() {
     esp_deep_sleep_start();
     delay(180000); // 3 min delay for cool down and power recovery before continuation in deep_sleep_mode
     pinMode(greenLED, OUTPUT);
-    for (int i = 0; i < 150; i++) { //indicate brown out error by fast flashing of green LED for 30 seconds
+    for (int i = 0; i < 900; i++) { //indicate brown out error by fast flashing of green LED for 3 minutes
       digitalWrite(greenLED, HIGH);
       delay(100);
       digitalWrite(greenLED, LOW);
@@ -555,7 +888,6 @@ void setup() {
     }
   }
 
-  delay(2000); //wait 2 s at startup in order to alliviate start-up brown-out cycle
   // Initialise LEDs.
   pinMode(POWER_LED_PIN, OUTPUT);
   pinMode(redLED, OUTPUT);
@@ -570,18 +902,20 @@ void setup() {
     digitalWrite(greenLED, HIGH);
     delay(20);
   }
-    
+
+  /*
+  //disable this section, when startup should speed up and not wait for user confirmation by touch input signal 
   while (!(touchRead(input_switch) < input_switch_level)) { //wait for touch signal at startup in order to alliviate start-up brown-out cycle
     Serial.print("Waiting for startup signal at GPIO pin ");
     Serial.print(input_switch);
     Serial.print(" TOUCH read= ");
-    Serial.println(touchRead(input_switch)); 
-    
+    Serial.println(touchRead(input_switch));  
     delay(950); 
     digitalWrite(greenLED, LOW);
     delay(50);
     digitalWrite(greenLED, HIGH);
   }
+  */
 
   // Set up ADC and audio input.
   pinMode(AUDIO_INPUT_PIN, INPUT);
@@ -589,6 +923,12 @@ void setup() {
   analogReadResolution(ANALOG_READ_RESOLUTION); 
   //analogReadAveraging(ANALOG_READ_AVERAGING);  //#####TODO test if adjustment to ESP analog input reading commands is functioning
   //analogSetCycles(ANALOG_READ_AVERAGING);      //#####TODO test if adjustment to ESP analog input reading commands is functioning
+
+  // ###### ADDITIONAL IDEA for continuing the project #############################################################################
+  // define GPIO pin 26 as input for monitoring motor current on a 1 Ohm resistor between ground and motor IC grounding,
+  // display and moinitor its voltage of approximatly up to 1 V, which is proportional to motor current as number on control panel 
+  // and its change over time recorded in a buffer and displayed in an extra website, which also allows for speed adjustments, 
+  // so that their effect can be monitored online   
 
 #else  //mP not definied, defualt for Teensy 4.0
   // Set up serial port.
@@ -638,10 +978,10 @@ void setup() {
 
   // Clear the input command buffer
   memset(commandBuffer, 0, sizeof(commandBuffer));
-  speed_command = "00"; //initial brake speed_command in order to check routines and LED indication
+  speed_command = "000"; //initial brake speed_command in order to check routines and LED indication
 
 #ifdef ToneSampling
-  // ###### comment out tone sampling, will be needed for FFT tone signal analysis in PiedPiper
+  // conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
   // Begin sampling audio
   samplingBegin();
 #endif
@@ -651,14 +991,12 @@ void setup() {
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef ESP32
 
-  // Initialize SPIFFS
-  if(!SPIFFS.begin(true)){
-    Serial.println("An Error has occurred while mounting SPIFFS");
-    return;
-  }
-
   // Open WiFi Access Point with SSID and password
-  Serial.print("Setting WiFi Access Point…");
+  Serial.println("Setting WiFi Access Point…");
+  Serial.print("SSID = ");
+  Serial.println(ssid);
+  Serial.print("password = ");
+  Serial.println(password);
   // Remove the password parameter, if you want the AP (Access Point) to open unprotected
   WiFi.softAP(ssid, password,1,0,2); //chanel=1, broadcastID=0, max_connections=2 //changed from 1 to two clients in version 083
   IPAddress IP = WiFi.softAPIP();
@@ -695,10 +1033,12 @@ void setup() {
   server.on("/info", HTTP_GET, [](AsyncWebServerRequest *request){
     AsyncResponseStream *response = request->beginResponseStream("text/html");
       response->print("<!DOCTYPE html><html><head><title>Infos zur Lokomotivsteuerung</title>");
-      response->print("<style>body{max-width: 1024px; font-size: 2.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:1% auto; text-align: left;}");
-      response->print("table, tr {vertical-align: top; padding: 1%; border-collapse: collapse; border-bottom: 2pt solid #ddd;} tr:last-child { border-bottom: none; } th, td {text-align: left; padding: 1%; }</style></head><body>");
-      response->printf("<h1><a href='/project.html'>PiedPiperS-Projekt</a></h1>");
-      response->printf("<h1><a href='/access'>WLAN-Zugang</a></h1>");
+      response->print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"  charset=\"utf-8\"/>");
+      response->print("<style>body{max-width: 1024px; font-size: 1.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:2% auto; text-align: left;}");
+      response->print("table, tr {vertical-align: top; padding: 1%; border-collapse: collapse; border-bottom: 2pt solid #ddd;} tr:last-child { border-bottom: none; }"); 
+      response->print("th, td {text-align: left; padding: 1%; } h1 {font-size: 1.8rem;} h2 {font-size: 1.2rem;}</style></head><body>");
+      response->printf("<h2><a href='/project.html'>PiedPiperS-Projekt</a></h2>");
+      response->printf("<h2><a href='/access'>WLAN-Zugang</a></h2>");
       response->printf("<h1>Infos zur Loksteuerung</h1>");
       response->printf("<p>Der Datenaustausch zwischen der Webseite zur Loksteuerung im Browser und dem ESP32 WLAN-Server ");  
       response->printf("auf dem ersten Wagen hinter der Lok erfolgt &uuml;ber das WebSocket-Protokoll. Der ESP32 steuert den angeschlossenen Motor. </p>"); 
@@ -711,9 +1051,9 @@ void setup() {
       response->printf("<p>Die Stromversorgung der Lok erfolgt nicht durch die Schiene sondern aus einer mitgef&uuml;hrten Batterie oder USB-Powerbank. ");
       response->printf("Aus 5 Volt Gleichspannung wird in einem Step-up-Konverter eine Gleichspannung von etwa %.1f Volt erzeugt.</p>", motor_voltage_supply);      
       response->printf("<p>Eine Puls&shy;weiten&shy;modulierung (PWM) im ESP32-Mikro&shy;controller mit %i Geschwindig&shy;keits&shy;stufen dient zur Steuerung der Lok. ",max_speed_level); 
-      response->printf("Dabei wird das PWM-Signal in einem integrierten Schaltkreis, IC TLE5206-2S, mit einer H-Br&uuml;cke verst&auml;rkt, um den Gleich&shy;strom&shy;motor per PWM zu regeln. ");
+      response->printf("Dabei wird das PWM-Signal in einem integrierten Schaltkreis (IC) mit einer H-Br&uuml;cke verst&auml;rkt, um den Gleich&shy;strom&shy;motor per PWM zu regeln. ");
       response->printf("Die erste Geschwindig&shy;keits&shy;stufe entspricht einer PWM von %.0f %%. </p>", ((static_cast<float>(1)/max_speed_level) * (1 - speedoffset) + speedoffset)*100); 
-
+      
       if(speed_level>0){
         response->printf("<p>PWM derzeit <b>%.0f %% bei Geschwindig&shy;keits&shy;stufe %i</b>. ", ((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)*100, speed_level); 
         response->printf("Das entspricht einem elektrischen Strom durch den Lokmotor, der bei etwa %.1f Volt flie&szlig;en w&uuml;rde.</p>",((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)* motor_voltage_supply);  
@@ -727,14 +1067,14 @@ void setup() {
       response->printf("<table style=\"width:100%%\">");
       response->printf("<tr><th>STEU&shy;ER&shy;UNG</th><th>BE&shy;SCHLEU&shy;NIGUNG</th><th>BEDEUTUNG</th></tr>");  
       response->printf("<tr><td>Schiebe&shy;regler</td>  <td> +/- x Stufen</td>  <td>auf neue Geschwindigkeit einstellen</td></tr>");        
-      response->printf("<tr><td>----</td>     <td>- 8 Stufen</td>    <td>bremsen </td></tr>");    
-      response->printf("<tr><td> - </td>      <td>- 2 Stufen</td>    <td>etwas langsamer </td></tr>");    
-      response->printf("<tr><td> + </td>      <td>+ 2 Stufen</td>    <td>etwas schneller </td></tr>");    
-      response->printf("<tr><td>++++ </td>    <td>+ 8 Stufen</td>    <td>beschleunigen </td></tr>"); 
-      response->printf("<tr><td> < > </td>    <td>00 < ></td>        <td>Stop und Richtung wechseln </td></tr>");    
-      response->printf("<tr><td>Halten</td>   <td>- 32 Stufen</td>   <td>abbremsen bis zum Halt </td></tr>");    
-      response->printf("<tr><td>Stopp!</td>   <td>00</td>            <td>Schnellbremsung zum Notstopp</td></tr>"); 
-      response->printf("<tr><td>Info?</td>    <td>?</td>             <td>Status der Programmvariablen</td></tr>"); 
+      response->printf("<tr><td>----</td>     <td>- 8 Stufen</td>            <td>bremsen </td></tr>");    
+      response->printf("<tr><td> - </td>      <td>- 2 Stufen</td>            <td>etwas langsamer </td></tr>");    
+      response->printf("<tr><td> + </td>      <td>+ 2 Stufen</td>            <td>etwas schneller </td></tr>");    
+      response->printf("<tr><td>++++ </td>    <td>+ 8 Stufen</td>            <td>beschleunigen </td></tr>"); 
+      response->printf("<tr><td> <&nbsp;> </td>    <td>0&nbsp;<&nbsp;></td>  <td>Stop und Richtung wechseln </td></tr>");    
+      response->printf("<tr><td>Halten</td>   <td>- 32 Stufen</td>           <td>abbremsen bis zum Halt </td></tr>");    
+      response->printf("<tr><td>Stopp!</td>   <td>00</td>                    <td>Schnellbremsung zum Notstopp</td></tr>"); 
+      response->printf("<tr><td>Info?</td>    <td>?</td>                     <td>Status der Programmvariablen</td></tr>"); 
       response->printf("</table>");     
       response->printf("<p> </p>"); 
       response->printf("<p> </p>");   
@@ -770,15 +1110,17 @@ void setup() {
   server.on("/access", HTTP_GET, [](AsyncWebServerRequest *request){
     AsyncResponseStream *response = request->beginResponseStream("text/html");
       response->print("<!DOCTYPE html><html><head><title>WLAN-Zugang</title>");
-      response->print("<style>p, td {font-size: 1.5em;} body{max-width: 1024px; font-size: 2.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:1% auto; text-align: left;}");
-      response->print("table, tr {vertical-align: top; padding: 1%; border-collapse: collapse; border-bottom: 2pt solid #ddd;} tr:last-child { border-bottom: none; } th, td {text-align: left; padding: 1%; }</style></head><body>");
-      response->printf("<h1>WLAN-Zugang zur Loksteuerung</h2>");
+      response->print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" charset=\"utf-8\"/>");
+      response->print("<style>p, td {font-size: 1.2em;} body{max-width: 1024px; font-size: 1.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:2% auto; text-align: left;}");
+      response->print("table, tr {vertical-align: top; padding: 1%; border-collapse: collapse; border-bottom: 2pt solid #ddd;} tr:last-child { border-bottom: none; }"); 
+      response->print("th, td {text-align: left; padding: 1%; } h1 {font-size: 1.4rem;} h2 {font-size: 1.2rem;}</style></head><body>");
+      response->printf("<h1>WLAN-Zugang zur Loksteuerung</h1>");
       response->printf("<table style=\"width:100%%\">");
       response->printf("<tr><td>WLAN-Name (SSID) = </td>  <td>%s</td></tr>",ssid);        
       response->printf("<tr><td>Passwort = </td>          <td>%s</td></tr>",password);    
       response->printf("</table>"); 
       response->printf("<p>Link zur Loksteuerung: <a href='http://%s'>http://%s</a></p>",WiFi.softAPIP().toString().c_str(),WiFi.softAPIP().toString().c_str());
-      response->printf("<a href='/'><img src=\"/qr_code.png\" alt='Startseite/Portal' style='width:98%%'></a>");
+      response->printf("<a href='/'><img src=\"/qr_code.png\" alt='Startseite/Portal' style='width:100%%'></a>");
       response->printf("</body></html>");
       request->send(response);
   });
@@ -789,8 +1131,10 @@ void setup() {
       Serial.println("Monitor called. Send status via speed_command '?' to adjustSpeed()");
       speed_command = '?'; //Send info on status from controller via serial monitor and indicate by flashing LEDs, executed via adjustSpeed(), additionally notifyClients() and JASON message (alternative to update via processor)
       response->print("<!DOCTYPE html><html><head><title>Programmvariablen</title>");
-      response->print("<style>body{max-width: 1024px; font-size: 2.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:1% auto; text-align: left;}");
-      response->print("table, tr {vertical-align: top; padding: 1%; border-collapse: collapse; border-bottom: 2pt solid #ddd;} tr:last-child { border-bottom: none; } th, td {text-align: left; padding: 1%; }</style></head><body>");
+      response->print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" charset=\"utf-8\"/>");
+      response->print("<style>body{max-width: 1024px; font-size: 1.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:2% auto; text-align: left;}");
+      response->print("table, tr {vertical-align: top; padding: 1%; border-collapse: collapse; border-bottom: 2pt solid #ddd;} tr:last-child { border-bottom: none; }");
+      response->print("th, td {font-size: 0.8rem; text-align: left; padding: 1%; } h1 {font-size: 1.8rem;} h2 {font-size: 1.2rem;}</style></head><body>");
       response->printf("<h1>Programmvariablen</h1>");
       response->printf("<p>Laufender arduino/c++ <b>SKETCH</b> ist: </p>");
       response->printf("<p>%s</p>", SKETCH_INFO.c_str());
@@ -838,12 +1182,143 @@ void setup() {
       response->printf("</table>");     
       response->printf("<p> </p>");      
       response->printf("<h2><a href='/monitor'>Aktualisieren: Sende '?'</a></h2>");
+      response->printf("<h2><a href='/lok.ini'>Programmeinstellung: lok.ini</a></h2>");
       response->printf("<div><a href='/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>");
+      response->printf("<p> </p>");      
+      response->printf("<p><a href='/ini.html' style=\"color: gray; font-size: 1.0rem;\">Programmeinstellungen in lok.ini anpassen</a></p>");
       response->printf("<p> </p>");
       response->print("</body></html>");
       request->send(response);
       request->send(SPIFFS, "/lok.png", "image/png");
   });
+
+  // Route to load status info and instruction
+  server.on("/ini.html", HTTP_GET, [](AsyncWebServerRequest *request){
+    String iniread;
+    Serial.print("+ .ini editor called. Opening .ini file from SPIFFS: ");
+    Serial.println(inipath);
+    Serial.println("  Saved new version will only be used at next microprocessor stratup");
+    // open SPIFFS
+    File inifile = SPIFFS.open(inipath.c_str(), "r");
+    delay (10);
+    if(!inifile){
+      // File not found
+      Serial.print("- Failed to open .ini file for reading! ");
+      Serial.println(inipath);
+      return;
+    } 
+    else {
+      Serial.println("+ lok.ini opened for reading.");
+      while(inifile.available()){
+        iniread += String((char)inifile.read());
+//        Serial.println( (char*) inifile.read());
+      }
+      Serial.println("iniread = ");
+      Serial.println(iniread);
+      inifile.close();
+    }
+    Serial.println("+ lok.ini closed after reading");
+    AsyncResponseStream *response = request->beginResponseStream("text/html");
+      response->print("<!DOCTYPE html><html><head><title>Programmvariablen</title>   ");
+      response->print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" charset=\"utf-8\"/>   ");
+      response->print("<style>body{max-width: 1024px; font-size: 1.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:2% auto; text-align: left;}   ");
+      response->print("table, tr {vertical-align: top; padding: 1%; border-collapse: collapse; border-bottom: 2pt solid #ddd;} tr:last-child { border-bottom: none; }   ");
+      response->print("th, td {font-size: 0.8rem; text-align: left; padding: 1%; } h1 {font-size: 1.8rem;} h2 {font-size: 1.2rem;}</style></head><body>   ");
+      response->printf("<h1>Programmeinstellungen</h1>   ");
+      response->printf("  <form onSubmit=\"event.preventDefault(); formToJSON(this);\">  "); 
+      response->printf("    <label>%s anpassen:</label>  ", inipath.substring(1).c_str()); 
+      response->printf("    <textarea style=\"font-size: 1.0rem; width:96%%;\" rows = \"16\" cols = \"40\" name = \"iniedit\">%s</textarea><br>   ",iniread.c_str());
+      response->printf("    <label for=\"inifile\">Datei: </label><input id=\"inifile\" type=\"text\" name=\"lok.ini\" size=\"28\" style=\"font-size: 1.0rem\" value=\"%s\"> <br> <b>   ", inipath.substring(1).c_str());
+      response->printf("    <input type=\"radio\" id=\"save\" name=\"iniaction\" value=\"save\">   ");
+      response->printf("    <label for=\"save\">Speichern</label> &nbsp;  ");
+      response->printf("    <input type=\"radio\" id=\"load\" name=\"iniaction\" value=\"load\">   ");
+      response->printf("    <label for=\"load\">Neu laden</label> &nbsp;&nbsp;  ");
+      response->printf("    <a href='/dir'>Dateiindex</a><br>   ");      
+      response->printf("    <input type=\"radio\" id=\"start\" name=\"iniaction\" value=\"start\">   ");
+      response->printf("    <label for=\"start\">Neustart mit lok.ini</label> &nbsp;&nbsp; &nbsp;&nbsp;  ");
+      response->printf("    <a href='/lok.ini'>lok.ini anzeigen</a><br>   ");
+      response->printf("    <input type=\"submit\" style=\"font-size: 1.0rem\" value=\"&nbsp;&nbsp;&nbsp;&nbsp;Programmeinstellung anpassen &nbsp;&nbsp;&nbsp;&nbsp;\"> </b>  ");
+      response->printf("  </form>  ");
+      response->printf("<p> </p>");      
+      response->printf("<div><a href='/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>");
+      response->printf("<p> </p>");
+      response->printf("<p><b>Neu laden</b> nutzt die Funktion <i>inisetup()</i> um die Programmeinstellung der Variablen aus der angegebenen Datei durchzuf&uuml;hren. ");
+      response->printf("Die Festlegung der Zugangsdaten zum WLAN und die Pinbelegung des Mikroprozessors werden dadurch jedoch zunächst nicht ge&auml;ndert. ");
+      response->printf("Eine &Uuml;bernahme der Programmeinstellungen aus der lok.ini mit neuen WLAN Zugangsdaten (und ge&auml;nderter Pinbelegung, wenn implementiert) "); 
+      response->printf("erfordert einen Neustart.</p>  "); 
+      response->printf("<p>Ein <b>Neustart</b> kann durch Auswahl aus dem Programm heraus oder durch den Reset-Knopf am Mikroprozesser ausgel&ouml;st werden. "); 
+      response->printf("Nach dem Neustart wird des Mikroprozessors wird die gesamte Funktion <i>setup()</i> durchlaufen und WLAN-Zugang und Pinbelegung neu festgelegt.</p>  ");
+      response->printf("<p>Nach erfolgreiche Speichern oder Laden der neuen Programmeinstellung wird mit dreimaligem langen <b>Aufleuchten der blauen LED</b> best&auml;tigt. ");
+      response->printf("Unterschiedliche Datei-Fehler beim Speichern und Laden werden durch Aufleuchten der roten LED angezeigt. Debugging ist mit der Ausgaben auf der seriellen Schnittstelle mouml;glich.</p>");
+      response->printf("<p>Die meisten kleine Fehlfunktionen k&ouml;nnen durch ein erneutes Laden der ini.html Webseite behoben werden. Hierzu den Reload-Knopf im Browser nutzen</p>  ");
+      response->printf("  <script>  ");
+      response->printf("    console.log('Trying to open a WebSocket connection...');  ");
+      response->printf("    var gateway = \'ws://%s/ws\';  ",WiFi.softAPIP().toString().c_str() );  
+      response->printf("    var websocket = new WebSocket(gateway);  ");      
+      response->printf("    function formToJSON(form){  ");
+      response->printf("      var edit=form.iniedit.value;  ");
+      response->printf("      var file=form.inifile.value;  ");
+      response->printf("      var action=form.iniaction.value;  ");
+      response->printf("      window.alert(action + '   ' + file + '   mit folgendem Inhalt : ' + edit);  ");
+      response->printf("      var jsonIniEdit=JSON.stringify({iniaction:action, inifile:file, iniedit:edit});  ");
+      response->printf("      websocket.send(jsonIniEdit);  ");
+      response->printf("      window.alert('The browser has successfully sent the following JSON message to the webserver via WebSocket: ' + jsonIniEdit);  ");
+      response->printf("      console.log('sent iniedit as JSON to Server via WebSocket');  ");  
+      response->printf("      console.log('close WebSocket');  ");   
+      response->printf("      setTimeout(initWebSocket, 2000);  ");   
+      response->printf("      setTimeout(location.reload(), 2000);  ");   
+      response->printf("    }  ");
+      response->printf("  </script>  ");   
+      response->printf("</body></html>");  
+      request->send(response);
+      request->send(SPIFFS, "/lok.png", "image/png");
+  });
+
+  // display fileindex of ESP32 SPIFFS, equal to ESP32 sketch data folder upload
+  server.on("/dir", HTTP_GET, [](AsyncWebServerRequest *request){
+    const char * dirname = "/";
+    int totalfilesize = 0;
+    Serial.printf     ("FILE INDEX \t\tSIZE:\r\n");
+    String fileindex = "FILE INDEX \t\tSIZE:\n";
+    Serial.printf     ("DIRECTORY: %s\r\n\n",        dirname);
+    fileindex +=       "DIRECTORY: "; fileindex += dirname; fileindex += "\n\n";
+    //
+    File root = SPIFFS.open(dirname);
+    if(!root){
+        Serial.println("- failed to open directory");
+        speed_command = "rrr";  // three red very long flashes  
+        return;
+    }
+    if(!root.isDirectory()){
+        Serial.println(" - not a directory");
+        speed_command = "grr";  // one green, two red very long flashes  
+        return;
+    }
+    //
+    File file = root.openNextFile();
+    while(file){
+        if(file.isDirectory()){
+            Serial.print("  DIR : ");
+            fileindex += "  DIR : ";
+            Serial.println(file.name());
+            fileindex +=   file.name(); fileindex += "\n";
+        } else {
+            Serial.print(file.name());
+            fileindex += file.name();
+            Serial.print("\t\t"); 
+            fileindex += "\t\t";
+            Serial.println(file.size());
+            fileindex +=   file.size(); fileindex += "\n";   
+            totalfilesize += file.size();     
+        }
+        file = root.openNextFile();
+    }
+    Serial.print("\nTOTAL SIZE = \t\t"); Serial.println(totalfilesize);
+    fileindex += "\nTOTAL SIZE = \t\t";  fileindex +=   totalfilesize; fileindex += "\n";
+    request->send(200, "text/plain", fileindex);
+    Serial.println("+ send fileindex to client");
+    speed_command = "ggg";  // three green/blue very long flashes  
+  });  
 
   // Serve files in directory "/data/" when request url starts with "/"
   // Request to the root or none existing files will try to server the defualt
@@ -884,7 +1359,9 @@ void setup() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // MAIN LOOP
+////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 void loop() {
@@ -907,7 +1384,7 @@ void loop() {
   }
 
 #ifdef ToneSampling
-  //###### comment out tone sampling, will be needed for FFT tone signal analysis in PiedPiper
+  //###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
   // Calculate FFT if a full sample is available.
   if (samplingIsDone()) {
     // Run FFT on sample data.
@@ -953,10 +1430,16 @@ void loop() {
   // end of main loop
 }
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+// Additional FUNCTIONS
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 #ifdef ToneSampling
 ////////////////////////////////////////////////////////////////////////////////
 // SPECTRUM DISPLAY FUNCTIONS (J Ruppert 2020, built on principles by Tony DiCola, Copyright 2013, MIT License)
-//###### comment out tone sampling, will be needed for FFT tone signal analysis in PiedPiper
+//###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
 ///////////////////////////////////////////////////////////////////////////////
   void toneLoop() {
     ++TONE_LOOP_COUNT;
@@ -1024,7 +1507,7 @@ void loop() {
   ////////////////////////////////////////////////////////////////////////////////
   // SAMPLING FUNCTIONS (by Tony DiCola, Copyright 2013, MIT License)
   ////////////////////////////////////////////////////////////////////////////////
-  // ###### comment out tone sampling, will be needed for FFT tone signal analysis in PiedPiper
+  // ###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
   void samplingCallback() {
     // Read from the ADC and store the sample data
     samples[sampleCounter] = (float32_t)analogRead(AUDIO_INPUT_PIN);
@@ -1111,7 +1594,7 @@ void MorseCodeDecoder() {
   else {
     //evaluate length of last signal
     if (SignalActive) {
-      //Serial.print("##### Monitor false positive SignalActive readings ##### millis() - SignalTimer = ");
+      //Serial.print("##### FOR DEBUGGING: Monitor false positive SignalActive readings ##### millis() - SignalTimer = ");
       //Serial.println(millis() - SignalTimer);
       SignalTimer = millis();
       SignalActive = false;
@@ -1172,9 +1655,9 @@ void MORSE_CODE (const char* command) {
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef ESP32 
 void CLIENT_COMMAND (const char* command) {  //const char * commandstrpointer = command.c_str();
-      const char * str = "=";
 
-      if (strncmp(command, str, 1)==0) { // compare first character
+      const char * str = "=";
+      if (strncmp(command, str, 1)==0) {         // compare first character
         int new_speed_level = atoi(&command[1]); // convert string to integer after first character
         int difference = new_speed_level - speed_level;
         speed_command = "";   
@@ -1203,6 +1686,7 @@ void CLIENT_COMMAND (const char* command) {  //const char * commandstrpointer = 
         Serial.print("GOT WIFI WEB CLIENT COMMAND");
         Serial.print(" | SPEED COMMAND: ");
         Serial.print(speed_command);
+        Serial.print(" | ");
         speed_wait_countdown = 0;    // don't wait but immedeatly (countdown value = 0) start adjusting the motor speed
       }   
   notifyClients();
@@ -1238,7 +1722,7 @@ void adjustSpeed() {
         }
         digitalWrite(redLED, HIGH);
         Serial.print("speed level decreased - | ");
-        delay(300);
+        delay(200);
         break;
       case '+':        //increase speed
         ++speed_level;
@@ -1248,7 +1732,7 @@ void adjustSpeed() {
         }
         digitalWrite(greenLED, HIGH);
         Serial.print("speed level increased + | ");
-        delay(300);
+        delay(200);
         break;
       case '<':        //reverse direction
         speed_direction = !speed_direction;
@@ -1283,7 +1767,19 @@ void adjustSpeed() {
           Serial.println("direction reversed backward <<< | ");
         }
         break;
-      case '?':        //question
+      case 'r': //light red LED
+        digitalWrite(redLED, HIGH);
+        delay (1800);
+        digitalWrite(redLED, LOW);
+        Serial.print("light red LED very long flash | ");
+        break;
+      case 'g': //light green (or blue) LED
+        digitalWrite(greenLED, HIGH);
+        delay (1800);
+        digitalWrite(greenLED, LOW);
+        Serial.print("light green/blue LED very long flash | ");
+        break;
+      case '?': //info
         #ifdef ESP32
           notifyClients();  // Send current speed_level information via Wifi WebSocket to clients, additional early call for updating index.html
         #endif
@@ -1657,7 +2153,7 @@ void monitor_global_variables() {
 #ifdef ToneSampling
 ////////////////////////////////////////////////////////////////////////////////
 // UTILITY FUNCTIONS (by Tony DiCola, Copyright 2013, MIT License)
-//###### comment out tone sampling, will be needed for FFT tone signal analysis in PiedPiper
+//###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
 ////////////////////////////////////////////////////////////////////////////////
   
   // Compute the average magnitude of a target frequency window vs. all other frequencies.
@@ -1740,7 +2236,7 @@ void parserLoop() {
 }
 
 #ifdef ToneSampling
-  //###### comment out tone sampling, will be needed for FFT tone signal analysis in PiedPiper
+  //###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
   // Macro used in parseCommand function to simplify parsing get and set commands for a variable
   #define GET_AND_SET(variableName) \
     else if (strcmp(command, "GET " #variableName) == 0) { \
@@ -1754,7 +2250,7 @@ void parserLoop() {
 void parseCommand(char* command) {
 
 #ifdef ToneSampling
-  //###### comment out tone sampling, will be needed for FFT tone signal analysis in PiedPiper
+  //###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
   if (strcmp(command, "GET MAGNITUDES") == 0) {
     for (int i = 0; i < FFT_SIZE; ++i) {
       Serial.println(magnitudes[i]);
