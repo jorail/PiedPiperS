@@ -141,8 +141,9 @@
   147 2021-04-18 add location.reload() to ini.html, add LED and debugging infor to ini.html
   148 2021-04-18 cleanup, consolidation, fine tuning, amend code comments
   149 2021-04-18 consolidated code version prepared for github branch lok.ini
-  150 2021-04-18 lok.ini branch upload: https://github.com/jorail/PiedPiperS/tree/lok.ini
+  150 2021-04-18 lok.ini branch upload failed
   151 2021-04-18 additional explanation on ini.html, explain .ini save problems due to limited size of ESP32 flash memory
+  152 2021-04-19 lok.ini branch upload: https://github.com/jorail/PiedPiperS/tree/lok.ini
 */
   // ###### ADDITIONAL IDEA for continuing the project #############################################################################
   // define GPIO pin 26 as input for monitoring motor current on a 1 Ohm resistor between ground and motor IC grounding,
@@ -154,7 +155,7 @@
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 151, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-18";
+String SKETCH_INFO = "PiedPiperS.ino, Version 152, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-19";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -1287,7 +1288,7 @@ void setup() {
       response->printf("      console.log('sent iniedit as JSON to Server via WebSocket');  ");  
       response->printf("      console.log('close WebSocket');  ");   
       response->printf("      setTimeout(initWebSocket, 2000);  ");   
-      response->printf("      setTimeout(location.reload(), 2000);  ");   
+      response->printf("      setTimeout(location.reload(), 500);  ");   
       response->printf("    }  ");
       response->printf("  </script>  ");   
       response->printf("</body></html>");  
