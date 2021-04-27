@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>PiedPiperS-Bauteile</title>
+	<title>PiedPiperS-Bauteile 2021-04-27 Version 171</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="icon" href="data:,">
 	<link rel="stylesheet" type="text/css" href="style.css">
@@ -26,20 +26,27 @@
 		</ul>
 		<li><b>Step-up DC/DC-Konverter-Modul</b>, 5&#x202F;V auf 8&#x202F;V bis 16&#x202F;V</li>
 		<li><b>IC mit H-Br&uuml;cke zur Steuerung eines Gleichstrommotors</b>, z.B. TLE5206-2S</li>
-		<li>Kleine <b>USB-Powerbank</b> als 5&#x202F;V&#x202F;DC Stromquelle. Es ist gut, 2 davon zu haben, die 2. als Ersatz, 
-		wenn die 1. leer ist</li>
+		<li>Kleine <b>USB-Powerbank</b> als 5&#x202F;V&#x202F;DC Stromquelle. Es ist gut, 2 davon zu haben, 
+		die 2. als Ersatz, wenn die 1. leer ist. Der WLAN-Betrieb des ESP32 Mikrocontrollers ben&ouml;tigt beim Start 
+		und zeitweise bis zu 600&#x202F;mA Stromversorgung. 5&#x202F;W Leistung aus einer klassischen kleinen 
+		USB-Powerbank (siehe Abbildung) sind f&uuml;r kleinere Lokomotiven und effiziente Gleichstromotoren geeignet. 
+		Bei gro&szlig;en H0-Modellbahnlokomotiven oder bei Modellen mit &auml;lteren Motoren sind diese 
+		meist nicht ausreichend. Eine etwas teurere, kompakte USB-C-Powerbank f&uuml;r die Schnellladung mit 
+		ca.&nbsp;15&#x202F;W Leistung und 2&nbsp;bis&nbsp;3&#x202F;A Stromquelle hat sich f&uuml;r diese Lokomotiven 
+		als ausreichend und im langen Fahrbetrieb als sehr gut geeignet erwiesen.</li>
     </ul>
 	<div><a href="/viewer.html"><img src="/image/001.jpg" alt="Elektronik-Bauteile" style="width:100%"></a></div>
     <ul>
 		<li>TVS-Diode mit 5&#x202F;V-Arbeits&shy;spannung (reverse standoff voltage) zum Schutz des 5&#x202F;V Eingangs des 
 		Mikro&shy;prozessors vor Spannungs&shy;spitzen aus dem Step-up-Konverter</li>
-		<li>1 k&Omega; SMD-Widerstand als k&uuml;nstliche Last nach dem Spannungs&shy;regler</li>
+		<li>1 k&Omega; SMD-Widerstand als k&uuml;nstliche Last nach dem Spannungs&shy;regler,
+		kann nach sehr vorsichtigemen Ausl&ouml;ten eines Widerstands aus dem ESP32 Node MCU DevKit V1 wieder verwendet werden</li>
 		<li>Nutzung von 2 on-board SMD-LEDs durch einl&ouml;ten eines 1,5&#x202F;k&Omega; Widerstands von GPIO&#x202F;4 
 		(alternativ zwei 3 mm LEDs: 1 blau, 1 rot,  plus 2 x 1,5&#x202F;k&Omega; Widerst&auml;nde) </li>
     </ul>
 	<div><a href="/viewer.html"><img src="/image/003.jpg" alt="ESP32-Modifikation" style="width:100%"></a></div>
     <ul>
-		<li>2,7 k&Omega; Widerstand f&uumlr die &Uumlbertragung des Fehlersignals vom Motro-IC </li>
+		<li>2,7 oder 1,0 k&Omega; Widerstand f&uumlr die &Uumlbertragung des Fehlersignals vom Motro-IC </li>
 		<li>USB-Kabel, ggf. alt und gebraucht, aber mit dicken Leitern und zuverl&auml;ssig f&uuml;r die 
 		Strom&shy;verbindung mit geringem Spannungs&shy;verlust</li>
 		<li>2-poliges Kabel, dick, ca. 20&#x202F;cm, 0,25&#x202F;mm<sup>2</sup>, f&uumlr die 
@@ -47,16 +54,35 @@
 		<li>2-poliges Kabel, d&uuml;nn und flexibel, ca. 20&#x202F;cm, f&uuml;r die Verbindung zum Motor </li>
 		<li>Schrumpfschlauch, verschiedene Gr&ouml;&szlig;en, u.a. mit einem Durchmesser, um 2-Pol-IC-Kontakte aufzunehmen</li>
 	</ul>
+	<h2>Messwiderst&auml;nde (optional)</h2>
+	<p>Zur Beobachtung der Motorleistung k&ouml;nnen der effiktive Motorstrom und die Versorgungsspannung an zwei Analogen 
+	   Eing&auml;ngen des Mikrocontrollers w&auml;hrend der Fahrt gemessen werden. Die Messwiderst&auml;nde sollten 
+	   daf&uuml;r eine niedrige Toleranz aufweisen, z.B. Metallschichtwiderst&auml;nde. 
+	   Der 1,00&#x202F;&Omega; Messwiderstand f&uuml;r den Motorstrom muss hinsichtlich 
+	   seiner Leistung (in Watt) an die maximale Stromst&auml;rke (in Ampere) angepasst werden.</p>
+	<ul>
+		<li>1,00&#x202F;&Omega; Messwiderstand, 1&#x202F;% Toleranz, 1&#x202F;W, f&uuml;r &uuml;bliche 
+		H0-Modellbahnlokomotiven mit weniger als 1&#x202F;A maximaler Stromaufnahme</li>
+	</ul>
+	F&uuml;r 1:11 Spannungsteiler
+	<ul>
+		<li>1,00&#x202F;k&Omega; Messwiderstand, 1&#x202F;% Toleranz, 0,5&#x202F;W</li>
+		<li>10,0&#x202F;k&Omega; Messwiderstand, 1&#x202F;% Toleranz, 0,5&#x202F;W</li>
+		<br>
+		<li>2 x 1,0&#x202F;k&Omega; Widerst&auml;nde, 0,25&#x202F;W, zum Schutz der beiden analogen 
+		Messeing&auml;nge des Mikrocontrollers vor Spannungsspitzen aus dem Leistungsteil der Motorsteuerung</li>
+		<li>Schrumpfschlauch, sehr d&uuml;nn, zur teilweisen Isolierung der Anschlussdr&auml;hte der Widerst&auml;nde</li>
+	</ul>
 	
 	<h2>Weitere Materialien</h2>
 	<ul>
-	<li>Modellbahn-Lokomotive mit 12&#x202F;V ... 16&#x202F;V Gleich&shy;strom&shy;motor</li>
-	<li>Flachwagen f&uuml;r die elektronischen Bauteile</li>
-	<li>Eaos Hochbord offener G&uuml;terwagen f&uuml;r USB-Powerbank</li>
-	<li>Etwas wei&szlig;e Pappe f&uuml;r den QR-Code</li>
-	<li>Einfaches und doppelseitiges Klebeband</li>
-	<li>Etwas Klebstoff</li>
-	<li>Ein Haushaltsgummi</li>
+		<li>Modellbahn-Lokomotive mit 10&#x202F;V bis 24&#x202F;V Gleich&shy;strom&shy;motor</li>
+		<li>Flachwagen f&uuml;r die elektronischen Bauteile</li>
+		<li>Eaos Hochbord offener G&uuml;terwagen f&uuml;r USB-Powerbank</li>
+		<li>Etwas wei&szlig;e Pappe f&uuml;r den QR-Code</li>
+		<li>Einfaches und doppelseitiges Klebeband</li>
+		<li>Etwas Klebstoff</li>
+		<li>Ein Haushaltsgummi</li>
 	</ul>
 
 	<h2>Werkzeuge</h2>

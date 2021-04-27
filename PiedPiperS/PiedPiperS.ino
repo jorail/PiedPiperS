@@ -162,13 +162,14 @@
   168 2021-04-26 optimise powerdata display
   169 2021-04-27 optimise /info display
   170 2021-04-27 otimise /info and /monitor display, add buttons to power.html, working and consolidated version
+  171 2021-04-27 enhance descriptions, sketch info, link to license, parts.html, add WLAN station number display, allow 3 stations
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 170, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-27";
+String SKETCH_INFO = "PiedPiperS.ino, Version 171, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-27";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -439,13 +440,13 @@ String currentSignal      = ""; //string to hold what is currently being signall
 #ifdef ESP32 
 
   //initialize ini file variables, path to .ini file and buffer length for .ini file line readings
-  //const size_t pathLen     = 41;   //maximum .ini file path length of 15 characters plus '\0' character  
   String inipath           = "";   //initialize pointer to inipath with maximum path length
   const size_t bufferLen   = 41;   //maximum .ini file line length of 40 characters plus '\0' character
   char buffer[bufferLen];
   char loconame[bufferLen] = {0};
   char ssid[bufferLen]     = {0};
   char password[bufferLen] = {0};
+  int  channel             = 1;    //default WLAN channel
 
 
 //for debugging .ini file reading errors
@@ -517,7 +518,10 @@ void captivePortalTarget(AsyncWebServerRequest *request) {
       response->printf("Es k&ouml;nnen immer nur zwei Nutzer (Clients) gleichzeitig mit dem WLAN-Server Verbindung aufnehmen. </p>"); 
       response->printf("<h2><a href='http://%s/'>Loksteuerung</a> &nbsp;&nbsp; <a href='http://%s/info'>weitere Informationen</a></h2>", WiFi.softAPIP().toString().c_str(), WiFi.softAPIP().toString().c_str());
       response->printf("<div><a href='http://%s/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>", WiFi.softAPIP().toString().c_str());      
-      response->printf("<p>Viel Spa&szlig; beim Ausprobieren, Jo</p>");
+      response->printf("<p>Viel Spa&szlig; beim Ausprobieren, Jo</p><br>");
+      response->printf("<p>Laufender c++/arduino <b><a href='/license.html'>Sketch</a></b> ist: </p>");
+      response->printf("<p>%s</p>", SKETCH_INFO.c_str());
+      response->printf("<p>%i WLAN-Nutzer <br>(Stations connected to Access Point)</p>", WiFi.softAPgetStationNum());
       response->print("</body></html>");
       request->send(response);
 };
@@ -545,7 +549,10 @@ class CaptiveRequestHandler : public AsyncWebHandler {
       response->printf("Es k&ouml;nnen immer nur zwei Nutzer (Clients) gleichzeitig mit dem WLAN-Server Verbindung aufnehmen. </p>"); 
       response->printf("<h2><a href='http://%s/'>Loksteuerung</a> &nbsp;&nbsp; <a href='http://%s/info'>weitere Informationen</a></h2>", WiFi.softAPIP().toString().c_str(), WiFi.softAPIP().toString().c_str());
       response->printf("<div><a href='http://%s/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>", WiFi.softAPIP().toString().c_str());      
-      response->printf("<p>Viel Spa&szlig; beim Ausprobieren, Jo</p>");
+      response->printf("<p>Viel Spa&szlig; beim Ausprobieren, Jo</p><br>");
+      response->printf("<p>Laufender c++/arduino <b><a href='/license.html'>Sketch</a></b> ist: </p>");
+      response->printf("<p>%s</p>", SKETCH_INFO.c_str());
+      response->printf("<p>%i WLAN-Nutzer <br>(Stations connected to Access Point)</p>", WiFi.softAPgetStationNum());
       response->print("</body></html>");
       request->send(response);
     }
@@ -835,9 +842,14 @@ void iniSetup() {
     strncpy (password,password_default,bufferLen);
   }
 
+  //wifi channel from .ini
+  if (ini.getValue("wifi", "channel", buffer, bufferLen)) {channel = atoi(buffer);}
+  else {Serial.print("note: .ino default wifi channel ");}
+  
   Serial.print("loco name: "); Serial.println(loconame);
   Serial.print("ssid: "); Serial.println(ssid);
   Serial.print("password: "); Serial.println(password);
+  Serial.print("channel: "); Serial.println(channel);
 
   //voltage settings, adjustment of default values by reading values from .ini
   if (ini.getValue("voltage", "supply", buffer, bufferLen)) {motor_voltage_supply = atof(buffer);}
@@ -1029,8 +1041,10 @@ void setup() {
   Serial.println(ssid);
   Serial.print("password = ");
   Serial.println(password);
+  Serial.print("WiFi channel = ");
+  Serial.println(channel);
   // Remove the password parameter, if you want the AP (Access Point) to open unprotected
-  WiFi.softAP(ssid, password,1,0,2); //chanel=1, broadcastID=0, max_connections=2 //changed from 1 to two clients in version 083
+  WiFi.softAP(ssid, password, channel, 0, 3); //chanel default=1, broadcastID=0, max_connections=3
   IPAddress IP = WiFi.softAPIP();
   Serial.print("WiFi Access Point IP address: ");
   Serial.println(IP);
@@ -1081,27 +1095,27 @@ void setup() {
       response->printf("<p> </p>"); 
       response->printf("<p><b>MOTORSTEUERUNG</b></p>");
       response->printf("<p>Die Stromversorgung der Lok erfolgt nicht durch die Schiene sondern aus einer mitgef&uuml;hrten Batterie oder USB-Powerbank. ");
-      response->printf("Aus 5&nbsp;Volt Gleichspannung wird in einem Step-up-Konverter eine Gleichspannung von etwa %.1f&nbsp;Volt erzeugt.</p>", motor_voltage_supply);      
+      response->printf("Aus 5&#x202F;Volt Gleichspannung wird in einem Step-up-Konverter eine Gleichspannung von etwa %.1f&nbsp;Volt erzeugt.</p>", motor_voltage_supply);      
       response->printf("<p>Eine Puls&shy;weiten&shy;modulierung (PWM) im ESP32-Mikro&shy;controller mit %i Geschwindig&shy;keits&shy;stufen dient zur Steuerung der Lok. ",max_speed_level); 
       response->printf("Dabei wird das PWM-Signal in einem integrierten Schaltkreis (IC) mit einer H-Br&uuml;cke verst&auml;rkt, um den Gleich&shy;strom&shy;motor per PWM zu regeln. ");
-      response->printf("Die erste Geschwindig&shy;keits&shy;stufe entspricht einer PWM von %.0f&nbsp;%%. </p>", ((static_cast<float>(1)/max_speed_level) * (1 - speedoffset) + speedoffset)*100); 
+      response->printf("Die erste Geschwindig&shy;keits&shy;stufe entspricht einer PWM von %.0f&#x202F;%%. </p>", ((static_cast<float>(1)/max_speed_level) * (1 - speedoffset) + speedoffset)*100); 
       
       if(speed_level>0){
-        response->printf("<p>PWM derzeit <b>%.0f&nbsp;%% bei Geschwindig&shy;keits&shy;stufe %i</b>. ", ((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)*100, speed_level); 
+        response->printf("<p>PWM derzeit <b>%.0f&#x202F;%% bei Geschwindig&shy;keits&shy;stufe %i</b>. ", ((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)*100, speed_level); 
         
         if(MotorVoltageAverage < 3000) { //in case of no voltage analog input reading
-          response->printf("Das entspricht einem elektrischen Strom durch den Lokmotor, der bei etwa %.1f&nbsp;Volt ohne PWM-Regelung flie&szlig;en w&uuml;rde.</p>",((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)* motor_voltage_supply);  
+          response->printf("Das entspricht einem elektrischen Strom durch den Lokmotor, der bei etwa %.1f&#x202F;Volt ohne PWM-Regelung flie&szlig;en w&uuml;rde.</p>",((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)* motor_voltage_supply);  
         }
         else {
-          response->printf("Das entspricht einem elektrischen Strom durch den Lokmotor, der bei etwa %.1f&nbsp;Volt ohne PWM-Regelung flie&szlig;en w&uuml;rde.</p>",((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)* MotorVoltageAverage/1000);
-          response->printf("<p>Die Messung der <b>Spannungsversorgung</b> vor der Pulsweitenmodulation mit einem Analog-Digital-Wandler (ADC) im Mikrocontroller ergibt derzeit <b>%.1f&nbsp;Volt</b>. ", (static_cast<float>(MotorVoltageAverage/1000))); 
-          response->printf("Der effektive elektrische Strom wird durch die Pulsweitenmodulation im Motor-IC geregelt. Er wird w&auml;hrend der Fahrt &uuml;ber den Spannungsabfall an einem 1&nbsp;&Omega; Messwiderstand vor dem Motor-IC gemessen. ");
-          response->printf("Derzeit flie&szlig;en <b>%i&nbsp;mA effektiver elektrischer Strom</b> (True&nbsp;RMS). ", MotorCurrentAverage);   
-          response->printf("Der Motor nimmt dadurch ca. <a href='/power.html'><b>%.1f&nbsp;Watt elektrische Leistung</b></a> auf.</p>", MotorPower);           
+          response->printf("Das entspricht einem elektrischen Strom durch den Lokmotor, der bei etwa %.1f&#x202F;Volt ohne PWM-Regelung flie&szlig;en w&uuml;rde.</p>",((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)* MotorVoltageAverage/1000);
+          response->printf("<p>Die Messung der <b>Spannungsversorgung</b> vor der Pulsweitenmodulation mit einem Analog-Digital-Wandler (ADC) im Mikrocontroller ergibt derzeit <b>%.1f&#x202F;Volt</b>. ", (static_cast<float>(MotorVoltageAverage/1000))); 
+          response->printf("Der effektive elektrische Strom wird durch die Pulsweitenmodulation im Motor-IC geregelt. Er wird w&auml;hrend der Fahrt &uuml;ber den Spannungsabfall an einem 1&#x202F;&Omega; Messwiderstand vor dem Motor-IC gemessen. ");
+          response->printf("Derzeit flie&szlig;en<b> %i&#x202F;mA effektiver elektrischer Strom</b> (True&nbsp;RMS). ", MotorCurrentAverage);   
+          response->printf("Der Motor nimmt dadurch ca. <a href='/power.html'><b>%.1f&#x202F;Watt elektrische Leistung</b></a> auf.</p>", MotorPower);           
         }      
       }
       else {
-        response->printf("<p>PWM derzeit <b>0&nbsp;%% bei Geschwindigkeitsstufe 0</b>. "); 
+        response->printf("<p>PWM derzeit <b>0&#x202F;%% bei Geschwindigkeitsstufe 0</b>. "); 
         response->printf("Es flie&szlig;t kein Strom durch den Lokmotor.</p>");  
       }
       response->printf("<br>");   
@@ -1178,9 +1192,9 @@ void setup() {
       response->print("table, tr {vertical-align: top; padding: 1%; border-collapse: collapse; border-bottom: 2pt solid #ddd;} tr:last-child { border-bottom: none; }");
       response->print("th, td {font-size: 0.8rem; text-align: left; padding: 1%; } h1 {font-size: 1.8rem;} h2 {font-size: 1.2rem;}</style></head><body>");
       response->printf("<h1>Programmvariablen</h1>");
-      response->printf("<p>Laufender arduino/c++ <b>SKETCH</b> ist: </p>");
+      response->printf("<p>Laufender c++/arduino <b><a href='/license.html'>Sketch</a></b> ist: </p>");
       response->printf("<p>%s</p>", SKETCH_INFO.c_str());
-      //response->printf("<p>WLAN-Nutzer (Stations connected to Access Point):%s</p>", WiFi.softAPgetStationNum()); //causes some problems with ESP32 power management
+      response->printf("<p>%i WLAN-Nutzer (Stations connected to Access Point)</p>", WiFi.softAPgetStationNum());
       response->printf("<p> </p>"); 
       response->printf("<table style=\"width:100%%\">");    
       response->printf("<tr><th>Hauptprogramm</th></tr>"); 
@@ -1503,8 +1517,8 @@ void loop() {
   if (LOOP_COUNT % MONITOR_FREQ == 0) {
 
     #if defined(ESP32) && defined(TLE5206) //motor IC TLE5206 offers a comprehensive error flag output
-      if (!digitalRead(error_motoric)) { //TLE5206 error indicated if error_motoric = LOW
-        motor_set(0);                   // emergency break
+      if (!digitalRead(error_motoric)) {   //TLE5206 error indicated if error_motoric = LOW
+        motor_set(0);                      //emergency break
         speed_level = 0;
         motor_ok =0;
         IndicateMotorError();
