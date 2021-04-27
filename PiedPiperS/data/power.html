@@ -1,0 +1,304 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>ESP32 WebServer WebSocket JSON 2021-04-27 Version 170</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8"/>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" type="text/css" href="control.css">
+  <style> h3 {margin: 0 0 0 0;} div {margin: 0 1% 0 1%;} 
+  table {vertical-align: top; padding: 2%; border-collapse: collapse;} tr {border-bottom: 2pt solid #ddd;} 
+  tr:last-child { border-bottom: none; } td {padding-left: 2%;} </style>
+  <script charset="utf-8" src="/chart.min.js"></script>
+</head>
+<body onload="loadChart();">
+    <h3>Leistungsaufnahme des Lokmotors</h3>
+	<p style= "margin: 0 0 0 0;" > <span id="StatusText">%STATE%</span> &nbsp; </p>
+	<p style= "margin: 0 0 0 0; text-align: left;" > &nbsp; &nbsp; &nbsp; <span id="SpeedText">%SPEED%</span> &nbsp; </p>
+	<div><input type="range" onchange="GetPWMSliderValue(this)" id="pwmSlider" min="0" max="32" value="%SLIDERVALUE%" step="1" class="slider"></div>
+    <div class="container">
+		  <canvas id="PowerChart" width="92%" height="100"></canvas> 
+    </div><br>
+	<table style= "width: 96%; text-align: left; font-size: 1.0rem; margin: 0 2% 0 2%;" >
+	<tr><td>letzter Fahrbefehl</td>      <td><span id="LastCommand" >%COMMAND%</span></td><td>&nbsp;</td></tr>
+	<tr><td>Geschwindigkeitsstufe</td>   <td><span id="SpeedValue"  >%SpeedValue%</span></td>   <td>von 32</td></tr>
+	<tr><td>Pulsweite (PWM)</td>         <td><span id="PWMValue"    >%PWMValue%</span></td>     <td>%</td></tr>
+	<tr><td>Versorgungsspannung</td>     <td><span id="VoltageValue">%VoltageValue%</span></td> <td>V</td></tr>
+	<tr><td>effektiver Motorstrom (T-RMS)</td><td><span id="CurrentValue">%CurrentValue%</span></td> <td>mA</td></tr>
+	<tr><td><b>Leistungsaufnahme</b></td><td><span id="PowerValue" style="font-weight:bold;">%PowerValue%</span></td><td><b>W</b></td></tr>
+	</table>
+	<br>
+	<div><button id="minus4" class="button red4">- - - -</button>    <button id="minus1" class="button red1">-</button>    <button id="plus1" class="button blue1">+</button>    <button id="plus4" class="button blue4">++++</button></div>
+	<div><button id="reverse" class="button orange">< ></button>   <button id="halt" class="button redlong">Halten</button>   <button id="stop" class="button darkred">Stopp!</button></div> 
+	<br>
+	<div><a href="/"><img src="/lok" alt="Loksteuerung" style="width:95%"></a></div>
+<script>
+    // PowerChart initialisation, formatting, data collection from JSON and handling, intervall updating
+	var speedArray = [];
+	var pwmArray = [];
+	var voltageArray = [];
+	var currentArray = [];
+	var powerArray = [];
+	var labelsArray = [];
+	var N = 60;
+	for (i = 0; i < N; i++) {
+	  speedArray.push(0);
+	  pwmArray.push(0);
+	  voltageArray.push(0);
+	  currentArray.push(0);
+	  powerArray.push(0);
+	  labelsArray.push(i-N);
+	}
+	
+	//display PowerChart
+	Chart.defaults.color = "rgba(0, 0, 0, 1)"; //black text color
+	Chart.defaults.font.size = 14;
+	var ctx = document.getElementById('PowerChart').getContext('2d');
+	var PowerChart = new Chart(ctx, {
+		type: 'line',
+		data: {
+		  labels: labelsArray,  //x-axis is defined as 'category' axis not as linear value axis, this allows for a simplified single dimension array in the data structure, ok for indicating 60 seconds
+		  datasets: [{
+			label: 'Geschwindigkeitsstufe (*100 %)        ',
+			data: speedArray,    //single dimension array in the data structure
+			backgroundColor: "rgba(255, 165, 0, 0.5)", 
+			borderColor: "rgba(255, 165, 0, 1)",  //yellow
+	      }, {
+		    label: 'Pulsweite (*100 %)   ',
+			data: pwmArray, 
+			backgroundColor: "rgba(0, 165, 255, 0.5)",	
+			borderColor: "rgba(0, 165, 255, 1)",    //light blue
+		  }, {
+			label: 'Spannung (*10 V) ',
+			data: voltageArray, 
+			backgroundColor: "rgba(0, 0, 255, 0.5)",	
+			borderColor: "rgba(0, 0, 255, 1)",    //dark blue
+		  }, {
+			label: 'eff. Motorstrom (A)   ',
+			data: currentArray, 
+			backgroundColor: "rgba(255, 0, 0, 0.5)",	
+			borderColor: "rgba(255, 0, 0, 1)",    //red				
+		  }, {
+			label: 'Leistungsaufnahme (W)',
+			data: powerArray,
+			backgroundColor: "rgba(60, 179, 113, 0.5)",	
+			borderColor: "rgba(60, 179, 113, 1)", //green			
+		  }]
+		},
+		options: {
+			animation: false,
+			scales: {
+				x: {
+					type: 'linear',
+					suggestedMin: -60,
+					suggestedMax: 0,
+					count: 6,              //6 ticks for devision of x-axis
+					ticks: {
+						//fontColor: "rgba(0, 0, 0, 1)", //black
+					},
+					title: {
+						display: true,
+						text: 'Sekunden',  //axis title
+						//fontColor: "rgba(0, 0, 0, 1)", //black
+					},
+				},
+				y: {
+					suggestedMin: 0,
+					suggestedMax: 2,      //will scale to data maximum, if > suggestedMax
+					ticks: {
+						stepSize: 1
+						//fontColor: "rgba(0, 0, 0, 1)", //black
+					},
+				},
+
+			},
+			elements: {
+				line: {
+					tension: 0, // disables bezier curves
+				},
+				point: {
+					radius: 2,  // decrease point size from default = 3 
+				},
+			},
+			plugins: {
+				legend: {
+					position: 'bottom', //place legend below PowerChart
+					align: 'start',     //place legend elements bount to the left
+					labels: {
+						boxWidth: 20, 
+					},
+				},
+			},
+		},
+	});
+	
+	var myVar = setInterval(loadChart, 1000); //update chart every 1000 milliseconds
+
+	function loadChart() { //fetches json data & calls dspChart() to render graph  {"speed":31,"currentspeed":167,"power":1.6711}
+	  var motorData, speed, pwm, voltage, current, power;
+	  var requestURL = '/powerdata'; //URL of the JSON data
+	  var request = new XMLHttpRequest({
+		mozSystem: true
+	  }); // create http request
+	  request.onreadystatechange = function() {
+		if (request.readyState == 4 && request.status == 200) {
+		  //console.log(request.responseText);
+		  motorData = JSON.parse(request.responseText); //parse JSON string to motorData object
+		  console.log(motorData);
+		  /*oritinal JSON motor /powerdata definition in PiedPiperS v162
+			json["speed"]   = speed_level;         //0 to 32
+			json["pwm"]     = ((float(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)*100 ; //in % 
+			json["voltage"] = MotorVoltageAverage; //in mV
+			json["current"] = MotorCurrentAverage; //in mA
+			json["power"]   = MotorPower;          //in W
+		  */
+		  //retrive and scale new data elements from motorData object		  
+		  speed = motorData.speed/32;        // 0 to full speed, range 0 to 1
+		  pwm = motorData.pwm/100;           // 0 to full pulse width, range 0 to 1
+		  voltage = motorData.voltage/10000; // 0 to measured_voltage in mV, diveded by 10000, range 0 to 1.6 (*10 V)
+		  current = motorData.current/1000;  // A (Ampere) instead of mA, range 0 to 0.5
+		  power = motorData.power;           // W (Watt), unchanged, range 0 to 5 (10)
+		  //updating data for PowerChart
+		  speedArray.shift();
+		  speedArray.push(speed);
+		  pwmArray.shift();
+		  pwmArray.push(pwm);
+		  voltageArray.shift();
+		  voltageArray.push(voltage);
+		  currentArray.shift();
+		  currentArray.push(current);
+		  powerArray.shift();
+		  powerArray.push(power);
+		  PowerChart.update(); //update PowerChart with new data
+		  
+		  //update value display in text
+		  document.getElementById('SpeedValue').innerHTML   = speed*32;                           // 0 to 32
+		  document.getElementById('PWMValue').innerHTML     = Math.round(pwm*100);                // in % 
+		  document.getElementById('VoltageValue').innerHTML = Math.round(voltage*10*10)/10;       // in V,  precision 1 
+		  document.getElementById('CurrentValue').innerHTML = Math.round(current*1000*1000)/1000; // in mA, precision 3 
+		  document.getElementById('PowerValue').innerHTML   = Math.round(power*100)/100;          // in W,  precision 2 
+		}
+	  }
+	  request.open('GET', requestURL);
+	  request.send(); // send the request
+	}
+	//based on concept in https://stackoverflow.com/questions/51556002/live-update-the-charts-js-graph-on-a-web-page-using-json-data-received-from-a-re
+	//https://blog.heimetli.ch/chart-js-update.html
+	/*
+	   options: {
+		  responsive: true,
+		  legend: {
+			 display: false
+		  },
+		  tooltips: {
+			 mode: "index",
+			 intersect: false,
+		  },
+		  hover: {
+			 mode: "nearest",
+			 intersect: true
+		  },
+	*/
+	//https://gist.github.com/skhisma/5689383#file-live-update-chartjs-html
+	//https://canvasjs.com/javascript-charts/dynamic-spline-chart/
+	
+</script>
+
+<script>
+// index.html functionality for variable text updates via notify_clients()
+  var gateway = `ws://${window.location.hostname}/ws`;
+  var websocket;
+  window.addEventListener('load', onLoad);
+  function onLoad(event) {
+    initWebSocket();
+    initButton();
+  }
+  
+  function initWebSocket() {
+    console.log('Trying to open a WebSocket connection...');
+    websocket = new WebSocket(gateway);
+    websocket.onopen    = onOpen;
+    websocket.onclose   = onClose;
+    websocket.onmessage = onMessage; // <-- add this line
+  }
+  function onOpen(event) {
+    console.log('Connection opened');
+  }
+  function onClose(event) {
+    console.log('Connection closed');
+    setTimeout(initWebSocket, 2000);
+  }
+  function onMessage(event) {
+    console.log('');
+	console.log(`Received a WebSocket notification from ${event.origin}`);
+    console.log(event);
+	console.log(event.data);
+	var text = JSON.parse(event.data);
+	document.getElementById('StatusText').innerHTML = text.status;
+	document.getElementById('SpeedText').innerHTML = text.speed;
+	document.getElementById('LastCommand').innerHTML = text.command; // <-- adjust this line to text.command;
+	console.log('');
+  }
+  function initButton() {
+	document.getElementById('minus4').addEventListener('click', minus4e);
+	document.getElementById('minus1').addEventListener('click', minus1e);
+	document.getElementById('plus1').addEventListener('click', plus1e);
+	document.getElementById('plus4').addEventListener('click', plus4e);
+	document.getElementById('reverse').addEventListener('click', reversee);
+	document.getElementById('halt').addEventListener('click', halte);
+	document.getElementById('stop').addEventListener('click', stope);
+  }
+  function minus4e(){
+    websocket.send('--------');
+	console.log('WebSocket command sent --------');
+	//document.getElementById('LastCommand').innerHTML = 'sent: toggle';
+	delay(1000);
+  }
+  function minus1e(){
+    websocket.send('--');
+	console.log('WebSocket command sent --');
+	//document.getElementById('LastCommand').innerHTML = 'sent: -';
+	delay(1000);
+  }
+  function plus1e(){
+    websocket.send('++');
+	console.log('WebSocket command sent ++');
+	//document.getElementById('LastCommand').innerHTML = 'sent: +';
+	delay(1000);
+  }
+  function plus4e(){
+    websocket.send('++++++++');
+	console.log('WebSocket command sent ++++++++');
+	//document.getElementById('LastCommand').innerHTML = 'sent ++++';
+   delay(1000);
+  }
+  function reversee(){
+    websocket.send('0<');
+	console.log('WebSocket command sent 0<');
+	//document.getElementById('LastCommand').innerHTML = 'sent 0<';
+	delay(1000);
+  }
+  function halte(){
+    websocket.send('--------------------------------');
+	console.log('WebSocket command sent --------------------------------');
+	//document.getElementById('LastCommand').innerHTML = 'sent ----------------';
+	delay(1000);
+  }
+  function stope(){
+    websocket.send('00');
+	console.log('WebSocket command sent 00');
+	//document.getElementById('LastCommand').innerHTML = 'sent 00';
+	delay(1000);
+  }
+  function GetPWMSliderValue(element) {
+    var sliderValue = document.getElementById("pwmSlider").value;
+    websocket.send("="+sliderValue); 
+    console.log('WebSocket command sent sliderValue ='+sliderValue);
+    //document.getElementById('LastCommand').innerHTML = 'sent sliderValue = '+sliderValue;
+    delay(1000);
+  }
+//	function UpdateStatusLines(statustxt,speedtxt,speedleveltxt) {
+//	  document.getElementById("StatusText").innerHTML = statustxt;
+//  }
+</script>
+</body>
+</html>

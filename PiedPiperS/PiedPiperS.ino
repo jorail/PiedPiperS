@@ -143,19 +143,32 @@
   149 2021-04-18 consolidated code version prepared for github branch lok.ini
   150 2021-04-18 lok.ini branch upload failed
   151 2021-04-18 additional explanation on ini.html, explain .ini save problems due to limited size of ESP32 flash memory
-  152 2021-04-19 lok.ini branch upload: https://github.com/jorail/PiedPiperS/tree/lok.ini
+  152 2021-04-19 lok.ini branch successful upload: https://github.com/jorail/PiedPiperS/tree/lok.ini
+  153 2021-04-19 editorial change for additional idea: GPIO pin 35 instead of 26 (26 is not working when wifi in use!)
+  154 2021-04-19 amend description for motor error ic input on GPIO pin 25 (25 can stay for digital input)
+  155 2021-04-20 add analog input for motor current observation at GPIO pin 35 = ADC1_CH7
+  156 2221-04-21 motor current sampling and monitoring in notify_client()
+  157 2021-04-24 motor power data transfered as JSON response to get request from smartphone
+  158 2021-04-25 add motor voltage reading and transmission in JSON
+  159 2021-04-25 add implement motor voltage reading 
+  160 2021-04-25 bakcup
+  161 2021-04-25 test motor voltage reading
+  162 2021-04-25 parametrisation of voltage analog input readings, including 1/11 kOhm voltage split, to mV 
+  163 2021-04-25 debugging mV output, MotorVoltageArray.sum() integer overflow, solved by devision by 10
+  164 2021-04-26 complete version including mV output to /powerdata
+  165 2021-04-26 complete, running
+  166 2021-04-26 add PWM data to /powerdata JSON message
+  167 2021-04-26 optimise PWM data, 0 at speed_level 0
+  168 2021-04-26 optimise powerdata display
+  169 2021-04-27 optimise /info display
+  170 2021-04-27 otimise /info and /monitor display, add buttons to power.html, working and consolidated version
 */
-  // ###### ADDITIONAL IDEA for continuing the project #############################################################################
-  // define GPIO pin 26 as input for monitoring motor current on a 1 Ohm resistor between ground and motor IC grounding,
-  // display and moinitor its voltage of approximatly up to 1 V, which is proportional to motor current as number on control panel 
-  // and its change over time recorded in a buffer and displayed in an extra website, which also allows for speed adjustments, 
-  // so that their effect can be monitored online. Let me know if you like to go for it together: jorail [at] gmx.de  
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 152, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-19";
+String SKETCH_INFO = "PiedPiperS.ino, Version 170, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-27";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -168,6 +181,9 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 152, GNU General Public License Ve
                        //https://github.com/jorail/PiedPiper
                        //it has not been thoroughly tested in combination with PiedPiperS, version 60 through version 148 and later
                        //https://github.com/jorail/PiedPiperS
+#define  MotorPowerSampling  //motor power sampling 
+                       //motor voltage sampling on GBIO pin 34, ADC1_Ch6, up to ca. 1.5 V on 1 kOhm resistor in 11 kOhm resistor, i.e. ca. 0 to 1.5 Vdc 
+                       //motor current sampling on GBIO pin 35, ADC1_Ch7, up to ca. 0.5 A on 1 Ohm resistor, i.e. ca. 0 to 0.5 Vdc 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Select libraries
@@ -206,6 +222,10 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 152, GNU General Public License Ve
   //#include <wavelib.h>
 #endif
 
+#ifdef MotorPowerSampling
+  #include <valarray>
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // Microprocessor and Development Board Pin-out definition
 ////////////////////////////////////////////////////////////////////////////////
@@ -221,7 +241,9 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 152, GNU General Public License Ve
   int motor2        = 32;          // D32 digital output to motor H-bridge ic input 2 setting motor direction4
   int motor1        = 33;          // D33 digital output to motor H-bridge ic input 1 setting motor direction
   int motor_enable  = 25;          // D32 PWM output to motor H-bridge ic enable setting motor speed
-  int error_motoric = 25;          // motor H-bridge ic error flag, for TLE5206 on pin 25 must be defined as input, alternatively: D12 
+  int error_motoric = 25;          // motor H-bridge ic error flag, for TLE5206 on ESP32 GPIO pin 25 must be defined as input and with internal pullup-resistor, alternatively: D12 
+  int motor_voltage = 34;          // ADC1_CH6 analog input for monitoring motor voltage
+  int motor_current = 35;          // ADC1_CH7 analog input for monitoring motor current
 
   #define LEDC_TIMER_BITS   8            // PWM properties, use 8 bit precission for LEDC timer with 256 levels
   #define LEDC_BASE_FREQ    5000         // PWM properties, use 5000 Hz as a LEDC base frequency
@@ -231,7 +253,7 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 152, GNU General Public License Ve
 
   int AUDIO_INPUT_PIN = 14;        // Input D14 = ADC16 pin for audio signal.
   int LIGHT_INPUT_PIN = 27;        // Input D27 = ADC17 pin for light signal.
-  int ANALOG_READ_RESOLUTION = 10; // Bits of resolution for the ADC.
+  int ANALOG_READ_RESOLUTION = 12; // Bits of resolution for the ADC. Increased to 12 bit for motro current monitoring 1 Ohm resistor and ca. 0 to 0.5 Vdc on ADC1_CH7
   int ANALOG_READ_AVERAGING = 8;   // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
 
 
@@ -257,7 +279,7 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 152, GNU General Public License Ve
 ////////////////////////////////////////////////////////////////////////////////
 
 // mainloop and monitoring
-const int MONITOR_FREQ =   10;                      // Frequency of monitoring switch Morse signal input (ca. 10 Hz or 0.1 second, defined by division of main LOOP COUNT)
+const int MONITOR_FREQ =   10;                      // Frequency of monitoring switch Morse signal input (ca. 10 Hz or 0.1 second, defined by division of main LOOP COUNT), and MotorCurrent readings
 const int FLASH_FREQ   =   2*5059;                  // Frequency for power LED flashes while void loop running (ca. 1 to 2 seconds, defined by value for main LOOP_COUNT), default 18815 on ESP32 without WebServer, 5059 on ESP with WebServer v106
 const int FLASH_FREQ_DARK = int(FLASH_FREQ * 0.99); // flash frequency period with unlit power LED, use number close to 1.00, when redLED is used as alternative powerLEDdefault 0.99
 
@@ -273,6 +295,19 @@ const char *meaning[morsecode_size]   = {"decrease speed", "slow down", "break t
 //use fast brake to immediatly stop the motor by command charcter '0',
 //'<'   stands for reverse of direction, which can only be done after a safe full halt, thus multiple leading '0' characters are introduced in front for train inertia
 const int MAX_CHARS      = 65;   // Max size of the input command buffer
+
+#ifdef MotorPowerSampling
+  const int MotorPowerSampleNumber = 50;
+  std::valarray<int> MotorVoltageArray(MotorPowerSampleNumber);
+  const float MotorVoltageOffset = 1514.1; //linear parametrisation of stepup converter output voltage in mV with 1/11 kOhm voltage split, y = 8.8878 x + 1514.1. x= anolg reading@pin34, y= multimeter voltage in mV@stepup converter output   2021-04-25
+  const float MotorVoltageSlope  = 8.8878; //linear parametrisation of stepup converter output voltage in mV from measurments 2021-04-25
+  int MotorVoltageAverage = 0;  // in volts (V)
+  std::valarray<int> MotorCurrentArray(MotorPowerSampleNumber);
+  const float MotorCurrentOffset = 133; //153     128;         //linear parametrisation of motor current readings from measurments 2021-04-23
+  const float MotorCurrentSlope  = 0.91; //0.8     1.2;        //linear parametrisation of motor current readings from measurments 2021-04-23
+  int MotorCurrentAverage = 0;  // in milliamperes (mA)
+  float MotorPower = 0; // in Watt (W)
+#endif
 
 #ifdef ToneSampling
 ////////////////////////////////////////////////////////////////////////////////
@@ -684,12 +719,12 @@ void notifyClients() {
   StaticJsonDocument<size> json;
   String TextStatus ="";
   if (speed_direction) {
-    TextStatus="Vorwärts ";
+    TextStatus="Vorwärts &nbsp;";
   }
   else {
-    TextStatus="Rückwärts ";
+    TextStatus="Rückwärts &nbsp;";
   }
-  TextStatus = TextStatus + String(speed_level*5)+" km/h";
+  TextStatus = TextStatus + String(speed_level*5)+" km/h &nbsp;" + String(MotorPower, 1) + " Watt";
   json["status"] = TextStatus;
   Serial.print(" speed_level: ");
   Serial.print(speed_level);
@@ -922,15 +957,10 @@ void setup() {
   // Set up ADC and audio input.
   pinMode(AUDIO_INPUT_PIN, INPUT);
   pinMode(LIGHT_INPUT_PIN, INPUT);
+  pinMode(motor_current, INPUT);
   analogReadResolution(ANALOG_READ_RESOLUTION); 
   //analogReadAveraging(ANALOG_READ_AVERAGING);  //#####TODO test if adjustment to ESP analog input reading commands is functioning
   //analogSetCycles(ANALOG_READ_AVERAGING);      //#####TODO test if adjustment to ESP analog input reading commands is functioning
-
-  // ###### ADDITIONAL IDEA for continuing the project #############################################################################
-  // define GPIO pin 26 as input for monitoring motor current on a 1 Ohm resistor between ground and motor IC grounding,
-  // display and moinitor its voltage of approximatly up to 1 V, which is proportional to motor current as number on control panel 
-  // and its change over time recorded in a buffer and displayed in an extra website, which also allows for speed adjustments, 
-  // so that their effect can be monitored online   
 
 #else  //mP not definied, defualt for Teensy 4.0
   // Set up serial port.
@@ -955,7 +985,7 @@ void setup() {
 #if defined(ESP32) && defined(TLE5206) //motor IC, TLE5206 is using only 2 input signals but offers an error flag output
   pinMode(motor1, OUTPUT);
   pinMode(motor2, OUTPUT);
-  pinMode(error_motoric, INPUT_PULLUP); //use internal 45 kOhm pullup resistor
+  pinMode(error_motoric, INPUT_PULLUP); //use internal 45 kOhm pullup resistor, TLE5206 error flag = 0, ok = 1
   // configure ESP32 LEDC PWM functionalitites for TLE5206
   ledcSetup(pwmChannel1, LEDC_BASE_FREQ, LEDC_TIMER_BITS);
   ledcAttachPin(motor1, pwmChannel1); // attach the channel to the GPIO to be controlled
@@ -963,7 +993,7 @@ void setup() {
   ledcAttachPin(motor2, pwmChannel2); // attach the channel to the GPIO to be controlled
 
 #elif defined(ESP32)&& !defined(TLE5206)  //motorIC not defined, default L293D, using motor_enable for PWM signal
-  //pinMode(error_motoric, INPUT);
+  //pinMode(error_motoric, INPUT);  //no error flab available on L293D motorIC
   pinMode(motor1, OUTPUT);
   pinMode(motor2, OUTPUT);
   pinMode(motor_enable, OUTPUT);
@@ -1051,21 +1081,30 @@ void setup() {
       response->printf("<p> </p>"); 
       response->printf("<p><b>MOTORSTEUERUNG</b></p>");
       response->printf("<p>Die Stromversorgung der Lok erfolgt nicht durch die Schiene sondern aus einer mitgef&uuml;hrten Batterie oder USB-Powerbank. ");
-      response->printf("Aus 5 Volt Gleichspannung wird in einem Step-up-Konverter eine Gleichspannung von etwa %.1f Volt erzeugt.</p>", motor_voltage_supply);      
+      response->printf("Aus 5&nbsp;Volt Gleichspannung wird in einem Step-up-Konverter eine Gleichspannung von etwa %.1f&nbsp;Volt erzeugt.</p>", motor_voltage_supply);      
       response->printf("<p>Eine Puls&shy;weiten&shy;modulierung (PWM) im ESP32-Mikro&shy;controller mit %i Geschwindig&shy;keits&shy;stufen dient zur Steuerung der Lok. ",max_speed_level); 
       response->printf("Dabei wird das PWM-Signal in einem integrierten Schaltkreis (IC) mit einer H-Br&uuml;cke verst&auml;rkt, um den Gleich&shy;strom&shy;motor per PWM zu regeln. ");
-      response->printf("Die erste Geschwindig&shy;keits&shy;stufe entspricht einer PWM von %.0f %%. </p>", ((static_cast<float>(1)/max_speed_level) * (1 - speedoffset) + speedoffset)*100); 
+      response->printf("Die erste Geschwindig&shy;keits&shy;stufe entspricht einer PWM von %.0f&nbsp;%%. </p>", ((static_cast<float>(1)/max_speed_level) * (1 - speedoffset) + speedoffset)*100); 
       
       if(speed_level>0){
-        response->printf("<p>PWM derzeit <b>%.0f %% bei Geschwindig&shy;keits&shy;stufe %i</b>. ", ((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)*100, speed_level); 
-        response->printf("Das entspricht einem elektrischen Strom durch den Lokmotor, der bei etwa %.1f Volt flie&szlig;en w&uuml;rde.</p>",((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)* motor_voltage_supply);  
+        response->printf("<p>PWM derzeit <b>%.0f&nbsp;%% bei Geschwindig&shy;keits&shy;stufe %i</b>. ", ((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)*100, speed_level); 
+        
+        if(MotorVoltageAverage < 3000) { //in case of no voltage analog input reading
+          response->printf("Das entspricht einem elektrischen Strom durch den Lokmotor, der bei etwa %.1f&nbsp;Volt ohne PWM-Regelung flie&szlig;en w&uuml;rde.</p>",((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)* motor_voltage_supply);  
+        }
+        else {
+          response->printf("Das entspricht einem elektrischen Strom durch den Lokmotor, der bei etwa %.1f&nbsp;Volt ohne PWM-Regelung flie&szlig;en w&uuml;rde.</p>",((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)* MotorVoltageAverage/1000);
+          response->printf("<p>Die Messung der <b>Spannungsversorgung</b> vor der Pulsweitenmodulation mit einem Analog-Digital-Wandler (ADC) im Mikrocontroller ergibt derzeit <b>%.1f&nbsp;Volt</b>. ", (static_cast<float>(MotorVoltageAverage/1000))); 
+          response->printf("Der effektive elektrische Strom wird durch die Pulsweitenmodulation im Motor-IC geregelt. Er wird w&auml;hrend der Fahrt &uuml;ber den Spannungsabfall an einem 1&nbsp;&Omega; Messwiderstand vor dem Motor-IC gemessen. ");
+          response->printf("Derzeit flie&szlig;en <b>%i&nbsp;mA effektiver elektrischer Strom</b> (True&nbsp;RMS). ", MotorCurrentAverage);   
+          response->printf("Der Motor nimmt dadurch ca. <a href='/power.html'><b>%.1f&nbsp;Watt elektrische Leistung</b></a> auf.</p>", MotorPower);           
+        }      
       }
       else {
-        response->printf("<p>PWM derzeit <b>0 %% bei Geschwindigkeitsstufe 0</b>. "); 
+        response->printf("<p>PWM derzeit <b>0&nbsp;%% bei Geschwindigkeitsstufe 0</b>. "); 
         response->printf("Es flie&szlig;t kein Strom durch den Lokmotor.</p>");  
       }
-      response->printf("<p>&nbsp;</p>");   
-      response->printf("<p> </p>");   
+      response->printf("<br>");   
       response->printf("<table style=\"width:100%%\">");
       response->printf("<tr><th>STEU&shy;ER&shy;UNG</th><th>BE&shy;SCHLEU&shy;NIGUNG</th><th>BEDEUTUNG</th></tr>");  
       response->printf("<tr><td>Schiebe&shy;regler</td>  <td> +/- x Stufen</td>  <td>auf neue Geschwindigkeit einstellen</td></tr>");        
@@ -1098,7 +1137,8 @@ void setup() {
       response->printf("wenn Signal&shy;str&auml;rke in der einfachen FFT im Frequenz&shy;fenster > THRESHOLD1</td></tr>");
       response->printf("<tr><td> </td>  <td>blaue LED = aktives Tonsignal, wenn Signal&shy;str&auml;rke der gemitttelten FFTs im Frequenz&shy;fenster > THRESHOLD2</td></tr>");    
       response->printf("</table>");     
-      response->printf("<p> </p>");      
+      response->printf("<p> </p>"); 
+      response->printf("<h2><a href='/power.html'>Leistungsaufnahme des Lokmotors</a></h2>");     
       response->printf("<h2><a href='/monitor'>Info zu Programmvariablen</a></h2>");
       response->printf("<p> </p>");
       //response->printf("<h2><a href='http://%s'>Loksteuerung</a></h2>", WiFi.softAPIP().toString().c_str());
@@ -1185,6 +1225,7 @@ void setup() {
       response->printf("<p> </p>");      
       response->printf("<h2><a href='/monitor'>Aktualisieren: Sende '?'</a></h2>");
       response->printf("<h2><a href='/lok.ini'>Programmeinstellung: lok.ini</a></h2>");
+      response->printf("<h2><a href='/power.html'>Leistungsaufnahme des Lokmotors</a></h2>");
       response->printf("<div><a href='/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>");
       response->printf("<p> </p>");      
       response->printf("<p><a href='/ini.html' style=\"color: gray; font-size: 1.0rem;\">Programmeinstellungen in lok.ini anpassen</a></p>");
@@ -1342,6 +1383,36 @@ void setup() {
     speed_command = "ggg";  // three green/blue very long flashes  
   });  
 
+  // Route to serve speed and power data
+  server.on("/powerdata", HTTP_GET, [](AsyncWebServerRequest *request){
+    Serial.print ("Send power data! ");
+    // Compute the capacity for the JSON document,
+    // which is used to exchange status information 
+    // and commands via WebSocket
+    // adjust according to members in JSON document, 
+    // see https://arduinojson.org/v6/assistant/
+    const uint8_t size = 128; //JSON_OBJECT_SIZE(4);
+    StaticJsonDocument<size> json;
+    json["speed"]   = speed_level;         //0 to 32
+    if (speed_level > 0) {
+      json["pwm"]     = ((float(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)*100 ; //in % 
+    }
+    else {
+      json["pwm"]     = 0;
+    }
+    json["voltage"] = MotorVoltageAverage; //in mV
+    json["current"] = MotorCurrentAverage; //in mA
+    json["power"]   = MotorPower;          //in W
+    char data[size];
+    size_t len = serializeJson(json, data);
+    //ws.textAll(data, len);
+    request->send(200, "text/plain", data);  //reply to get requrest instead of websocket  
+    Serial.print(" | WebSocket power data to all:");
+    data[len] = 0;
+    Serial.println((char*)data);
+  });
+  
+
   // Serve files in directory "/data/" when request url starts with "/"
   // Request to the root or none existing files will try to server the defualt
   // file name "index.htm" if exists
@@ -1439,6 +1510,31 @@ void loop() {
         IndicateMotorError();
       }
     #endif
+
+////////////////////////////////////////////////////////////////////////////////
+// MAIN LOOP - MotorPowerSampling
+////////////////////////////////////////////////////////////////////////////////
+    #ifdef MotorPowerSampling
+      if (LOOP_COUNT % (10*MONITOR_FREQ) == 0) {
+        MotorPowerLoop();        
+      }
+      if (LOOP_COUNT % (200*MONITOR_FREQ) == 0) {
+        Serial.print("MotorPowerSampling: motor voltage (mV) = ");
+        Serial.print(MotorVoltageAverage); 
+        if (MotorVoltageAverage < 3000) {
+          MotorVoltageAverage = motor_voltage_supply*1000; // replace missing Motor voltage analog reading by preset motor_voltage_supply value from .ini reading
+        Serial.print(" | missing analog reading replaced by preset value motor_voltage_supply (V) = ");
+        Serial.print(MotorVoltageAverage); 
+        }
+        Serial.print(" | motor current (mA) = ");
+        Serial.print(MotorCurrentAverage); 
+        MotorPower = float(MotorCurrentAverage)/1000*(motor_voltage_supply-float(MotorCurrentAverage)/1000);  //accounting voltage drop at 1 Ohm measuring resistor
+        Serial.print(" | motor power (W) = ");
+        Serial.print(String(MotorPower, 1));  
+        Serial.print(" | ");       
+        notifyClients(); 
+      }      
+    #endif
     
     // evaluate manual switch digital reading (or any alternative digital HIGH/LOW signal) for MorseCode
     MorseCodeDecoder();
@@ -1457,6 +1553,34 @@ void loop() {
 // Additional FUNCTIONS
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+#ifdef MotorPowerSampling
+// Sampling motor current from ADC1_Ch7 = GPIO pin 35 as voltage at 1 Ohm resistor in grounding to motor IC
+  void MotorPowerLoop() {
+    MotorVoltageArray = MotorVoltageArray.shift(-1);
+    MotorCurrentArray = MotorCurrentArray.shift(-1);
+    
+    int MotorVoltageRead     = analogRead(motor_voltage); 
+    MotorVoltageArray[0]     = int(sq((float(MotorVoltageRead) * MotorVoltageSlope + MotorVoltageOffset)/10)); //devision by 10 in order to fit MotorVoltageArray.sum in integer range      
+    MotorVoltageAverage      = 10 * int(sqrt(MotorVoltageArray.sum()/MotorVoltageArray.size()) ); //True-RMS calculation, multiply by 10 for original value  
+    
+    if (speed_level > 0) {
+      //linear parametrisation of analog reading, squared for True-RMS average calculation
+      int MotorCurrentRead   = analogRead(motor_current);
+      if (MotorCurrentRead   > 5) { //threshold on analog reading offset
+        MotorCurrentArray[0] = int(sq(float(MotorCurrentRead) * MotorCurrentSlope + MotorCurrentOffset)); 
+      }
+      else {
+        MotorCurrentArray[0] = 0;
+      }
+      //averaging and linear parametrisation of ADC readings to motor current in mA
+      MotorCurrentAverage    = int(sqrt(MotorCurrentArray.sum()/MotorCurrentArray.size()) ); //True-RMS calculation 
+    }
+    else {
+      MotorCurrentAverage =0; 
+    }
+  }
+#endif
 
 #ifdef ToneSampling
 ////////////////////////////////////////////////////////////////////////////////
