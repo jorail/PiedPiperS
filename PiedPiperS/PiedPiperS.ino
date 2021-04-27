@@ -163,13 +163,14 @@
   169 2021-04-27 optimise /info display
   170 2021-04-27 otimise /info and /monitor display, add buttons to power.html, working and consolidated version
   171 2021-04-27 enhance descriptions, sketch info, link to license, parts.html, add WLAN station number display, allow 3 stations
+  172 2021-04-28 html text editing in /info
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 171, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-27";
+String SKETCH_INFO = "PiedPiperS.ino, Version 172, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-27";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -1101,17 +1102,17 @@ void setup() {
       response->printf("Die erste Geschwindig&shy;keits&shy;stufe entspricht einer PWM von %.0f&#x202F;%%. </p>", ((static_cast<float>(1)/max_speed_level) * (1 - speedoffset) + speedoffset)*100); 
       
       if(speed_level>0){
-        response->printf("<p>PWM derzeit <b>%.0f&#x202F;%% bei Geschwindig&shy;keits&shy;stufe %i</b>. ", ((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)*100, speed_level); 
+        response->printf("<p>PWM derzeit <b>%.0f</b>&#x202F;<b>%% bei Geschwindig&shy;keits&shy;stufe %i</b>. ", ((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)*100, speed_level); 
         
         if(MotorVoltageAverage < 3000) { //in case of no voltage analog input reading
           response->printf("Das entspricht einem elektrischen Strom durch den Lokmotor, der bei etwa %.1f&#x202F;Volt ohne PWM-Regelung flie&szlig;en w&uuml;rde.</p>",((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)* motor_voltage_supply);  
         }
         else {
           response->printf("Das entspricht einem elektrischen Strom durch den Lokmotor, der bei etwa %.1f&#x202F;Volt ohne PWM-Regelung flie&szlig;en w&uuml;rde.</p>",((static_cast<float>(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)* MotorVoltageAverage/1000);
-          response->printf("<p>Die Messung der <b>Spannungsversorgung</b> vor der Pulsweitenmodulation mit einem Analog-Digital-Wandler (ADC) im Mikrocontroller ergibt derzeit <b>%.1f&#x202F;Volt</b>. ", (static_cast<float>(MotorVoltageAverage/1000))); 
+          response->printf("<p>Die Messung der <b>Spannungsversorgung</b> vor der Pulsweitenmodulation mit einem Analog-Digital-Wandler (ADC) im Mikrocontroller ergibt derzeit <b>%.1f</b>&#x202F;<b>Volt</b>. ", (static_cast<float>(MotorVoltageAverage/1000))); 
           response->printf("Der effektive elektrische Strom wird durch die Pulsweitenmodulation im Motor-IC geregelt. Er wird w&auml;hrend der Fahrt &uuml;ber den Spannungsabfall an einem 1&#x202F;&Omega; Messwiderstand vor dem Motor-IC gemessen. ");
-          response->printf("Derzeit flie&szlig;en<b> %i&#x202F;mA effektiver elektrischer Strom</b> (True&nbsp;RMS). ", MotorCurrentAverage);   
-          response->printf("Der Motor nimmt dadurch ca. <a href='/power.html'><b>%.1f&#x202F;Watt elektrische Leistung</b></a> auf.</p>", MotorPower);           
+          response->printf("Derzeit flie&szlig;en<b> %i</b>&#x202F;<b>mA effektiver elektrischer Strom</b> (True&nbsp;RMS). ", MotorCurrentAverage);   
+          response->printf("Der Motor nimmt dadurch ca.&nbsp;<b>%.1f</b>&#x202F;<b>Watt <a href='/power.html'>elektrische Leistung</a></b> auf.</p>", MotorPower);           
         }      
       }
       else {
