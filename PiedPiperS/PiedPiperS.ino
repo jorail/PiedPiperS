@@ -164,13 +164,14 @@
   170 2021-04-27 otimise /info and /monitor display, add buttons to power.html, working and consolidated version
   171 2021-04-27 enhance descriptions, sketch info, link to license, parts.html, add WLAN station number display, allow 3 stations
   172 2021-04-28 html text editing in /info
+  173 2021-04-28 html text editing in /info /license.html /project.html
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 172, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-27";
+String SKETCH_INFO = "PiedPiperS.ino, Version 173, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-28";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -1116,7 +1117,7 @@ void setup() {
         }      
       }
       else {
-        response->printf("<p>PWM derzeit <b>0&#x202F;%% bei Geschwindigkeitsstufe 0</b>. "); 
+        response->printf("<p>PWM derzeit <b>0</b>&#x202F;<b>%% bei Geschwindigkeitsstufe 0</b>. "); 
         response->printf("Es flie&szlig;t kein Strom durch den Lokmotor.</p>");  
       }
       response->printf("<br>");   
