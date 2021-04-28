@@ -15,7 +15,7 @@ Following options exist:
 
 4. SerialMonitor input commands by typing letters, requires connection via USB
 
-The project is inspired by the project 'free your model train' (FYMT) proposed by Frei Softwarefreunde
+The project is inspired by the project 'free your model train' (FYMT) proposed by Freie Softwarefreunde
 at https://freie-software.org/free-your-model-train/
 
 The code and layout are developed for ESP32 (or Teensy 4.0) but can easily be modified for other micro controllers.
