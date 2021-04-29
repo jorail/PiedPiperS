@@ -165,13 +165,14 @@
   171 2021-04-27 enhance descriptions, sketch info, link to license, parts.html, add WLAN station number display, allow 3 stations
   172 2021-04-28 html text editing in /info
   173 2021-04-28 html text editing in /info /license.html /project.html
+  174 2021-04-29 html text editing in captive portal and /parts.html
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 173, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-28";
+String SKETCH_INFO = "PiedPiperS.ino, Version 174, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-29";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -185,7 +186,7 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 173, GNU General Public License Ve
                        //it has not been thoroughly tested in combination with PiedPiperS, version 60 through version 148 and later
                        //https://github.com/jorail/PiedPiperS
 #define  MotorPowerSampling  //motor power sampling 
-                       //motor voltage sampling on GBIO pin 34, ADC1_Ch6, up to ca. 1.5 V on 1 kOhm resistor in 11 kOhm resistor, i.e. ca. 0 to 1.5 Vdc 
+                       //motor voltage sampling on GBIO pin 34, ADC1_Ch6, up to ca. 1.5 V on 1 kOhm resistor of 1:11 voltage split, i.e. ca. 0 to 1.5 Vdc 
                        //motor current sampling on GBIO pin 35, ADC1_Ch7, up to ca. 0.5 A on 1 Ohm resistor, i.e. ca. 0 to 0.5 Vdc 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -517,7 +518,7 @@ void captivePortalTarget(AsyncWebServerRequest *request) {
       response->printf("Du hast versucht folgende Seite zu erreichen und bist zur Startseite geleitet worden:</p>");
       response->printf("<p>http://%s%s</p>" , request->host().c_str(), request->url().c_str());
       response->printf("<p>Der ESP32 hat keinen Internet&shy;zugang. Du kannst aber &uuml;ber die Verbindung von deinen Browser zum ESP32 WLAN-Server eine Lokomotive steuern. ");
-      response->printf("Es k&ouml;nnen immer nur zwei Nutzer (Clients) gleichzeitig mit dem WLAN-Server Verbindung aufnehmen. </p>"); 
+      response->printf("Es k&ouml;nnen immer nur drei WLAN-Nutzer (Stations) gleichzeitig mit dem WLAN-Netzwerk (AccessPoint) Verbindung aufnehmen. </p>"); 
       response->printf("<h2><a href='http://%s/'>Loksteuerung</a> &nbsp;&nbsp; <a href='http://%s/info'>weitere Informationen</a></h2>", WiFi.softAPIP().toString().c_str(), WiFi.softAPIP().toString().c_str());
       response->printf("<div><a href='http://%s/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>", WiFi.softAPIP().toString().c_str());      
       response->printf("<p>Viel Spa&szlig; beim Ausprobieren, Jo</p><br>");
@@ -548,7 +549,7 @@ class CaptiveRequestHandler : public AsyncWebHandler {
       response->printf("Du hast versucht folgende Seite zu erreichen und bist zur Startseite geleitet worden:</p>");
       response->printf("<p>http://%s%s</p>" , request->host().c_str(), request->url().c_str());
       response->printf("<p>Der ESP32 hat keinen Internetzugang. Du kannst aber &uuml;ber die Verbindung von deinen Browser zum ESP32 WLAN-Server eine Lokomotive steuern. ");
-      response->printf("Es k&ouml;nnen immer nur zwei Nutzer (Clients) gleichzeitig mit dem WLAN-Server Verbindung aufnehmen. </p>"); 
+      response->printf("Es k&ouml;nnen immer nur drei WLAN-Nutzer (Stations) gleichzeitig mit dem WLAN-Netzwerk (AccessPoint) Verbindung aufnehmen. </p>"); 
       response->printf("<h2><a href='http://%s/'>Loksteuerung</a> &nbsp;&nbsp; <a href='http://%s/info'>weitere Informationen</a></h2>", WiFi.softAPIP().toString().c_str(), WiFi.softAPIP().toString().c_str());
       response->printf("<div><a href='http://%s/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>", WiFi.softAPIP().toString().c_str());      
       response->printf("<p>Viel Spa&szlig; beim Ausprobieren, Jo</p><br>");
