@@ -166,13 +166,14 @@
   172 2021-04-28 html text editing in /info
   173 2021-04-28 html text editing in /info /license.html /project.html
   174 2021-04-29 html text editing in captive portal and /parts.html
+  175 2021-04-30 debugging /ini.html JS function
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 174, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-29";
+String SKETCH_INFO = "PiedPiperS.ino, Version 175, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-30";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -1283,7 +1284,26 @@ void setup() {
       response->print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" charset=\"utf-8\"/>   ");
       response->print("<style>body{max-width: 1024px; font-size: 1.0rem; font-family: Helvetica; display: inline-block; padding:2%; margin:2% auto; text-align: left;}   ");
       response->print("table, tr {vertical-align: top; padding: 1%; border-collapse: collapse; border-bottom: 2pt solid #ddd;} tr:last-child { border-bottom: none; }   ");
-      response->print("th, td {font-size: 0.8rem; text-align: left; padding: 1%; } h1 {font-size: 1.8rem;} h2 {font-size: 1.2rem;}</style></head><body>   ");
+      response->print("th, td {font-size: 0.8rem; text-align: left; padding: 1%; } h1 {font-size: 1.8rem;} h2 {font-size: 1.2rem;}</style>  ");
+      response->printf("  <script>  ");
+      response->printf("    console.log('Trying to open a WebSocket connection...');  ");
+      response->printf("    var gateway = \'ws://%s/ws\';  ",WiFi.softAPIP().toString().c_str() );  
+      response->printf("    var websocket = new WebSocket(gateway);  ");      
+      response->printf("    function formToJSON(form){  ");
+      response->printf("      var edit=form.iniedit.value;  ");
+      response->printf("      var file=form.inifile.value;  ");
+      response->printf("      var action=form.iniaction.value;  ");
+      response->printf("      window.alert(action + '   ' + file + '   mit folgendem Inhalt : ' + edit);  ");
+      response->printf("      var jsonIniEdit=JSON.stringify({iniaction:action, inifile:file, iniedit:edit});  ");
+      response->printf("      websocket.send(jsonIniEdit);  ");
+      response->printf("      window.alert('The browser has successfully sent the following JSON message to the webserver via WebSocket: ' + jsonIniEdit);  ");
+      response->printf("      console.log('sent iniedit as JSON to Server via WebSocket');  ");  
+      response->printf("      console.log('close WebSocket');  ");   
+      response->printf("      setTimeout(initWebSocket, 2000);  ");   
+      response->printf("      setTimeout(location.reload(), 500);  ");   
+      response->printf("    }  ");
+      response->printf("  </script>  ");   
+      response->printf("</head><body>   ");
       response->printf("<h1>Programmeinstellungen</h1>   ");
       response->printf("  <form onSubmit=\"event.preventDefault(); formToJSON(this);\">  "); 
       response->printf("    <label>%s anpassen:</label>  ", inipath.substring(1).c_str()); 
@@ -1331,24 +1351,6 @@ void setup() {
       response->printf("auf der seriellen Schnittstelle wiedergegeben. </p>");
       response->printf("<p>Kleine <b>Fehlfunktionen der ini.html-Webseite nach R&uuml;ckkehr von anderen Anzeigen</b> k&ouml;nnen "); 
       response->printf("meist durch ein erneutes Laden behoben werden. Hierzu einfach den <b>Reload-Knopf im Browser</b> nutzen.</p> ");
-      response->printf("  <script>  ");
-      response->printf("    console.log('Trying to open a WebSocket connection...');  ");
-      response->printf("    var gateway = \'ws://%s/ws\';  ",WiFi.softAPIP().toString().c_str() );  
-      response->printf("    var websocket = new WebSocket(gateway);  ");      
-      response->printf("    function formToJSON(form){  ");
-      response->printf("      var edit=form.iniedit.value;  ");
-      response->printf("      var file=form.inifile.value;  ");
-      response->printf("      var action=form.iniaction.value;  ");
-      response->printf("      window.alert(action + '   ' + file + '   mit folgendem Inhalt : ' + edit);  ");
-      response->printf("      var jsonIniEdit=JSON.stringify({iniaction:action, inifile:file, iniedit:edit});  ");
-      response->printf("      websocket.send(jsonIniEdit);  ");
-      response->printf("      window.alert('The browser has successfully sent the following JSON message to the webserver via WebSocket: ' + jsonIniEdit);  ");
-      response->printf("      console.log('sent iniedit as JSON to Server via WebSocket');  ");  
-      response->printf("      console.log('close WebSocket');  ");   
-      response->printf("      setTimeout(initWebSocket, 2000);  ");   
-      response->printf("      setTimeout(location.reload(), 500);  ");   
-      response->printf("    }  ");
-      response->printf("  </script>  ");   
       response->printf("</body></html>");  
       request->send(response);
       request->send(SPIFFS, "/lok.png", "image/png");
