@@ -81,13 +81,13 @@ the start of the AsyncWebServer.
 
 Additions from the lok.ini branch as of version 170, https://github.com/jorail/PiedPiperS/tree/lok.ini
 
-The file lok.ini specifies the loco name, WiFi and motor parameters. It is read at the startup of the program and defines values corresponding global variables. 
+The file lok.ini specifies the loco name, WiFi and motor parameters. It is read at the startup of the program and defines values of corresponding global variables. 
 Later online modification and saving of a new parameter set is possible, but should be used with care and some knowledge of their program functionality. 
 
 Optional: Online monitoring of power data by measuring motor current and supply voltage during operation by analog input reading at ESP32 ADC Channels 7 and 6. 
-The current and voltage measurements requires the addition of 4 measuring resistors between the step-up converter and the motor IC. The readings are
+The current and voltage measurements require the addition of 4 measuring resistors between the step-up converter and the motor IC. The readings are
 converted to display the power consumption of the motor online on the control panel. A dedicated /powerdata panel displays a chart.js diagram with
-joint trends of speed settings, voltage, current and power use.
+joint trends of speed settings, voltage, current and power use. Data is requrested every second by get requrests and the servers response is sent as JSON message. 
 
 Please feel invited to pass your comments on github or via e-mail, if you have any suggestions for further improvement or
 new applications for PiedPiperS.
