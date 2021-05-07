@@ -523,7 +523,7 @@ void captivePortalTarget(AsyncWebServerRequest *request) {
       response->printf("Es k&ouml;nnen immer nur drei WLAN-Nutzer (Stations) gleichzeitig mit dem WLAN-Netzwerk (AccessPoint) Verbindung aufnehmen. </p>"); 
       response->printf("<h2><a href='http://%s/'>Loksteuerung</a> &nbsp;&nbsp; <a href='http://%s/info'>weitere Informationen</a></h2>", WiFi.softAPIP().toString().c_str(), WiFi.softAPIP().toString().c_str());
       response->printf("<div><a href='http://%s/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>", WiFi.softAPIP().toString().c_str());      
-      response->printf("<p>Viel Spa&szlig; beim Ausprobieren, Jo</p><br>");
+      response->printf("<p>Viel Spa&szlig; beim Zugfahren und Ausprobieren! Jo</p><br>");
       response->printf("<p>Laufender c++/arduino <b><a href='/license.html'>Sketch</a></b> ist: </p>");
       response->printf("<p>%s</p>", SKETCH_INFO.c_str());
       response->printf("<p>%i WLAN-Nutzer <br>(Stations connected to Access Point)</p>", WiFi.softAPgetStationNum());
@@ -554,7 +554,7 @@ class CaptiveRequestHandler : public AsyncWebHandler {
       response->printf("Es k&ouml;nnen immer nur drei WLAN-Nutzer (Stations) gleichzeitig mit dem WLAN-Netzwerk (AccessPoint) Verbindung aufnehmen. </p>"); 
       response->printf("<h2><a href='http://%s/'>Loksteuerung</a> &nbsp;&nbsp; <a href='http://%s/info'>weitere Informationen</a></h2>", WiFi.softAPIP().toString().c_str(), WiFi.softAPIP().toString().c_str());
       response->printf("<div><a href='http://%s/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>", WiFi.softAPIP().toString().c_str());      
-      response->printf("<p>Viel Spa&szlig; beim Ausprobieren, Jo</p><br>");
+      response->printf("<p>Viel Spa&szlig; beim Zugfahren und Ausprobieren! Jo</p><br>");
       response->printf("<p>Laufender c++/arduino <b><a href='/license.html'>Sketch</a></b> ist: </p>");
       response->printf("<p>%s</p>", SKETCH_INFO.c_str());
       response->printf("<p>%i WLAN-Nutzer <br>(Stations connected to Access Point)</p>", WiFi.softAPgetStationNum());
