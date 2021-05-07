@@ -167,13 +167,14 @@
   173 2021-04-28 html text editing in /info /license.html /project.html
   174 2021-04-29 html text editing in captive portal and /parts.html
   175 2021-04-30 debugging /ini.html JS function
+  176 2021-05-07 html text /info amended for LED indication in case of motor IC error
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 175, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-30";
+String SKETCH_INFO = "PiedPiperS.ino, Version 176, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-05-07";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -1142,7 +1143,9 @@ void setup() {
       response->printf("<tr><td>Programm&shy;schleife l&auml;uft</td>  <td>Oranger Blitz etwa alle 2 Skunden nach</td></tr>"); 
       response->printf("<tr><td> </td>  <td>%i Hauptprogrammschleifen</td></tr>", FLASH_FREQ);  
       response->printf("<tr><td> </td>  <td>%i mal Steuerbefehle beobachten</td></tr>", FLASH_FREQ/MONITOR_FREQ);
-      response->printf("<tr><td> </td>  <td>bis zu %i mal Geschwindigkeit anpassen</td></tr>", FLASH_FREQ/speed_wait_loops);       
+      response->printf("<tr><td> </td>  <td>bis zu %i mal Geschwindigkeit anpassen</td></tr>", FLASH_FREQ/speed_wait_loops); 
+      response->printf("<tr><td>St&ouml;rung</td>  <td>rote und blaue LED schnelles Blinken, wenn die Ver&shy;sorg&shy;ungs&shy;span&shy;nung nicht aufrecht gehalten werden kann, Fehler am Motor-IC</td></tr>");
+      response->printf("<tr><td> </td>  <td>rote und blaue LED unterbrochen, warte auf Freigabe nach St&ouml;rung durch Ber&uuml;hren des TOUCH4-Kontakts am Pin D13</td></tr>");
       response->printf("<tr><td>Info zur Richtung</td>  <td>blaue LED = vorw&auml;rts = 1</td></tr>"); 
       response->printf("<tr><td> </td>  <td>rote LED = r&uuml;ckw&auml;rts = 0</td></tr>"); 
       response->printf("<tr><td>Info zur Geschwin&shy;digkeit</td>  <td>0 bis 16 kurze LED-Blitze</td></tr>");
