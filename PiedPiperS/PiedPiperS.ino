@@ -168,13 +168,17 @@
   174 2021-04-29 html text editing in captive portal and /parts.html
   175 2021-04-30 debugging /ini.html JS function
   176 2021-05-07 html text /info amended for LED indication in case of motor IC error
+  178 2021-05-09 consolidated
+  
+  speedo branch in github: https://github.com/jorail/PiedPiperS/tree/speedo, develop speed-o-meter with reflective ir detector on railway sleepers
+  180 2021-05-09 use D15 as input
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 176, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-05-07";
+String SKETCH_INFO = "PiedPiperS.ino, Version 180, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-05-09";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -262,7 +266,9 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 176, GNU General Public License Ve
   int ANALOG_READ_RESOLUTION = 12; // Bits of resolution for the ADC. Increased to 12 bit for motro current monitoring 1 Ohm resistor and ca. 0 to 0.5 Vdc on ADC1_CH7
   int ANALOG_READ_AVERAGING = 8;   // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
 
-
+  int SPEED_IR_INPUT_PIN = 15;     // Input D15 = signal from IR-diode for pulse counter
+  bool _flag = 0;  // only for testing ####################################
+  
 #else  //uP not definied, defualt for Teensy 4.0
   // input output defintions
   int input_switch  =  5;          // manual switch input: HIGH=steady state, LOW=activated
@@ -979,6 +985,9 @@ void setup() {
   //analogReadAveraging(ANALOG_READ_AVERAGING);  //#####TODO test if adjustment to ESP analog input reading commands is functioning
   //analogSetCycles(ANALOG_READ_AVERAGING);      //#####TODO test if adjustment to ESP analog input reading commands is functioning
 
+  // Set up IR counter
+  pinMode(SPEED_IR_INPUT_PIN, INPUT_PULLUP);     //digital input with pullup
+
 #else  //mP not definied, defualt for Teensy 4.0
   // Set up serial port.
   Serial.begin(38400);
@@ -1523,7 +1532,11 @@ void loop() {
   parserLoop();
 
   if (LOOP_COUNT % MONITOR_FREQ == 0) {
-
+    #ifdef ESP32                                 // only for testing #########################################
+      _flag = digitalRead(SPEED_IR_INPUT_PIN);   // only for testing #########################################
+       digitalWrite(greenLED, _flag);            // only for testing #########################################
+    #endif                                       // only for testing #########################################
+    
     #if defined(ESP32) && defined(TLE5206) //motor IC TLE5206 offers a comprehensive error flag output
       if (!digitalRead(error_motoric)) {   //TLE5206 error indicated if error_motoric = LOW
         motor_set(0);                      //emergency break
