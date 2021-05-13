@@ -172,13 +172,14 @@
   
   speedo branch in github: https://github.com/jorail/PiedPiperS/tree/speedo, develop speed-o-meter with reflective ir detector on railway sleepers
   180 2021-05-09 use D15 as input
+  181 2021-05-10 apply ESP32 pulse counter
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 180, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-05-09";
+String SKETCH_INFO = "PiedPiperS.ino, Version 181, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-05-10";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -191,9 +192,21 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 180, GNU General Public License Ve
                        //https://github.com/jorail/PiedPiper
                        //it has not been thoroughly tested in combination with PiedPiperS, version 60 through version 148 and later
                        //https://github.com/jorail/PiedPiperS
-#define  MotorPowerSampling  //motor power sampling 
+#define  MotorPowerSampling  //motor power sampling with ESP32
                        //motor voltage sampling on GBIO pin 34, ADC1_Ch6, up to ca. 1.5 V on 1 kOhm resistor of 1:11 voltage split, i.e. ca. 0 to 1.5 Vdc 
                        //motor current sampling on GBIO pin 35, ADC1_Ch7, up to ca. 0.5 A on 1 Ohm resistor, i.e. ca. 0 to 0.5 Vdc 
+
+#define  SpeedSampling //monitor speed on track by detecting railway sleeper passage with reflective infrared (IR) detector and ESP32
+                       //IR detecter input on GPIO pin 15, mode INPUT_PULLUP
+                       //IR detector signal is amplified by a transistor, to form logical low (reflective ground, transistor links pin 15 to ground) 
+                       //and logical high levels (unreflective railway sleeper, transistor inactive, ca. 2.5 V by internal 47 kOhm pullup resistor, 
+                       //if needed backed-up by 2nd external 100 kOhm pullup resistor)  
+                       //pulse count libraries: 
+                       //https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/pcnt.html
+                       //https://esp32.com/viewtopic.php?t=14660
+                       //https://nodemcu.readthedocs.io/en/dev-esp32/modules/pulsecnt/
+                      
+                       
 
 ////////////////////////////////////////////////////////////////////////////////
 // Select libraries
@@ -214,9 +227,6 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 180, GNU General Public License Ve
   #include "FS.h"  //################### double chekc if really needed
   #include <SPIFFS.h>
   #include <SPIFFSIniFile.h>  
-
-
-  
 #endif
 
 #ifdef ToneSampling
@@ -234,6 +244,12 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 180, GNU General Public License Ve
 
 #ifdef MotorPowerSampling
   #include <valarray>
+#endif
+
+#ifdef SpeedSampling  
+  #include "driver/pcnt.h"  // ESP32 library for pulse count
+  // e.g. stored in following path C:\Users\User\Documents\Arduino\hardware\arduino-esp32-master\tools\sdk\include\driver\driver\pcnt.h
+  // when in the Arduino IDE properties the sketchbook storage location is set to C:\Users\User\Documents\Arduino
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -266,9 +282,6 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 180, GNU General Public License Ve
   int ANALOG_READ_RESOLUTION = 12; // Bits of resolution for the ADC. Increased to 12 bit for motro current monitoring 1 Ohm resistor and ca. 0 to 0.5 Vdc on ADC1_CH7
   int ANALOG_READ_AVERAGING = 8;   // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
 
-  int SPEED_IR_INPUT_PIN = 15;     // Input D15 = signal from IR-diode for pulse counter
-  bool _flag = 0;  // only for testing ####################################
-  
 #else  //uP not definied, defualt for Teensy 4.0
   // input output defintions
   int input_switch  =  5;          // manual switch input: HIGH=steady state, LOW=activated
@@ -319,6 +332,61 @@ const int MAX_CHARS      = 65;   // Max size of the input command buffer
   const float MotorCurrentSlope  = 0.91; //0.8     1.2;        //linear parametrisation of motor current readings from measurments 2021-04-23
   int MotorCurrentAverage = 0;  // in milliamperes (mA)
   float MotorPower = 0; // in Watt (W)
+#endif
+
+#ifdef SpeedSampling  // based on code suggested by jgustavoam on https://esp32.com/viewtopic.php?t=14660
+  #define PCNT_FREQ_UNIT      PCNT_UNIT_0                   // select ESP32 pulse counter unit 0 (out of 0 to 7 indipendent counting units)
+                                                            // https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/pcnt.html
+  #define PCNT_H_LIM_VAL      10000                         // upper limit of counting 32767 
+
+  int SPEED_IR_INPUT_PIN = 15;                              // Input D15 = signal from IR-diode for pulse counter
+  bool _flag = 0;  // only for testing ####################################
+  
+  int16_t contador = 0;                                     // pulse counter, max. value is 65536
+  int OverflowCounter;                                     // pulse counter overflow counter
+  float frequencia = 0;                                     // Frequencia medida
+  String unidade;                                           // Unidade de medida da escala
+  unsigned long tempo;                                      // base de tempo da medida dos pulsos
+  int prescaler;                                            // frequency devider of timer
+  bool conterOK = false;
+  
+  pcnt_isr_handle_t user_isr_handle = NULL;                 // interrupt handler - not used
+  hw_timer_t * timer = NULL;                                // Instancia do timer
+
+  void IRAM_ATTR CounterOverflow(void *arg) {               // Interrupt for overflow of pulse counter
+    OverflowCounter = OverflowCounter + 1;                  // increase overflow counter
+    PCNT.int_clr.val = BIT(PCNT_FREQ_UNIT);                 // clean overflow flag
+    pcnt_counter_clear(PCNT_FREQ_UNIT);                     // zero and reset of pulse counter unit
+  }
+  
+  void iniciaContadorPulsos (){                                // initialise pulse counter
+    pcnt_config_t pcntFreqConfig = { };                        // Instance of pulse counter
+    pcntFreqConfig.pulse_gpio_num = SPEED_IR_INPUT_PIN;        // pin assignment for pulse counter = GPIO 15
+    pcntFreqConfig.pos_mode = PCNT_COUNT_INC;                  // count rising edges (=change from low to high logical level) as pulses
+    pcntFreqConfig.counter_h_lim = PCNT_H_LIM_VAL;             // set upper limit of counting 
+    pcntFreqConfig.unit = PCNT_FREQ_UNIT;                      // select ESP32 pulse counter unit 0
+    pcntFreqConfig.channel = PCNT_CHANNEL_0;                   // select channel 0 of pulse counter unit 0
+    pcnt_unit_config(&pcntFreqConfig);                         // configur rigisters of the pulse counter
+  
+    pcnt_counter_pause(PCNT_FREQ_UNIT);                        // pause puls counter unit
+    pcnt_counter_clear(PCNT_FREQ_UNIT);                        // zero and reset of pulse counter unit
+  
+    pcnt_event_enable(PCNT_FREQ_UNIT, PCNT_EVT_H_LIM);         // enable event for interrupt on reaching upper limit of counting
+    pcnt_isr_register(CounterOverflow, NULL, 0, &user_isr_handle);  // configure register overflow interrupt handler
+    pcnt_intr_enable(PCNT_FREQ_UNIT);                          // enable overflow interrupt 
+  
+    pcnt_counter_resume(PCNT_FREQ_UNIT);                       // resume counting on pulse counter unit
+  }
+  
+  void baseTempo() {                                          // function for reading pulse counter (for timer)
+    pcnt_get_counter_value(PCNT_FREQ_UNIT, &contador);        // get pulse counter value - maximum value is 16 bits
+
+    // resetting counter as if example, delet for application in PiedPiperS
+    OverflowCounter = 0;                                      // set overflow counter to zero
+    pcnt_counter_clear(PCNT_FREQ_UNIT);                       // zero and reset of pulse counter unit
+    conterOK = true;
+  }
+  
 #endif
 
 #ifdef ToneSampling
