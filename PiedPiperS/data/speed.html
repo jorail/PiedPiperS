@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <title>ESP32 Analog Input Reading JSON Message 2021-05-15 Version 193</title>
+  <title>ESP32 Analog Input Reading JSON Message 2021-05-16 Version 195</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8"/>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" type="text/css" href="control.css">
@@ -20,7 +20,7 @@
     </div><br>
 	<table style= "width: 96%; text-align: left; font-size: 1.0rem; margin: 0 2% 0 2%;" >
 	<tr><td>Zähler</td>                  <td><span id="CountValue">%CountValue%</span></td>               <td><small>Schwellen</small></td></tr>
-	<tr><td>IR-Signal</td>               <td><span id="IRAvgValue">%IRAvgValue%</span></td>               <td>mV</td></tr>
+	<tr><td>IR-Signal</td>               <td><span id="IRAvgValue">%IRAvgValue%</span></td>               <td>V</td></tr>
 	<tr><td>Fahrstrecke</td>             <td><span id="DistanceValue">%DistanceValue%</span></td>         <td>m</td></tr>
 	<tr><td>Geschwindigkeit</td>         <td><span id="SpeedmeasureValue">%SpeadmeasureValue%</span></td> <td>m/s</td></tr>
 	<tr style="border-bottom: 4pt double #ddd;">
@@ -32,11 +32,11 @@
 	<tr><td>Versorgungsspannung</td>     <td><span id="VoltageValue">%VoltageValue%</span></td>           <td>V</td></tr>
 	<tr><td>effektiver Motorstrom</td>   <td><span id="CurrentValue">%CurrentValue%</span></td>           <td>mA&nbsp;<small>TRMS</small></td></tr>
 	<tr style="border-bottom: 4pt double #ddd;">
-	<td><b>Leistungsaufnahme</b></td>    <td><span id="PowerValue" style="font-weight:bold;">%PowerValue%</span></td><td><b>W&nbsp;&nbsp;<small>TRMS</small></b></td></tr>
+	<td><b>Leistungsaufnahme</b></td>    <td><span id="PowerValue" style="font-weight:bold;">%PowerValue%</span></td><td><b>W&nbsp;&nbsp;&nbsp;<small>TRMS</small></b></td></tr>
 	<!--<tr><td>&nbsp;</td></tr>-->
 	<tr><td>LED-Anzeige</td>             <td><span id="SpeedLEDValue">%SpeedLEDValue%</span></td>         <td>1/0</td></tr>
 	<tr><td>IR-low</td>                  <td><span id="IRlowValue">%IRlowValue%</span></td>               <td>V</td></tr>
-	<tr><td>IR-High</td>                 <td><span id="IRhighValue">%IRhighValue%</span></td>             <td>V</td></tr>
+	<tr><td>IR-high</td>                 <td><span id="IRhighValue">%IRhighValue%</span></td>             <td>V</td></tr>
 	</table>
 	<br>
 	<div><button id="minus4" class="button red4">- - - -</button>    <button id="minus1" class="button red1">-</button>    <button id="plus1" class="button blue1">+</button>    <button id="plus4" class="button blue4">++++</button></div>
@@ -257,7 +257,7 @@
 		  
 		  //update value display in text
 		  document.getElementById('CountValue').innerHTML        = Math.round(count*100000);           // in number of sleepers
-		  document.getElementById('IRAvgValue').innerHTML        = Math.round(iravg*1000)/1000;        // in V,    precision 3
+		  document.getElementById('IRAvgValue').innerHTML        = Math.round(iravg*100)/100;          // in V,    precision 2
 		  document.getElementById('DistanceValue').innerHTML     = Math.round(distance*1000*100)/100;  // in m,    precision 2 
 		  document.getElementById('SpeedmeasureValue').innerHTML = Math.round(speedmeasure*1000)/1000; // in m/s,  precision 3 
 		  document.getElementById('SpeedscaleValue').innerHTML   = Math.round(speedscale*100*10)/10;   // in km/h, precision 1 
@@ -269,8 +269,8 @@
 		  document.getElementById('PowerValue').innerHTML        = Math.round(power*100)/100;          // in W,   precision 2 
 
 		  document.getElementById('SpeedLEDValue').innerHTML     = Math.round(speedled);               // integer, 1=on, 0=off
-		  document.getElementById('IRlowValue').innerHTML        = Math.round(irlow*1000)/1000;       // in V,    precision 3
-		  document.getElementById('IRhighValue').innerHTML       = Math.round(irhigh*1000)/1000;       // in V,    precision 3
+		  document.getElementById('IRlowValue').innerHTML        = Math.round(irlow*100)/100;          // in V,    precision 2
+		  document.getElementById('IRhighValue').innerHTML       = Math.round(irhigh*100)/100;         // in V,    precision 2
 		}
 	  }
 	  request.open('GET', requestURL);
