@@ -146,6 +146,8 @@ src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBR
 <script>
 var loadingImage = false;
 
+//load images one after one by adding their sources: 
+//lok.png (1st image, source included, add source of next image 001.jpg), 001.jpg, 002.jpg, 003.jpg, ...
 function LoadImage(imageName,imageFile)
 {
   if ((!document.images) || loadingImage) return;
@@ -156,8 +158,6 @@ function LoadImage(imageName,imageFile)
   }
   loadingImage = false;
 }
-
-<!-- LoadImage('img001','/image/001.jpg'); not needed, included in first on-load handler-->
 
 function myFunction(imgs) {
   var expandImg = document.getElementById("expandedImg");

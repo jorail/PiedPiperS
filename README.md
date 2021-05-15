@@ -97,6 +97,7 @@ request get /speeddata. Detection of sleepers can be indicted by LED on the micr
 (see 'doc' folder) and consists of following few parts: 
 1. reflective IR emitting and receiving diodes as sensor and as an integrated electronic part 
 2. simple amplifier, consisting of one small and ordinary transistor and two resistors
+
 The reflectiv IR sensor signal is converted to a frequency of passing railway sleepers and to a true speed over ground measurement in meters per second. 
 This speed data is continuously updated, converted to the model scale speed in km/h and displayed on the train control panel. Alternatively it can by analysed in a 
 chart.js diagram at speed.html together with the power data.

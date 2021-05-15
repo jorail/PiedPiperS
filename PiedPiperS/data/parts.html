@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>PiedPiperS-Bauteile 2021-04-29 Version 174</title>
+	<title>PiedPiperS-Bauteile 2021-05-14 Version 192</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8"/>
 	<link rel="icon" href="data:,">
 	<link rel="stylesheet" type="text/css" href="style.css">
@@ -27,15 +27,15 @@
 		<li><b>Step-up DC/DC-Konverter-Modul</b>, 5&#x202F;V auf 8&#x202F;V bis 16&#x202F;V</li>
 		<li><b>IC mit H-Br&uuml;cke zur Steuerung eines Gleichstrommotors</b>, z.B. TLE5206-2S</li>
 		<li>Kleine <b>USB-Powerbank</b> als 5&#x202F;V&#x202F;DC Stromquelle. Es ist gut, 2 davon zu haben, 
-		die 2. als Ersatz, wenn die 1. leer ist. Der WLAN-Betrieb des ESP32 Mikrocontrollers ben&ouml;tigt beim Start 
+		die 2. als Ersatz, wenn die 1. leer ist. Der WLAN-Betrieb des ESP32 Mikro&shy;controllers ben&ouml;tigt beim Start 
 		und zeitweise bis zu 600&#x202F;mA Stromversorgung. 5&#x202F;W Leistung aus einer klassischen kleinen 
-		USB-Powerbank (siehe Abbildung) sind f&uuml;r kleinere Lokomotiven und effiziente Gleichstromotoren geeignet. 
-		Bei gro&szlig;en H0-Modellbahnlokomotiven oder bei Modellen mit &auml;lteren Motoren sind diese 
+		USB-Powerbank (siehe Abbildung) sind f&uuml;r kleinere Lokomotiven und effiziente Gleich&shy;strom&shy;motoren geeignet. 
+		Bei gro&szlig;en H0-Modell&shy;bahn&shy;loko&shy;motiven oder bei Modellen mit &auml;lteren Motoren sind diese 
 		meist nicht ausreichend. Eine etwas teurere, kompakte USB-C-Powerbank f&uuml;r die Schnellladung mit 
 		ca.&nbsp;15&#x202F;W Leistung und 2&nbsp;bis&nbsp;3&#x202F;A Stromquelle hat sich f&uuml;r diese Lokomotiven 
 		als ausreichend und im langen Fahrbetrieb als sehr gut geeignet erwiesen.</li>
     </ul>
-	<div><a href="/viewer.html"><img src="/image/001.jpg" alt="Elektronik-Bauteile" style="width:100%"></a></div>
+	<div><a href="/viewer.html"><img name="img001" alt="Elektronik-Bauteile" style="width:100%" onLoad="LoadImage('img003','/image/003.jpg')";></a></div>    <!-- src="/image/001.jpg" -->
     <ul>
 		<li>TVS-Diode mit 5&#x202F;V-Arbeits&shy;spannung (reverse standoff voltage) zum Schutz des 5&#x202F;V Eingangs des 
 		Mikro&shy;prozessors vor Spannungs&shy;spitzen aus dem Step-up-Konverter</li>
@@ -44,11 +44,11 @@
 		<li>Nutzung von 2 on-board SMD-LEDs durch einl&ouml;ten eines 1,5&#x202F;k&Omega; Widerstands von GPIO&#x202F;4 
 		(alternativ zwei 3 mm LEDs: 1 blau, 1 rot,  plus 2 x 1,5&#x202F;k&Omega; Widerst&auml;nde) </li>
     </ul>
-	<div><a href="/viewer.html"><img src="/image/003.jpg" alt="ESP32-Modifikation" style="width:100%"></a></div>
+	<div><a href="/viewer.html"><img name="img003" alt="ESP32-Modifikation" style="width:100%" onLoad="LoadImage('img002','/image/002.jpg')";></a></div>  <!-- src="/image/003.jpg" -->
     <ul>
 		<li>2,7 oder 1,0 k&Omega; Widerstand f&uumlr die &Uumlbertragung des Fehlersignals vom Motro-IC </li>
 		<li>2-poliges Kabel, dick, ca. 20&#x202F;cm, 0,25&#x202F;mm<sup>2</sup> Litze, f&uumlr die Strom&shy;zufuhr 
-		mit bis zu 2,5&#x202F;A von der USB-Powerbank mit wenig Spannungs- und Leistungsverlust der 5&#x202F;V-Spannungsquelle </li>
+		mit bis zu 2,5&#x202F;A von der USB-Powerbank mit wenig Spannungs- und Leistungs&shy;verlust der 5&#x202F;V-Spannungs&shy;quelle </li>
 		<li>USB-2.0 Typ A Stecker, m&ouml;glichst kurz und mit L&ouml;tfahnen</li>
 		<li>2-poliges Kabel, d&uuml;nn und flexibel, ca. 30&#x202F;cm, f&uuml;r die Verbindung zum Motor.
 		Bei eine Versorg&uuml;ungs&uuml;spannung für den Lokmotor von ca. 12&#x202F;V sind Leiter&shy;quer&shy;schnitte 
@@ -59,17 +59,16 @@
 		<li>Schrumpfschlauch, verschiedene Gr&ouml;&szlig;en, u.a. mit einem Durchmesser, um 2-Pol-IC-Kontakte aufzunehmen</li>
 		<li>USB-Kabel, ggf. alt und gebraucht, aber mit dicken Leitern (American wire gauge, AWG 22, 23 oder 24) und 
 		zuverl&auml;ssig f&uuml;r die Strom&shy;verbindung mit geringem Spannungs&shy;verlust</li>
-
 	</ul>
 	<h2>Messwiderst&auml;nde (optional)</h2>
-	<p>Zur Beobachtung der Motorleistung k&ouml;nnen der effiktive Motorstrom und die Versorgungsspannung an zwei Analogen 
+	<p>Zur Beobachtung der Motorleistung k&ouml;nnen der effiktive Motorstrom und die Ver&shy;sorg&shy;ungs&shy;span&shy;nung an zwei Analogen 
 	   Eing&auml;ngen des Mikrocontrollers w&auml;hrend der Fahrt gemessen werden. Die Messwiderst&auml;nde sollten 
 	   daf&uuml;r eine niedrige Toleranz aufweisen, z.B. Metallschichtwiderst&auml;nde. 
 	   Der 1,00&#x202F;&Omega; Messwiderstand f&uuml;r den Motorstrom muss hinsichtlich 
 	   seiner Leistung (in Watt) an die maximale Stromst&auml;rke (in Ampere) angepasst werden.</p>
 	<ul>
 		<li>1,00&#x202F;&Omega; Messwiderstand f&uuml;r die Strommessung, 1&#x202F;% Toleranz, 1&#x202F;W ist geeignet 
-		f&uuml;r &uuml;bliche H0-Modellbahnlokomotiven mit weniger als 1&#x202F;A maximaler Stromaufnahme</li>
+		f&uuml;r &uuml;bliche H0-Modell&shy;bahn&shy;lo&shy;ko&shy;mo&shy;tiven mit weniger als 1&#x202F;A maximaler Stromaufnahme</li>
 	</ul>
 	F&uuml;r 1:11 Spannungsteiler
 	<ul>
@@ -80,7 +79,11 @@
 		Messeingangs des Mikrocontrollers vor Spannungsspitzen aus der Strommessung im Leistungsteil der Motorsteuerung</li>
 		<li>Schrumpfschlauch, sehr d&uuml;nn, zur teilweisen Isolierung der Anschlussdr&auml;hte der Widerst&auml;nde</li>
 	</ul>
-	<div><a href="/viewer.html"><img src="/image/002.jpg" alt="Schaltung mit ESP32 DevKit V1, Step-up-converer und Motor-IC TLE5206-2S" style="width:100%"></a></div>
+	<div><a href="/viewer.html"><img name="img002" alt="Schaltung mit ESP32 DevKit V1, Step-up-converer und Motor-IC TLE5206-2S" style="width:100%" onLoad="LoadImage('img004','/image/004.jpg')";></a></div> <!-- src="/image/002.jpg" -->
+
+	<p>Gesch&auml;tzte Materialkosten f&uuml;r Elektronik ca. 25&#x202F;&euro; ohne weitere Materialen und Werkzeuge</p>
+	<p>Die <b>Bauanleitung mit Fotos</b> f&uuml;r das PiedPiperS-Projekt liegt im Internet unter 
+	<a href='/github.html'>https://github.com/jorail</a></p> 
 	
 	<h2>Weitere Materialien</h2>
 	<ul>
@@ -109,10 +112,66 @@
 	<li>Multimeter</li>
 	</ul>
 	
-	<p>Gesch&auml;tzte Materialkosten f&uuml;r Elektronik ca. 25&#x202F;&euro; ohne weitere Materialen und Werkzeuge</p>
+	<h2>Geschwindigkeitsmessung (optional)</h2>
+	<a href='https://github.com/jorail/PiedPiperS/tree/speedo'>PiedPiPerS branch 'speedo', version 191</a>
+    <p>F&uuml;r eine Geschwind&shy;ig&shy;keits&shy;messung vom fahrenden Zug aus (d.h. kontinuierlich und online) werden 
+	   die schwarzen oder dunklen Schienen&shy;schwellen der Modellbahn&shy;schinen beim &Uuml;berfahren durch einen Infrarot-Sensor erfasst. 
+	   Die Schienen&shy;schwellen haben gleichm&auml;&szlig;ige Abst&auml;nde. Aus der Zeit, die der Zug bis zur n&auml;chsten Schwelle ben&ouml;tigt, und der
+	   Frequenz des &Uuml;berfahrens kann dann die <b>wahre Geschwind&shy;igkeit der Fahrt über die Schiene in Meter pro Sekunde (m/s)</b> bestimmt werden.
+	   Die Geschwind&shy;igkeit wird regelm&auml;&szlig; gemessen, <b>in km/h entsprechend dem Modellma&szlig;stab</b> umgerechnet und in der Lok&shy;steuer&shy;ung online angezeigt.
+       Au&szlig;erdem k&ouml;nnen die Ergebnisse der Geschwind&shy;ig&shy;keits&shy;messung in einem Diagramm auf der zus&auml;tzlichen Webseite 
+	   <i><a href ='speed.html'>speed.html</a></i> verfolgt werden. Die Daten werden hierzu jede Sekunde &uuml;ber <i>get /speeddata</i> 
+	   vom ESP32-Webserver angefordert.
+	</p>
+	<p>F&uuml;r diese Geschwind&shy;ig&shy;keits&shy;messung wereden wenige zus&auml;tzliche Bauteile und eine sehr einfache 
+	   elektrische Schaltung gebraucht. Eine <b>Infrarot-(IR)-Reflex&shy;licht&shy;schranke dient als Sensor zur Erkennung 
+	   der Schienen&shy;schwellen</b> unter dem Waagen. In der elektrischen Schaltung wird die Signalspannung f&uuml;r den Micro&shy;prozessor verst&auml;rkt. 
+	   Die unten abgebildete Schaltung ist in den <a href='https://github.com/jorail/PiedPiperS/tree/main/docs'> Projektdokumenten</a> 
+	   beschrieben und besteht aus folgenden Bauteilen:
+	</p>
+	<ul>
+		<li>Infrarot-(IR)-Reflexlichtschranke und N&auml;herungssensor für ca. 5&#x202F;mm Abstand, z.B. Typ HSDL-9100,
+		mit IR-LED als Sender und IR-Diode als Empf&auml;nger</li>
+		<li>220&#x202F;&Omega; Vorwiderstand f&uuml;r die Einstellung des Stroms durch die IR-LED I<sub>F</sub> bei 10&#x202F;mA </li>
+		<li>Signalverst&auml;rker aus einfachem NPN-Kleintransistor mit hoher Verst&auml;rkung, z.B. BC&#x202F;238C, BC&#x202F;548C, BC&#x202F;547B, BC&#x202F;848C, BC&#x202F;846B</li>
+		<li>33&#x202F;k&Omega; Pull-up-Widerstand f&uuml;r die Erzeugung des analogen Eingangssignals. Der Widerstand kann zwischen 
+		27&#x202F;k&Omega; und 47&#x202F;k&Omega; so gew&auml;hlt werden, dass sich eine gute Erkennung der dunklen Schwellen ergibt.</li>
+	</ul>
+	<div><a href="/viewer.html"><img name="img004" alt="IR-Sensor f&uumlr Geschwindigkeitsmessung" style="width:100%"></a></div>  <!-- src="/image/004.jpg" -->
+	<p>Die verst&auml;rkte Signal&shy;spannung wird über den analogen Eingang am Pin GPIO&#x202F;39 und den Analog-Digital-Wandler ADC1_CH3 des Micro&shy;prozessors erfasst. 
+	   Die laufende Erkennung der Schienen&shy;schwellen im PiedPiperS-Programm kann unmittelbar durch die blaue LED auf dem Micro&shy;prozessor angezeigt werden.
+    </p>   
+	<p>Um eine Mehrfachz&auml;hlung einzelner Schwellen bei kontinuierlich zu- und abnehmender Signal&shy;spannung zu verhindern, 
+		ist zwischen dem niedrigen Spannungs&shy;niveau (<&#x202F;0,5&#x202F;V, heller Grund, reflektierend, keine Bahnschwelle) 
+		und dem hohen Sannungs&shy;niveau (ca. 1,5&#x202F;V, >&#x202F;0,8&#x202F;V, dunkle Bahnschwelle, Transistor sperrt) ein ausreichend gro&szlig;es Totband 
+		(hier z.B. 0,3&#x202F;V zwischen dem nidrigen und hohen Spannungs&shy;niveau) als Verz&ouml;gerung (Hysterese) erforderlich. 
+		Letztlich m&uuml;ssen die Erkennung der Bahn&shy;schwellen in der Praxis entsprechend der Eigenschaften des Modell&shy;bahn&shy;gleises 
+		und IR-Sensors erprobt und der Pull-up-Widerstand und die Grenzwerte für die Signal&shy;erken&shy;nung dazu passend eingestellt werden.
+		Die Grenzwerte des niedrigen und hohen Spannungs&shy;niveaus k&ouml;nnen bei Bedarf &auml;hnlich wie die Motorspannung in der 
+		<a href="/lok.ini">lok.ini-Datei</a> angepasst werden.
+	</p>
+	<p>Gesch&auml;tzte zus&auml;tzliche Materialkosten f&uuml;r Elektronik ca. 3&#x202F;&euro;</p>
 	<p>Die <b>Bauanleitung mit Fotos</b> f&uuml;r das PiedPiperS-Projekt liegt im Internet unter 
 	<a href='/github.html'>https://github.com/jorail</a></p> 
-	<div><a href="/"><img src="/lok.png" alt="Loksteuerung" style="width:100%"></a></div> <!--http://192.168.4.1/-->
+	<div><a href="/"><img src="/lok.png" alt="Loksteuerung" style="width:100%" onLoad="LoadImage('img001','/image/001.jpg')"> </a></div> <!--http://192.168.4.1/-->
+
+<script>
+	var loadingImage = false;
+    
+    //load images one after one by adding their sources: 
+	//lok.png (1st image, source included, add source of next image 001.jpg), 001.jpg, 003.jpg, 002.jpg, 004.jpg
+	function LoadImage(imageName,imageFile) 
+	{
+	  if ((!document.images) || loadingImage) return;
+	  loadingImage = true;
+	  if (document.images[imageName].src.indexOf(imageFile)<0)
+	  {
+		document.images[imageName].src = imageFile;
+	  }
+	  loadingImage = false;
+	}
+
+</script>
 	
 	<!--
 	<h1>PiedPiper Parts</h1>
