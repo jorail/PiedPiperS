@@ -100,7 +100,17 @@ request get /speeddata. Detection of sleepers can be indicted by LED on the micr
 
 The reflectiv IR sensor signal is converted to a frequency of passing railway sleepers and to a true speed over ground measurement in meters per second. 
 This speed data is continuously updated, converted to the model scale speed in km/h and displayed on the train control panel. Alternatively it can by analysed in a 
-chart.js diagram at speed.html together with the power data.
+chart.js diagram at speed.html together with the power data. 
+
+Version 208 has a complete redifiontion of main loop timing variables and corresponding changes to lok.ini definitions. This facilitates up to 5000 Hz IR sampling.
+
+The irsamplerecord.html, version 211, has a second chart display of single or average IR sample data. It allows for fine tuning of IR thresholds (IRlow, IRhigh) for
+defining the voltage deadbeand for effective railway sleepter detection. Furthermore, this IR data recorder allows to sum the railway sleeper count
+in one round, in order to check the completeness of the counting based on a known number of passed railway sleepers. The sum-counter is automatically
+interrupted by a streched reflective track ground (e.g. white paper or tape applied on track). Choose the length of this strech so, that it yields > 1 second 
+reflective IR signal during train passage. The data of the sum-counter is than copied and evaluated as dataset from 'last round' and the sum-counter is zeroed 
+for the restart of a new round. This allows for simple and repeated control of the completeness of counting with different deadband settings, speed levels,
+sensor position adjustments, environmental conditions.  
 
 Please feel invited to pass your comments on github or via e-mail, if you have any suggestions for further improvement or
 new applications for PiedPiperS.
