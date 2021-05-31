@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <title>ESP32 Analog Input Reading JSON Message 2021-05-16 Version 195</title>
+  <title>ESP32 Analog Input Reading JSON Message 2021-05-31 Version 211</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8"/>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" type="text/css" href="control.css">
@@ -19,7 +19,7 @@
 		  <canvas id="SpeedChart" width="92%" height="100"></canvas> 
     </div><br>
 	<table style= "width: 96%; text-align: left; font-size: 1.0rem; margin: 0 2% 0 2%;" >
-	<tr><td>Zähler</td>                  <td><span id="CountValue">%CountValue%</span></td>               <td><small>Schwellen</small></td></tr>
+	<tr><td>Z&auml;hler</td>             <td><span id="CountValue">%CountValue%</span></td>               <td><small>Schwellen</small></td></tr>
 	<tr><td>IR-Signal</td>               <td><span id="IRAvgValue">%IRAvgValue%</span></td>               <td>V</td></tr>
 	<tr><td>Fahrstrecke</td>             <td><span id="DistanceValue">%DistanceValue%</span></td>         <td>m</td></tr>
 	<tr><td>Geschwindigkeit</td>         <td><span id="SpeedmeasureValue">%SpeadmeasureValue%</span></td> <td>m/s</td></tr>
@@ -45,6 +45,7 @@
 	<div><button id="ledonoff" class="button orange" style="width: 45%; font-size: 1.7rem;">LED an/aus</button>     <button id="zerocounter" class="button darkred" style="width: 45%; font-size: 1.7rem;">Null-stellen</button></div>
 	<br>
 	<div><a href="/"><img src="/lok" alt="Loksteuerung" style="width:95%"></a></div>
+	<h2 style="font-size: 1.2rem; margin: 5% 5%;"><a href="/irsamplerecord.html"> IR-Datenrecorder</a></h2>
 <script>
     // SpeedChart initialisation, formatting, data collection from JSON and handling, intervall updating
 	var countArray = [];
@@ -347,7 +348,7 @@
   function minus4e(){
     websocket.send('--------');
 	console.log('WebSocket command sent --------');
-	//document.getElementById('LastCommand').innerHTML = 'sent: toggle';
+	//document.getElementById('LastCommand').innerHTML = 'sent: ----';
 	delay(1000);
   }
   function minus1e(){
