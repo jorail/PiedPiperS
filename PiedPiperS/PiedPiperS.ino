@@ -200,16 +200,15 @@
   209 2021-05-29 monitor speed sampling
   210 2021-05-30 json serialize with data nestedjsonarray
   211 2021-05-31 json recorder only one array, toggle average sample, layout of irsamplerecord.html
-  
+  212 2021-06-01 irsamplerecord.html internal switch for 'irrecordreading', add explanation, html formatting
       
-  TODO: increase deadband, if possible
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 211, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-05-31";
+String SKETCH_INFO = "PiedPiperS.ino, Version 212, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-06-01";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -378,8 +377,8 @@ const int MAX_CHARS      = 65;   // Max size of the input command buffer
   int IRSampleAveraging = 3;  //attenuation of IR signal, ajust according to max. speed counting frequency, default 2, increase if signal is very noisy
   int SpeedSampleLoopCounts = int(MainLoopFrequency/SpeedSampleFrequency);
   int SpeedLEDLoopCounts    = int(SpeedSampleLoopCounts*IRSampleAveraging);
-  int IRlow = 400;   //IR analog signal high level threshold in mV, choose value > 150 mV due to analogue input reading offset
-  int IRhigh = 1100; //IR analog signal high level threshold in mV
+  int IRlow = 600;   //IR analog signal high level threshold in mV, choose value > 150 mV due to analogue input reading offset, default 600 mV
+  int IRhigh = 1100; //IR analog signal high level threshold in mV, default 1100 mV
   std::valarray<int> IRArray(IRSampleAveraging);
   int IRAverage = 0;
   bool SleeperDetected = true; //start with true value, in order to avoid rising edge count at startup

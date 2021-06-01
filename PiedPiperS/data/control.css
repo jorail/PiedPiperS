@@ -2,7 +2,6 @@ html {
   font-family: Helvetica;
   display: inline-block;
   margin: 2% auto;
-  text-align: block;
 }
 h1{
   font-size: 1.8rem;
@@ -12,7 +11,7 @@ h1{
 h2 {
   font-size: 0.8rem;
   text-align: left;
-  margin-left = 5%;
+  margin-left: 5%;
 }
 p{
   font-size: 1.3rem;

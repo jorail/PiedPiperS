@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <title>ESP32 Analog Input Reading JSON Message 2021-05-31 Version 211</title>
+  <title>ESP32 Analog Input Reading JSON Message 2021-06-01 Version 212</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8"/>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" type="text/css" href="control.css">
@@ -11,8 +11,8 @@
   <script charset="utf-8" src="/chart.min.js"></script>
 </head>
 <body onload="loadChart();">
-    <h3>IR-Datenrecorder</h3>
-	<div><button id="irrecordingonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Recorder an/aus</button>    
+    <h3>IR-Datenrekorder</h3>
+	<div><button id="irrecordingonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Recorder an/aus</button>   <!-- general external and internal switch for IR record supply and reading-->
 	<button id="iraveragesampleonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Mittelwert an/aus</button> </div>
 	<br>
 	<table style= "width: 96%; text-align: left; font-size: 1.0rem; margin: 0 2% 0 2%;" >
@@ -34,7 +34,8 @@
 	<br>
 	<div><button id="ledonoff" class="button orange" style="width: 45%; font-size: 1.7rem;">LED an/aus</button>     <button id="zerocounter" class="button darkred" style="width: 45%; font-size: 1.7rem;">Null-stellen</button></div>
 	<table style= "width: 96%; text-align: left; font-size: 1.0rem; margin: 0 2% 0 2%;" >
-	<tr><td>Zähler</td>                  <td><span id="CountValue">%CountValue%</span></td>               <td><small>Schwellen</small></td></tr>
+	<br>
+	<tr><td>Zähler</td>                 <td><span id="CountValue">%CountValue%</span></td>                <td><small>Schwellen</small></td></tr>
 	<tr><td>IR-Signal</td>               <td><span id="IRAvgValue">%IRAvgValue%</span></td>               <td>V</td></tr>
 	<tr><td>Fahrstrecke</td>             <td><span id="DistanceValue">%DistanceValue%</span></td>         <td>m</td></tr>
 	<tr><td>Geschwindigkeit</td>         <td><span id="SpeedmeasureValue">%SpeadmeasureValue%</span></td> <td>m/s</td></tr>
@@ -46,7 +47,7 @@
 	<tr style="border-bottom: 4pt double #ddd;">
 	<td>Strecke</td>                     <td><span id="TotalDistance"  >%TOTALDISTANCE%</span></td>       <td>m</td></tr>
 	<tr><td><b>Letzte Runde</b></td>     <td>&nbsp;</td>                                                  <td>&nbsp;</td></tr>
-	<tr><td>Z&auml;hler</td>             <td><span id="LastTotal"    >%LASTTOTAL%</span></td>             <td><small>Schwellen</small></td></tr>
+	<tr><td><b>Z&auml;hler</b></td>      <td><span id="LastTotal" style="font-weight:bold;">%LASTTOTAL%</span></td> <td><b><small>Schwellen</small></b></td></tr>
 	<tr><td>Strecke</td>                 <td><span id="LastDistance">%LASTDISTANCE%</span></td>           <td>m</td></tr>
 	<tr><td>Zeit</td>                    <td><span id="LastSeconds">%LASTSECONDS%</span></td>             <td>s</td></tr>
 	<tr><td>Geschwindigkeit</td>          <td><span id="LastSpeed">%LASTSPEED%</span></td>                 <td>m/s</td></tr>
@@ -59,8 +60,37 @@
 	<div><button id="reverse" class="button orange">< ></button>     <button id="halt" class="button redlong">Halten</button>   <button id="stop" class="button darkred">Stopp!</button></div> 
 	<h2 style="font-size: 1.2rem; margin: 5% 5%;"><a href="/speed.html">Geschwindigkeitsdaten</a></h2>
 	<div><a href="/"><img src="/lok" alt="Loksteuerung" style="width:95%"></a></div>
+	<h2 style="font-size: 1.2rem; margin: 2% 5%;">Anleitung zum IR-Datenrekorder</h2>
+	<p style="text-align: left; font-size: 1.0rem; margin: 2% 0%;">
+	Die Daten&uuml;bertragung und -anzeige werden durch den Schalter 'IR-Recorder' gleichzeitig im Microporzessor und in der Webseite angeschaltet. 
+	Erneutes bet&auml;tigen stoppt die Daten&uuml;bertragung und die Aktualisierung der Anzeige. Der letzte Datensatz bleibt so f&uuml;r eine geneauere Auswertung erhalten.</p>
+	<p style="text-align: left; font-size: 1.0rem; margin: 2% 0%;">
+	Das <b>Diagramm</b> zeigt entweder Einzel- oder Mittelwerte der 500 j&uuml;ngsten Daten des IR-Sensors an (Schalter 'IR-Mittelwerte'). Die horizontale Achse kann 
+	mit den zwei Schiebe&shy;reglern hinsichtlich des Startposition im Datensatz (X) und hinsichtlich der Anzahl der angezeigten Daten (D) angepasst werden. 
+	Die Auswertung der IR-Signale kann zur Verbesserung der Erkennung der Bahn&shy;schwellen genutzt werden. Hierzu k&ouml;nnen die IR-Schwellen&shy;werte (irlow, irhigh) 
+	zur Definition der dazwischen liegenden Trennzone (Deadband, siehe Anzeige im Diagramm) und/oder die gleitenden Mittelwertbildung (averaging) in der 
+	<a href="/ini.html">Datei lok.ini</a> angepasst werden.</p>
+	<p style="text-align: left; font-size: 1.0rem; margin: 2% 0%;">
+	Der <b>IR-Daten&shy;rekorder</b> summiert die Anzahl der erkannten Bahn&shy;schwellen in einer Runde. Im Vergleich zu einer bekannten Anzahl &uuml;berfahrener 
+	Bahn&shy;schwellen kann die Vollst&auml;ndigkeit der Z&auml;hlung &uuml;berpr&uuml;ft werden. Der Summenz&auml;hler wird automatisch durch einen l&auml;ngeren 
+	Strecken&shy;abschnitt mit reflektier&shy;endem Gleisbett (z.B. wei&szlig;es Papier oder Klebeband auf dem Gleis) unterbrochen. Die L&auml;nge dieses Streckenabschnitts 
+	ist so zu w&auml;hlen, dass er bei Zugdurch&shy;fahrt l&auml;nger als eine Sekunde ein reflektier&shy;endes IR-Signal ergibt. Die Daten des Summenz&auml;hlers 
+	werden dann in den Datensatz der 'letzten Runde' kopiert und die Fahrtdauer und Geschwindigkeit auf dieser Strecke ausgewertet. Der Summenz&auml;hler wird f&uuml;r 
+	eine neue Runde auf Null gesetzt. Dadurch k&ouml;nnen wiederholte und automatisierte Kontrollen der Vollst&auml;ndigkeit der Z&auml;hlung, ggf. bei unterschied&shy;lichen 
+	Deadband-Einstel&shy;lungen, Geschwind&shy;igkeits&shy;stufen, Feineinstellung der Position des Sensors, Umgebungs&shy;bedingungen durchgef&uuml;hrt werden.  
+	</p>
+	<!--<p>
+	The chart displays either single or average IR sample data. It allows for fine tuning of IR thresholds (IRlow, IRhigh) for
+	defining the voltage deadbeand for effective railway sleepter detection. Furthermore, this IR data recorder allows to sum the railway sleeper count
+	in one round, in order to check the completeness of the counting based on a known number of passed railway sleepers. The sum-counter is automatically
+	interrupted by a streched reflective track ground (e.g. white paper or tape applied on track). Choose the length of this strech so, that it yields > 1 second 
+	reflective IR signal during train passage. The data of the sum-counter is than copied and evaluated as dataset from 'last round' and the sum-counter is zeroed 
+	for the restart of a new round. This allows for simple and repeated control of the completeness of counting with different deadband settings, speed levels,
+	sensor position adjustments, environmental conditions.  
+	</p>-->
 <script>
     // IRDataChart initialisation, formatting, data collection from JSON and handling, intervall updating
+	var irrecordreading = false;
 	var irsampleArray = [];
 	var irlowArray = [];
 	var irhighArray = [];
@@ -111,7 +141,7 @@
 					},
 					title: {
 						display: true,
-						text: 'Sekunden',  //axis title
+						text: 'erfasste IR-Messwerte',  //axis title
 						//fontColor: "rgba(0, 0, 0, 1)", //black
 					},
 				},
@@ -165,95 +195,97 @@
 	} 
 
 	function loadChart() { //fetches json data & calls dspChart() to render graph  {"speed":31,"currentspeed":167,"power":1.6711}
-	  var i, IRData, count, distance, speedmeasure, speedscale, total, totaldistance, lasttotal, lastseconds, lastdistance, lastspeed, lastspeedatscale, irsamplerecording, iraveragesample, irlow, irhigh;
-	  var requestURL = '/irsamplerecordingon'; //URL of the JSON data
-	  var request = new XMLHttpRequest({
-		mozSystem: true
-	  }); // create http request
-	  request.onreadystatechange = function() {
-		if (request.readyState == 4 && request.status == 200) {
-		  //console.log(request.responseText);
-		  IRData = JSON.parse(request.responseText); //parse JSON string to IRData object
-		  console.log(IRData);
-		  
-		  /*oritinal JSON IRSampleRecordingon definition in PiedPiperS v210
-			json2["count"]        = SpeedCount[0];       //railway sleeper counts
-			json2["iravg"]        = IRAverage;           //in mV
-			json2["distance"]     = float(SpeedCount[0])*SpeedCountDistance; //in m
-			json2["speedmeasure"] = Speed;               //measured speed m/s
-			json2["speedscale"]   = SpeedAtScale;        //measured speed converted to scale in km/h
-			
-			json2["total"]        = SpeedCountTotal;     //int
-			json2["totaldistance"] = float(SpeedCountTotal)*SpeedCountDistance; //in m  
-			json2["lasttotal"]    = SpeedCountLastTotal; //int    
-			json2["lastseconds"]  = SpeedCountLastSeconds; //float   
-			json2["lastdistance"] = float(SpeedCountLastTotal)*SpeedCountDistance; //in m    
-			json2["lastspeed"]    = LastSpeed;           //float m/s
-			json2["lastspeedatscale"] = LastSpeedAtScale; //float in km/h at model scale
-		 
-			json2["irsamplerecording"] = int(IRSampleRecording);  // IRSampleRecording active =1, deactivated =0
-            json2["iraveragesample"] = int(IRAverageSample);  // IRAverageSample active =1, deactivated =0
-			json2["irlow"]        = IRlow;               //ir_low_level, no sleeper detected in mV
-			json2["irhigh"]       = IRhigh;              //ir_high_level, sleeper detected in mV
+	    if (irrecordreading == true) {
+		  var i, IRData, count, distance, speedmeasure, speedscale, total, totaldistance, lasttotal, lastseconds, lastdistance, lastspeed, lastspeedatscale, irsamplerecording, iraveragesample, irlow, irhigh;
+		  var requestURL = '/irsamplerecordingon'; //URL of the JSON data
+		  var request = new XMLHttpRequest({
+			mozSystem: true
+		  }); // create http request
+		  request.onreadystatechange = function() {
+			if (request.readyState == 4 && request.status == 200) {
+			  //console.log(request.responseText);
+			  IRData = JSON.parse(request.responseText); //parse JSON string to IRData object
+			  console.log(IRData);
+			  
+			  /*oritinal JSON IRSampleRecordingon definition in PiedPiperS v210
+				json2["count"]        = SpeedCount[0];       //railway sleeper counts
+				json2["iravg"]        = IRAverage;           //in mV
+				json2["distance"]     = float(SpeedCount[0])*SpeedCountDistance; //in m
+				json2["speedmeasure"] = Speed;               //measured speed m/s
+				json2["speedscale"]   = SpeedAtScale;        //measured speed converted to scale in km/h
+				
+				json2["total"]        = SpeedCountTotal;     //int
+				json2["totaldistance"] = float(SpeedCountTotal)*SpeedCountDistance; //in m  
+				json2["lasttotal"]    = SpeedCountLastTotal; //int    
+				json2["lastseconds"]  = SpeedCountLastSeconds; //float   
+				json2["lastdistance"] = float(SpeedCountLastTotal)*SpeedCountDistance; //in m    
+				json2["lastspeed"]    = LastSpeed;           //float m/s
+				json2["lastspeedatscale"] = LastSpeedAtScale; //float in km/h at model scale
+			 
+				json2["irsamplerecording"] = int(IRSampleRecording);  // IRSampleRecording active =1, deactivated =0
+				json2["iraveragesample"] = int(IRAverageSample);  // IRAverageSample active =1, deactivated =0
+				json2["irlow"]        = IRlow;               //ir_low_level, no sleeper detected in mV
+				json2["irhigh"]       = IRhigh;              //ir_high_level, sleeper detected in mV
 
-			JsonArray IRSampleArray = json2.createNestedArray("irsamplerecord");
-			for (int i = 0; i < 500; i++) {
-			  IRSampleArray.add(IRSampleRecord[i]);     //array of original IR sample values after linear adjustment
-			}	
-		  */
-		  
-		  //retrive and scale new data elements from IRData object
-		  count = IRData.count/100000;        // number of railway sleepers detected /100000
-		  iravg = IRData.iravg/1000;          // averaged IR Signal converted from mV to V /1000
-		  distance = IRData.distance/1000;    // distance travelled, converted from m to km
-		  speedmeasure = IRData.speedmeasure; // speed over ground in m/s
-		  speedscale = IRData.speedscale/100; // speed in model scale in km/h converted to *100 km/h
-		  
-		  total = IRData.total;               // int count
-		  totaldistance = IRData.totaldistance; // in m
-		  lasttotal = IRData.lasttotal;       // int count
-		  lastseconds = IRData.lastseconds;   // in s
-		  lastdistance = IRData.lastdistance; // in m
-		  lastspeed = IRData.lastspeed;       // in m/s
-		  lastspeedatscale = IRData.lastspeedatscale; // in km/h at model scale	  
-		  
-		  irsamplerecording = IRData.irsamplerecording;  // IRSampleRecording active =1, deactivated =0, bool converted to integer, 1/0
-		  iraveragesample = IRData.iraveragesample;  // IRAverageSample active =1, deactivated =0, bool converted to integer, 1/0		  
-		  irlow = IRData.irlow;               // ir_low_level, no sleeper detected, in mV
-		  irhigh = IRData.irhigh;             // ir_high_level, no sleeper detected, in mV
-		  
-		  //updating irdata for IRDataChart
-          N = 500;
-		  for (i = 0; i < N; i++) {
-		  	  irsampleArray[i] = IRData.irsamplerecord[i];
-			  irlowArray[i] =irlow;
-			  irhighArray[i] =irhigh;
-		  }  
-		  IRDataChart.update(); //update IRDataChart with new data
-		  
-		  //update value display in text
-		  document.getElementById('CountValue').innerHTML        = Math.round(count*100000);           // in number of sleepers
-		  document.getElementById('IRAvgValue').innerHTML        = Math.round(iravg*100)/100;          // in V,    precision 2
-		  document.getElementById('DistanceValue').innerHTML     = Math.round(distance*1000*100)/100;  // in m,    precision 2 
-		  document.getElementById('SpeedmeasureValue').innerHTML = Math.round(speedmeasure*1000)/1000; // in m/s,  precision 3 
-		  document.getElementById('SpeedscaleValue').innerHTML   = Math.round(speedscale*100*10)/10;   // in km/h, precision 1 
-		  
-		  document.getElementById('Total').innerHTML             = total;                              // int
-		  document.getElementById('TotalDistance').innerHTML     = Math.round(totaldistance*1000)/1000;// in m,   precision 3 
-		  document.getElementById('LastTotal').innerHTML         = Math.round(lasttotal);              // int
-		  document.getElementById('LastSeconds').innerHTML       = Math.round(lastseconds*1000)/1000;  // in s,   precision 3 
-		  document.getElementById('LastDistance').innerHTML      = Math.round(lastdistance*1000)/1000; // in m,   precision 3 
-		  document.getElementById('LastSpeed').innerHTML         = Math.round(lastspeed*1000)/1000;    // in m/s, precision 3 
-		  document.getElementById('LastSpeedAtScale').innerHTML  = Math.round(lastspeedatscale);       // in km/h 
+				JsonArray IRSampleArray = json2.createNestedArray("irsamplerecord");
+				for (int i = 0; i < 500; i++) {
+				  IRSampleArray.add(IRSampleRecord[i]);     //array of original IR sample values after linear adjustment
+				}	
+			  */
+			  
+			  //retrive and scale new data elements from IRData object
+			  count = IRData.count/100000;        // number of railway sleepers detected /100000
+			  iravg = IRData.iravg/1000;          // averaged IR Signal converted from mV to V /1000
+			  distance = IRData.distance/1000;    // distance travelled, converted from m to km
+			  speedmeasure = IRData.speedmeasure; // speed over ground in m/s
+			  speedscale = IRData.speedscale/100; // speed in model scale in km/h converted to *100 km/h
+			  
+			  total = IRData.total;               // int count
+			  totaldistance = IRData.totaldistance; // in m
+			  lasttotal = IRData.lasttotal;       // int count
+			  lastseconds = IRData.lastseconds;   // in s
+			  lastdistance = IRData.lastdistance; // in m
+			  lastspeed = IRData.lastspeed;       // in m/s
+			  lastspeedatscale = IRData.lastspeedatscale; // in km/h at model scale	  
+			  
+			  irsamplerecording = IRData.irsamplerecording;  // IRSampleRecording active =1, deactivated =0, bool converted to integer, 1/0
+			  iraveragesample = IRData.iraveragesample;  // IRAverageSample active =1, deactivated =0, bool converted to integer, 1/0		  
+			  irlow = IRData.irlow;               // ir_low_level, no sleeper detected, in mV
+			  irhigh = IRData.irhigh;             // ir_high_level, no sleeper detected, in mV
+			  
+			  //updating irdata for IRDataChart
+			  N = 500;
+			  for (i = 0; i < N; i++) {
+				  irsampleArray[i] = IRData.irsamplerecord[i];
+				  irlowArray[i] =irlow;
+				  irhighArray[i] =irhigh;
+			  }  
+			  IRDataChart.update(); //update IRDataChart with new data
+			  
+			  //update value display in text
+			  document.getElementById('CountValue').innerHTML        = Math.round(count*100000);           // in number of sleepers
+			  document.getElementById('IRAvgValue').innerHTML        = Math.round(iravg*100)/100;          // in V,    precision 2
+			  document.getElementById('DistanceValue').innerHTML     = Math.round(distance*1000*100)/100;  // in m,    precision 2 
+			  document.getElementById('SpeedmeasureValue').innerHTML = Math.round(speedmeasure*1000)/1000; // in m/s,  precision 3 
+			  document.getElementById('SpeedscaleValue').innerHTML   = Math.round(speedscale*100*10)/10;   // in km/h, precision 1 
+			  
+			  document.getElementById('Total').innerHTML             = total;                              // int
+			  document.getElementById('TotalDistance').innerHTML     = Math.round(totaldistance*1000)/1000;// in m,   precision 3 
+			  document.getElementById('LastTotal').innerHTML         = Math.round(lasttotal);              // int
+			  document.getElementById('LastSeconds').innerHTML       = Math.round(lastseconds*1000)/1000;  // in s,   precision 3 
+			  document.getElementById('LastDistance').innerHTML      = Math.round(lastdistance*1000)/1000; // in m,   precision 3 
+			  document.getElementById('LastSpeed').innerHTML         = Math.round(lastspeed*1000)/1000;    // in m/s, precision 3 
+			  document.getElementById('LastSpeedAtScale').innerHTML  = Math.round(lastspeedatscale);       // in km/h 
 
-		  document.getElementById('IRSampleRecording').innerHTML = Math.round(irsamplerecording);      // integer, 1=on, 0=off
-		  document.getElementById('IRAverageSample').innerHTML   = Math.round(iraveragesample);        // integer, 1=on, 0=off
-		  document.getElementById('IRlowValue').innerHTML        = Math.round(irlow);                  // in mV,    precision 0
-		  document.getElementById('IRhighValue').innerHTML       = Math.round(irhigh);                 // in mV,    precision 0
+			  document.getElementById('IRSampleRecording').innerHTML = Math.round(irsamplerecording);      // integer, 1=on, 0=off
+			  document.getElementById('IRAverageSample').innerHTML   = Math.round(iraveragesample);        // integer, 1=on, 0=off
+			  document.getElementById('IRlowValue').innerHTML        = Math.round(irlow);                  // in mV,    precision 0
+			  document.getElementById('IRhighValue').innerHTML       = Math.round(irhigh);                 // in mV,    precision 0
+			}
+		  }
+		  request.open('GET', requestURL);
+		  request.send(); // send the request
 		}
-	  }
-	  request.open('GET', requestURL);
-	  request.send(); // send the request
 	}
 	//based on concept in https://stackoverflow.com/questions/51556002/live-update-the-charts-js-graph-on-a-web-page-using-json-data-received-from-a-re
 	//https://blog.heimetli.ch/chart-js-update.html
@@ -369,8 +401,9 @@
   }
   function irrecordingonoffe(){
     websocket.send('r');
-	console.log('WebSocket command sent r');
+	console.log('WebSocket command sent r'); //general .ino microprocessor .ino program switch for activating/deactivating sample record
 	//document.getElementById('LastCommand').innerHTML = 'sent r';
+	irrecordreading =!irrecordreading; //general internal javascript switch for reading sample record
 	delay(1000);
   }
   function iraveragesampleonoffe(){

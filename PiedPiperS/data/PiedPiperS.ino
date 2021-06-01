@@ -197,15 +197,18 @@
   206 2021-05-22 debugging main loop timing variable definition, solve devision by zero problem
   207 2021-05-25 debugging main loop timing, optimise speed sampling and power sampling, MainLoopFrequencySeconds evaluated in MainLoop, not in SpeedSampling
   208 2021-05-26 loop timing without speedsampling subdevision (commented out), prevention of int devision by zero problem in ini setup for loop variables
+  209 2021-05-29 monitor speed sampling
+  210 2021-05-30 json serialize with data nestedjsonarray
+  211 2021-05-31 json recorder only one array, toggle average sample, layout of irsamplerecord.html
+  212 2021-06-01 irsamplerecord.html internal switch for 'irrecordreading', add explanation, html formatting
       
-  TODO: increase deadband, if possible
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 208, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-05-26";
+String SKETCH_INFO = "PiedPiperS.ino, Version 212, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-06-01";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -326,7 +329,7 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 208, GNU General Public License Ve
 ////////////////////////////////////////////////////////////////////////////////
 
 // mainloop and monitoring
-int MainLoopFrequency     =   30000;                 // Frequency for power LED flashes while void loop running (ca. 1 to 2 seconds, defined by value for main LoopCount), 
+int MainLoopFrequency     =   5000;                 // Frequency for power LED flashes while void loop running (ca. 1 to 2 seconds, defined by value for main LoopCount), 
                                                      // default 30000 in PiedPiper v201
                                                      // 20000 in PiedPiper v199c exacts to 1 second MainLoopFrequency
                                                      // 5155 = 3.6 seconds, optimised main loop in v197 and with WebServer, with MorseDecoder, adjustSpeed
@@ -374,8 +377,8 @@ const int MAX_CHARS      = 65;   // Max size of the input command buffer
   int IRSampleAveraging = 3;  //attenuation of IR signal, ajust according to max. speed counting frequency, default 2, increase if signal is very noisy
   int SpeedSampleLoopCounts = int(MainLoopFrequency/SpeedSampleFrequency);
   int SpeedLEDLoopCounts    = int(SpeedSampleLoopCounts*IRSampleAveraging);
-  int IRlow = 400;   //IR analog signal high level threshold in mV, choose value > 150 mV due to analogue input reading offset
-  int IRhigh = 1100; //IR analog signal high level threshold in mV
+  int IRlow = 600;   //IR analog signal high level threshold in mV, choose value > 150 mV due to analogue input reading offset, default 600 mV
+  int IRhigh = 1100; //IR analog signal high level threshold in mV, default 1100 mV
   std::valarray<int> IRArray(IRSampleAveraging);
   int IRAverage = 0;
   bool SleeperDetected = true; //start with true value, in order to avoid rising edge count at startup
@@ -387,6 +390,19 @@ const int MAX_CHARS      = 65;   // Max size of the input command buffer
   float Speed = 0; // in m/s
   float SpeedAtScale = 0; // in km/h at model scale
   float Scale = 87; //model scale, Spur 1 = 32, H0 = 87, TT = 120, N = 160
+
+  //IRSampleRecording
+  bool IRSampleRecording = false;
+  int IRSampleRecord[500];
+  //int IRAverageRecord[500];
+  //int IRDetectionRecord[500];
+  int SpeedCountTotal =0;
+  int SpeedCountLastTotal =0; 
+  unsigned long SpeedCountStartMilli = 0;
+  float SpeedCountLastSeconds = 0;
+  float LastSpeed = 0; // in m/s, as of last IRSampleRecording: SpeedCountLastTotal*SpeedCountDistance/SpeedCountLastSeconds
+  float LastSpeedAtScale = 0; // in km/h at model scale
+  bool IRAverageSample = false; // IRAverageSample for IR sample recorder: false = raw IR signal, true = use averaged sample 
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -674,52 +690,58 @@ String client_message ="Bereit..."; //intial command message on index.html
 
 //Evaluate Websocket Message
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
-    AwsFrameInfo *info = (AwsFrameInfo*)arg;
-    if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-        Serial.println("+ WebSocket message received with following data in client_message: "); //echo received message for test and monitoring
-        data[len] = 0; // null termination for char data
-        client_message = (char*)data;
-        Serial.println(client_message); //echo received message for test and monitoring
-        //ws.textAll(client_message);   //echo websocket received message for test and debugging
-        
-        if (client_message[0]=='=' || client_message[0]=='+' || client_message[0]=='-' || client_message[0]=='0' || client_message[0]=='?' || client_message[0]=='<') {
-          CLIENT_COMMAND(client_message.c_str()); //compilation type problem solved by .c_str()       
-        }
-        else if (client_message[0]=='l') { //toggle speed indicator LED from speed.html
-          SpeedLED = !SpeedLED;
-          if (!SpeedLED) {
-            digitalWrite(greenLED, LOW);    // shut off LED, when indication is switched off 
-          }
-        }
-        else if (client_message[0]=='z') { //zero speed counter
-          SpeedCount[0] = 0;
-          SpeedCount[1] = 0;
-          SpeedCounter  = 0;
-        }
-        else if (client_message[0]=='{') {
-          Serial.println("+ { at start of client_message indicates JSON syntax for interpretation in function INI_ACTION()" ); //echo received message for test and monitoring 
+  AwsFrameInfo *info = (AwsFrameInfo*)arg;
+  if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
+    Serial.println("+ WebSocket message received with following data in client_message: "); //echo received message for test and monitoring
+    data[len] = 0; // null termination for char data
+    client_message = (char*)data;
+    Serial.println(client_message); //echo received message for test and monitoring
+    //ws.textAll(client_message);   //echo websocket received message for test and debugging
+    
+    if (client_message[0]=='=' || client_message[0]=='+' || client_message[0]=='-' || client_message[0]=='0' || client_message[0]=='?' || client_message[0]=='<') {
+      CLIENT_COMMAND(client_message.c_str()); //compilation type problem solved by .c_str()       
+    }
+    else if (client_message[0]=='l') { //toggle speed indicator LED from speed.html
+      SpeedLED = !SpeedLED;
+      if (!SpeedLED) {
+        digitalWrite(greenLED, LOW);    // shut off LED, when indication is switched off 
+      }
+    }
+    else if (client_message[0]=='r') { //toggle irrecording on/off from irsamplerecorder.html
+      IRSampleRecording = !IRSampleRecording;
+    }
+    else if (client_message[0]=='a') { //toggle sample recorder selection of average sample on/off from irsamplerecorder.html
+      IRAverageSample = !IRAverageSample;
+    }  
+    else if (client_message[0]=='z') { //zero speed counter
+      SpeedCount[0] = 0;
+      SpeedCount[1] = 0;
+      SpeedCounter  = 0;
+    }
+    else if (client_message[0]=='{') {
+      Serial.println("+ { at start of client_message indicates JSON syntax for interpretation in function INI_ACTION()" ); //echo received message for test and monitoring 
 //          AsyncResponseStream *response = request->beginResponseStream("application/javascript");
 //          response->printf("      window.alert(\'JSON client_message identified: %s\');  ", client_message.c_str());
 //          request->send(response);
-            INI_ACTION(data);
-        }
+        INI_ACTION(data);
+    }
 //          writeIni (&client_message.c_str());
-        
-        else if (client_message[0]=='#') {
-          Serial.println("+ sign '#' identified comment in client_message: ");
-          Serial.println(client_message);
-          Serial.println();
+    
+    else if (client_message[0]=='#') {
+      Serial.println("+ sign '#' identified comment in client_message: ");
+      Serial.println(client_message);
+      Serial.println();
 //          AsyncResponseStream *response = request->beginResponseStream("application/javascript");
 //          response->printf("      window.alert(\'comment with # character at start of client_message identified: %s\');  ", client_message.c_str());
 //          request->send(response);
-        }
-        else {
-          Serial.println("charcter at start of client_message not identified :" ); //echo received message for test and monitoring 
+    }
+    else {
+      Serial.println("charcter at start of client_message not identified :" ); //echo received message for test and monitoring 
 //          AsyncResponseStream *response = request->beginResponseStream("application/javascript");
 //          response->printf("      window.alert(\'character at start of client_message not identified: %s\');  ", client_message.c_str());
 //          request->send(response);
-        }       
-    }
+    }       
+  }
 }
 
 // manage action on .ini file
@@ -1640,6 +1662,84 @@ void setup() {
     Serial.println((char*)data);
   });  
 
+  server.on("/irsamplerecordingon", HTTP_GET, [](AsyncWebServerRequest *request){
+    Serial.print ("+Switch to send IR sample recording! ");
+    // Compute the capacity for the JSON document,
+    // which is used to exchange status information 
+    // and commands via WebSocket
+    // adjust according to members in JSON document, 
+    // see https://arduinojson.org/v6/assistant/
+    //IRSampleRecording = true;
+    const size_t size= 10000; //JSON_OBJECT_SIZE(4);  JSON_ARRAY_SIZE(500)
+    //StaticJsonDocument<size> json2;
+    DynamicJsonDocument json2(size);
+    json2["count"]        = SpeedCount[0];       //railway sleeper counts
+    json2["iravg"]        = IRAverage;           //in mV
+    json2["distance"]     = float(SpeedCount[0])*SpeedCountDistance; //in m
+    json2["speedmeasure"] = Speed;               //measured speed m/s
+    json2["speedscale"]   = SpeedAtScale;        //measured speed converted to scale in km/h
+    
+    json2["total"]        = SpeedCountTotal;     //int
+    json2["totaldistance"] = float(SpeedCountTotal)*SpeedCountDistance; //in m  
+    json2["lasttotal"]    = SpeedCountLastTotal; //int    
+    json2["lastseconds"]  = SpeedCountLastSeconds; //float   
+    json2["lastdistance"] = float(SpeedCountLastTotal)*SpeedCountDistance; //in m    
+    json2["lastspeed"]    = LastSpeed;           //float m/s
+    json2["lastspeedatscale"] = LastSpeedAtScale; //float in km/h at model scale
+ 
+    json2["irsamplerecording"] = int(IRSampleRecording);  // IRSampleRecording active =1, deactivated =0
+    json2["iraveragesample"] = int(IRAverageSample);  // IRAverageSample active =1, deactivated =0
+    json2["irlow"]        = IRlow;               //ir_low_level, no sleeper detected in mV
+    json2["irhigh"]       = IRhigh;              //ir_high_level, sleeper detected in mV
+
+    JsonArray IRSampleArray = json2.createNestedArray("irsamplerecord");
+    for (int i = 0; i < 500; i++) {
+      IRSampleArray.add(IRSampleRecord[i]);     //array of raw or averaged IR sample values after linear adjustment
+    }
+    
+    char data[size];
+    size_t len = serializeJson(json2, data);
+    request->send(200, "text/plain", data);  //reply to get requrest instead of websocket  
+    Serial.print(" | Reply to Get /irsamplerecordingon with json data:");
+    data[len] = 0;
+    Serial.println((char*)data);     
+  });  
+/*
+  server.on("/irsamplerecordingoff", HTTP_GET, [](AsyncWebServerRequest *request){
+    Serial.print ("+Switch off IR sample recording! ");
+    IRSampleRecording = false; 
+    request->send(200, "text/plain", "IR sample recording switched of");  //reply to get requrest
+  });  
+*/
+/*
+  server.on("/irsampledata", HTTP_GET, [](AsyncWebServerRequest *request){
+    Serial.print ("+Reply to IR sample data request! ");
+    // Compute the capacity for the JSON document,
+    // which is used to exchange status information 
+    // and commands via WebSocket
+    // adjust according to members in JSON document, 
+    // see https://arduinojson.org/v6/assistant/
+    IRSampleRecording = true;
+    const uint8_t size = 5096; //JSON_OBJECT_SIZE(4);  JSON_ARRAY_SIZE(500)
+    //StaticJsonDocument<size> json;
+    DynamicJsonDocument jsonarray(size);
+    // create an empty array
+    JsonArray array = jsonarray.to<JsonArray>();
+
+    for (int 
+    array.add(IRSampleRecord[]);
+    json["irsamplerecord"] =  IRSampleRecord[]; //array of original IR sample values after linear adjustment
+    json["iraveragerecord"] =  IRAverageRecord[]; //array of averaged IR sample values and after linear adjustment
+  
+    char data[size];
+    size_t len = serializeJson(json, data);
+    request->send(200, "text/plain", data);  //reply to get requrest instead of websocket  
+    Serial.print(" | Reply to Get /speeddata:");
+    data[len] = 0;
+    Serial.println((char*)data);     
+  });  
+*/
+
   // Serve files in directory "/data/" when request url starts with "/"
   // Request to the root or none existing files will try to server the defualt
   // file name "index.htm" if exists
@@ -1701,6 +1801,18 @@ void loop() {
     
     #ifdef SpeedSampling
       SpeedCalculation();
+      
+      if (IRSampleRecording) {
+        SpeedCountTotal = SpeedCountTotal + SpeedCount[0]-SpeedCount[1];
+        if (SpeedCount[0]-SpeedCount[1] <=3){ // no speed, very low speed or long white stripe on rail 
+          SpeedCountLastTotal = SpeedCountTotal;
+          SpeedCountTotal = 0;
+          SpeedCountLastSeconds = float(millis() - SpeedCountStartMilli)/1000; //convert last record in millis to seconds
+          SpeedCountStartMilli = millis();
+          LastSpeed = SpeedCountLastTotal * SpeedCountDistance / SpeedCountLastSeconds; //calculate speed of last record
+          LastSpeedAtScale = LastSpeed*Scale*3600/1000; // conversion from m/s to scale m/s to scale km/h 
+        }
+      }
     #endif
 
     #ifdef PowerSampling
@@ -1718,7 +1830,16 @@ void loop() {
   //if (LoopCount % (SpeedSampleLoopCounts) == 0) {  
     
     #ifdef SpeedSampling                       
-      SpeedSamplingIRSensor();        
+      SpeedSamplingIRSensor();   
+      if (IRSampleRecording) {
+        // devide LoopCount to streches of 500 data points
+        if(!IRAverageSample) { //raw IR signal for sample record
+          IRSampleRecord[LoopCount % (500)] = IRArray[0]; 
+        }
+        else {  // use averaged IR signal for sample record
+          IRSampleRecord[LoopCount % (500)] = IRAverage;     
+        }
+      }
     #endif 
 
   //}
@@ -1742,7 +1863,9 @@ void loop() {
           }
         #endif   
         #ifdef SpeedSampling
-          digitalWrite(greenLED, SleeperDetected);    // indicate detection of railway sleeper, when activated in /speed.html 
+          if(SpeedLED){
+            digitalWrite(greenLED, SleeperDetected);    // indicate detection of railway sleeper, when activated in /speed.html           
+          }
         #endif
         // evaluate manual switch digital reading (or any alternative digital HIGH/LOW signal) for MorseCode
         MorseCodeDecoder();
