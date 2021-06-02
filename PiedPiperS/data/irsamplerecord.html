@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <title>ESP32 Analog Input Reading JSON Message 2021-06-01 Version 212</title>
+  <title>ESP32 Analog Input Reading JSON Message 2021-06-02 Version 215</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8"/>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" type="text/css" href="control.css">
@@ -50,9 +50,19 @@
 	<tr><td><b>Z&auml;hler</b></td>      <td><span id="LastTotal" style="font-weight:bold;">%LASTTOTAL%</span></td> <td><b><small>Schwellen</small></b></td></tr>
 	<tr><td>Strecke</td>                 <td><span id="LastDistance">%LASTDISTANCE%</span></td>           <td>m</td></tr>
 	<tr><td>Zeit</td>                    <td><span id="LastSeconds">%LASTSECONDS%</span></td>             <td>s</td></tr>
-	<tr><td>Geschwindigkeit</td>          <td><span id="LastSpeed">%LASTSPEED%</span></td>                 <td>m/s</td></tr>
+	<tr><td>Geschwindigkeit</td>         <td><span id="LastSpeed">%LASTSPEED%</span></td>                 <td>m/s</td></tr>
 	<tr style="border-bottom: 4pt double #ddd;">
 	<td>Modellgeschwin&shy;dig&shy;keit</td><td><span id="LastSpeedAtScale">%LASTSPEEDATSCALE%</span></td><td>km/h</td></tr>
+	<!--<tr><td>&nbsp;</td></tr>-->
+	<td><b>Ergebnis</b></td> <td><span id="CountRelative" style="font-weight:bold;">%CNTREL%</span></td> <td><b>%</b></td></tr>
+	<tr><form>
+	<td><label for="countrefrencevalue" style="text-align: left; font-size: 1.0rem;">Soll-Wert</label></td>
+	<td><input type="number" id="CountReference" style="text-align: left; font-size: 1.0rem; width: 2.5em;" name="countreferencevalue" value="564" step="1"></td>
+	<td><small>Schwellen</small></td>
+	</form></tr> 
+	<tr><td>absoluter Fehler</td> <td><span id="CountDifference">%CNTDIFF%</span></td>     <td><small>Schwellen</small></td></tr>
+	<tr style="border-bottom: 4pt double #ddd;">
+	<td>relativer Fehler</td>     <td><span id="CountRelativeError">%ERRREL%</span></td> <td>%</td></tr>
 	<!--<tr><td>&nbsp;</td></tr>-->
 	</table>
 	<br>
@@ -61,23 +71,29 @@
 	<h2 style="font-size: 1.2rem; margin: 5% 5%;"><a href="/speed.html">Geschwindigkeitsdaten</a></h2>
 	<div><a href="/"><img src="/lok" alt="Loksteuerung" style="width:95%"></a></div>
 	<h2 style="font-size: 1.2rem; margin: 2% 5%;">Anleitung zum IR-Datenrekorder</h2>
-	<p style="text-align: left; font-size: 1.0rem; margin: 2% 0%;">
+	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
 	Die Daten&uuml;bertragung und -anzeige werden durch den Schalter 'IR-Recorder' gleichzeitig im Microporzessor und in der Webseite angeschaltet. 
-	Erneutes bet&auml;tigen stoppt die Daten&uuml;bertragung und die Aktualisierung der Anzeige. Der letzte Datensatz bleibt so f&uuml;r eine geneauere Auswertung erhalten.</p>
-	<p style="text-align: left; font-size: 1.0rem; margin: 2% 0%;">
+	Erneutes Bet&auml;tigen stoppt die Daten&uuml;bertragung und die Aktualisierung der Anzeige. Der letzte Datensatz bleibt so f&uuml;r eine geneauere Auswertung erhalten.</p>
+	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
 	Das <b>Diagramm</b> zeigt entweder Einzel- oder Mittelwerte der 500 j&uuml;ngsten Daten des IR-Sensors an (Schalter 'IR-Mittelwerte'). Die horizontale Achse kann 
-	mit den zwei Schiebe&shy;reglern hinsichtlich des Startposition im Datensatz (X) und hinsichtlich der Anzahl der angezeigten Daten (D) angepasst werden. 
-	Die Auswertung der IR-Signale kann zur Verbesserung der Erkennung der Bahn&shy;schwellen genutzt werden. Hierzu k&ouml;nnen die IR-Schwellen&shy;werte (irlow, irhigh) 
-	zur Definition der dazwischen liegenden Trennzone (Deadband, siehe Anzeige im Diagramm) und/oder die gleitenden Mittelwertbildung (averaging) in der 
+	mit den zwei Schiebe&shy;reglern hinsichtlich des Startposition im Datensatz (X) und der Anzahl der angezeigten Daten (D) angepasst werden. 
+	Der dargestllte Verlauf der IR-Messwerte kann zur Verbesserung der Erkennung der Bahn&shy;schwellen herangezogen werden. Hierzu k&ouml;nnen die IR-Schwellen&shy;werte (irlow, irhigh) 
+	zur Definition der dazwischen liegenden Trennzone (Deadband, siehe Anzeige im Diagramm) und/oder die gleitenden Mittel&shy;wert&shy;bildung (averaging) in der 
 	<a href="/ini.html">Datei lok.ini</a> angepasst werden.</p>
-	<p style="text-align: left; font-size: 1.0rem; margin: 2% 0%;">
+	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
 	Der <b>IR-Daten&shy;rekorder</b> summiert die Anzahl der erkannten Bahn&shy;schwellen in einer Runde. Im Vergleich zu einer bekannten Anzahl &uuml;berfahrener 
-	Bahn&shy;schwellen kann die Vollst&auml;ndigkeit der Z&auml;hlung &uuml;berpr&uuml;ft werden. Der Summenz&auml;hler wird automatisch durch einen l&auml;ngeren 
-	Strecken&shy;abschnitt mit reflektier&shy;endem Gleisbett (z.B. wei&szlig;es Papier oder Klebeband auf dem Gleis) unterbrochen. Die L&auml;nge dieses Streckenabschnitts 
-	ist so zu w&auml;hlen, dass er bei Zugdurch&shy;fahrt l&auml;nger als eine Sekunde ein reflektier&shy;endes IR-Signal ergibt. Die Daten des Summenz&auml;hlers 
-	werden dann in den Datensatz der 'letzten Runde' kopiert und die Fahrtdauer und Geschwindigkeit auf dieser Strecke ausgewertet. Der Summenz&auml;hler wird f&uuml;r 
-	eine neue Runde auf Null gesetzt. Dadurch k&ouml;nnen wiederholte und automatisierte Kontrollen der Vollst&auml;ndigkeit der Z&auml;hlung, ggf. bei unterschied&shy;lichen 
-	Deadband-Einstel&shy;lungen, Geschwind&shy;igkeits&shy;stufen, Feineinstellung der Position des Sensors, Umgebungs&shy;bedingungen durchgef&uuml;hrt werden.  
+	Bahn&shy;schwellen kann die Vollst&auml;ndigkeit der Z&auml;hlung &uuml;berpr&uuml;ft werden.</p>
+	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
+	Der Summenz&auml;hler wird automatisch durch einen l&auml;ngeren 
+	Strecken&shy;abschnitt mit reflektier&shy;endem Gleisbett (z.B. wei&szlig;es Papier oder Klebeband auf dem Gleis) unterbrochen. Die L&auml;nge dieses Strecken&shy;abschnitts 
+	muss daf&uuml;r so gew&auml;hlt werden, dass er bei Zugdurch&shy;fahrt ca. eine Sekunde lang ein reflektier&shy;endes IR-Signal ergibt, 
+	d.h. entsprechend der Zeit zwischen den orangen Blitzen (= MainLoopFrequencySeconds). 
+	Wenn der Z&auml;hler pl&ouml;tzlich stoppt oder nur noch halb soviele Bahn&shy;schwellen findet wird dies als
+	Markierung zum Abschluss einer Runde erkannt. Die Daten des Summenz&auml;hlers 	werden dann in den <b>Datensatz der 'letzten Runde'</b> kopiert und 
+	die Fahrtdauer und Geschwind&shy;igkeit auf dieser Strecke ausgewertet. Wird eine bekannte Anzahl an Bahnschwellen für den Z&auml;hler vorgegeben, kann
+	der relative Fehler der Erfassung durch den IR-Sensor bestimmt werden. Der Summenz&auml;hler wird f&uuml;r eine neue Runde auf Null gesetzt. 
+	Dadurch k&ouml;nnen wiederholte und automatisierte Kontrollen der Vollst&auml;ndigkeit der Z&auml;hlung, ggf. bei unterschied&shy;lichen 
+	Deadband-Einstel&shy;lungen, Geschwind&shy;igkeits&shy;stufen, Feinein&shy;stellung der Position des Sensors, Umgebungs&shy;bedingungen durchgef&uuml;hrt werden.  
 	</p>
 	<!--<p>
 	The chart displays either single or average IR sample data. It allows for fine tuning of IR thresholds (IRlow, IRhigh) for
@@ -197,7 +213,7 @@
 	function loadChart() { //fetches json data & calls dspChart() to render graph  {"speed":31,"currentspeed":167,"power":1.6711}
 	    if (irrecordreading == true) {
 		  var i, IRData, count, distance, speedmeasure, speedscale, total, totaldistance, lasttotal, lastseconds, lastdistance, lastspeed, lastspeedatscale, irsamplerecording, iraveragesample, irlow, irhigh;
-		  var requestURL = '/irsamplerecordingon'; //URL of the JSON data
+		  var requestURL = '/irsamplerecord'; //URL of the JSON data
 		  var request = new XMLHttpRequest({
 			mozSystem: true
 		  }); // create http request
@@ -263,6 +279,11 @@
 			  IRDataChart.update(); //update IRDataChart with new data
 			  
 			  //update value display in text
+			  document.getElementById('IRSampleRecording').innerHTML = Math.round(irsamplerecording);      // integer, 1=on, 0=off
+			  document.getElementById('IRAverageSample').innerHTML   = Math.round(iraveragesample);        // integer, 1=on, 0=off
+			  document.getElementById('IRlowValue').innerHTML        = Math.round(irlow);                  // in mV,    precision 0
+			  document.getElementById('IRhighValue').innerHTML       = Math.round(irhigh);                 // in mV,    precision 0
+			  
 			  document.getElementById('CountValue').innerHTML        = Math.round(count*100000);           // in number of sleepers
 			  document.getElementById('IRAvgValue').innerHTML        = Math.round(iravg*100)/100;          // in V,    precision 2
 			  document.getElementById('DistanceValue').innerHTML     = Math.round(distance*1000*100)/100;  // in m,    precision 2 
@@ -277,10 +298,10 @@
 			  document.getElementById('LastSpeed').innerHTML         = Math.round(lastspeed*1000)/1000;    // in m/s, precision 3 
 			  document.getElementById('LastSpeedAtScale').innerHTML  = Math.round(lastspeedatscale);       // in km/h 
 
-			  document.getElementById('IRSampleRecording').innerHTML = Math.round(irsamplerecording);      // integer, 1=on, 0=off
-			  document.getElementById('IRAverageSample').innerHTML   = Math.round(iraveragesample);        // integer, 1=on, 0=off
-			  document.getElementById('IRlowValue').innerHTML        = Math.round(irlow);                  // in mV,    precision 0
-			  document.getElementById('IRhighValue').innerHTML       = Math.round(irhigh);                 // in mV,    precision 0
+			  var countreference = document.getElementById("CountReference").value; 
+			  document.getElementById('CountRelative').innerHTML     = Math.round((lasttotal/countreference)*100*10)/10; // in %, precision 1
+			  document.getElementById('CountDifference').innerHTML   = (lasttotal>countreference?"+":"") + Math.round(lasttotal-countreference); // integer,  precision 0, leading '+' sign
+			  document.getElementById('CountRelativeError').innerHTML= (lasttotal>countreference?"+":"") + Math.round((lasttotal/countreference - 1)*100*10)/10; // in %, precision 1, leading '+' sign		  
 			}
 		  }
 		  request.open('GET', requestURL);
@@ -400,10 +421,18 @@
 	delay(1000);
   }
   function irrecordingonoffe(){
-    websocket.send('r');
-	console.log('WebSocket command sent r'); //general .ino microprocessor .ino program switch for activating/deactivating sample record
-	//document.getElementById('LastCommand').innerHTML = 'sent r';
-	irrecordreading =!irrecordreading; //general internal javascript switch for reading sample record
+    if (irrecordreading) {
+		websocket.send('r0');
+		console.log('WebSocket command sent r0'); //general .ino microprocessor .ino program switch for activating/deactivating sample record
+		//document.getElementById('LastCommand').innerHTML = 'sent r';
+		irrecordreading = false; //general internal javascript switch for reading sample record
+	}
+	else {
+		websocket.send('r1');
+		console.log('WebSocket command sent r1'); //general .ino microprocessor .ino program switch for activating/deactivating sample record
+		//document.getElementById('LastCommand').innerHTML = 'sent r';
+		irrecordreading = true; //general internal javascript switch for reading sample record
+	}
 	delay(1000);
   }
   function iraveragesampleonoffe(){
