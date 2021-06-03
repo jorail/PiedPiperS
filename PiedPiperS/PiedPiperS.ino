@@ -81,13 +81,16 @@
    
   speedo branch in github: https://github.com/jorail/PiedPiperS/tree/speedo, develop speed-o-meter with reflective ir detector on railway sleepers
   216 2021-06-02 consolidated version for speedo branch
+  217 2021-06-03 adjust transmission of irsamplerecord array, toggle ir sample averaging for railway sleeper detection
+  218 2021-06-03 add adjustment for IRlow and IRhigh from irsamplerecord.html via websocket message
+  219 2021-06-03 modify effect of flag IRSampleRecording: Extension to individual data record and json2 record submission
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 216, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-06-02";
+String SKETCH_INFO = "PiedPiperS.ino, Version 219, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-06-03";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -592,9 +595,20 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
     else if (client_message[0]=='r' && client_message[1]=='0') { //irrecording off from irsamplerecorder.html
       IRSampleRecording = false;
     }
-    else if (client_message[0]=='a') { //toggle sample recorder selection of average sample on/off from irsamplerecorder.html
-      IRAverageSample = !IRAverageSample;
-    }  
+    else if (client_message[0]=='a' && client_message[1]=='1') { //IR average sample on from irsamplerecorder.html
+      IRAverageSample = true;
+    }
+    else if (client_message[0]=='a' && client_message[1]=='0') { //IR average sample off from irsamplerecorder.html
+      IRAverageSample = false;
+    }
+    else if (client_message[0]=='i' && client_message[1]=='r' && client_message[2]=='l' && client_message[3]=='=') { 
+      //adjust IRlow setting from irsamplerecorder.html, start reading client message at position [4] for new number in mV
+      IRlow = atoi(&client_message[4]);
+    }
+    else if (client_message[0]=='i' && client_message[1]=='r' && client_message[2]=='h' && client_message[3]=='=') { 
+      //adjust IRlow setting from irsamplerecorder.html, start reading client message at position [4] for new number in mV
+      IRhigh = atoi(&client_message[4]);
+    }
     else if (client_message[0]=='z') { //zero speed counter
       SpeedCount[0] = 0;
       SpeedCount[1] = 0;
@@ -1553,8 +1567,13 @@ void setup() {
     // and commands via WebSocket
     // adjust according to members in JSON document, 
     // see https://arduinojson.org/v6/assistant/
-    const size_t size= 10000; //JSON_OBJECT_SIZE(16);  JSON_ARRAY_SIZE(500)
-    //StaticJsonDocument<size> json2;
+/*
+    int json2size = 300; //JSON_OBJECT_SIZE(16);
+    if (IRSampleRecording) {
+      json2size= 10000;  //JSON_OBJECT_SIZE(16);  JSON_ARRAY_SIZE(500)
+    }
+*/ 
+    const size_t size= 10000; 
     DynamicJsonDocument json2(size);
     json2["count"]        = SpeedCount[0];       //railway sleeper counts
     json2["iravg"]        = IRAverage;           //in mV
@@ -1575,11 +1594,15 @@ void setup() {
     json2["irlow"]        = IRlow;               //ir_low_level, no sleeper detected in mV
     json2["irhigh"]       = IRhigh;              //ir_high_level, sleeper detected in mV
 
-    JsonArray IRSampleArray = json2.createNestedArray("irsamplerecord");
-    for (int i = 0; i < 500; i++) {
-      IRSampleArray.add(IRSampleRecord[i]);     //array of raw or averaged IR sample values after linear adjustment
+    if (IRSampleRecording) {
+      JsonArray IRSampleArray = json2.createNestedArray("irsamplerecord");
+      for (int i = (LoopCount % (500)); i < 500; i++) {
+        IRSampleArray.add(IRSampleRecord[i]);     //second older half of array of raw or averaged IR sample values after linear adjustment
+      }
+      for (int i = 0; i < (LoopCount % (500)); i++) {
+        IRSampleArray.add(IRSampleRecord[i]);     //first new half of array of raw or averaged IR sample values after linear adjustment
+      }
     }
-    
     char data[size];
     size_t len = serializeJson(json2, data);
     request->send(200, "text/plain", data);  //reply to get requrest instead of websocket  
@@ -1749,20 +1772,35 @@ void loop() {
 
 #ifdef SpeedSampling
 // Sampling IR signal for detecting railway sleepers from ADC1_Ch3 = GPIO pin 39, transient voltage between low and medium high level = ca. 2500 mV 
-  void SpeedSamplingIRSensor() {
-    IRArray    = IRArray.shift(-1);
-    IRArray[0] = int(analogRead(ir_sensor)*0.816 +143); //approximate conversion to mV, parameterised 12.5.2021
-    IRAverage  = int(IRArray.sum()/IRArray.size());
-
-    if (IRAverage < IRlow) {     //below low level threshold
-      if (SleeperDetected) {     //falling edge IR signal detected
-        SleeperDetected = false; // reset status
+  void SpeedSamplingIRSensor() {  
+    if(IRAverageSample) { //averaged IR signal for SleeperDetection
+      IRArray    = IRArray.shift(-1);
+      IRArray[0] = int(analogRead(ir_sensor)*0.816 +143); //approximate conversion to mV, parameterised 12.5.2021
+      IRAverage  = int(IRArray.sum()/IRArray.size());
+      if (IRAverage < IRlow) {     //below low level threshold
+        if (SleeperDetected) {     //falling edge IR signal detected
+          SleeperDetected = false; // reset status
+        }
+      }   
+      else if (IRAverage > IRhigh) {// above high level threshold detected
+         if (!SleeperDetected) {    // rising edge IR signal detected
+           SleeperDetected = true;  // set status
+           ++SpeedCounter;          // increase counter +1
+        }
       }
-    }   
-    else if (IRAverage > IRhigh) {// above high level threshold detected
-       if (!SleeperDetected) {    // rising edge IR signal detected
-         SleeperDetected = true;  // set status
-         ++SpeedCounter;          // increase counter +1
+    }
+    else { //use individual IR signal for SleeperDetection, no shift of Valarray IRArray requierd 
+      IRArray[0] = int(analogRead(ir_sensor)*0.816 +143); //approximate conversion to mV, parameterised 12.5.2021      
+      if (IRArray[0] < IRlow) {     //below low level threshold
+        if (SleeperDetected) {     //falling edge IR signal detected
+          SleeperDetected = false; // reset status
+        }
+      }   
+      else if (IRArray[0] > IRhigh) {// above high level threshold detected
+         if (!SleeperDetected) {    // rising edge IR signal detected
+           SleeperDetected = true;  // set status
+           ++SpeedCounter;          // increase counter +1
+        }
       }
     }
   }
@@ -1776,26 +1814,25 @@ void loop() {
     Speed = float(SpeedCountDifference[0]) * SpeedCountDistance / MainLoopFrequencySeconds;  
     SpeedAtScale = Speed*Scale*3600/1000; // conversion from m/s to scale m/s to scale km/h  
     
-    if (IRSampleRecording) {
-      SpeedCountTotal = SpeedCountTotal + SpeedCount[0]-SpeedCount[1]; 
-      if (RoundMarkerDetected) {
-        if (SpeedCountDifference[0] > SpeedCountDifference[1]) {RoundMarkerDetected = false;}
+    //IRSampleRecording commands for SpeedCounting
+    SpeedCountTotal = SpeedCountTotal + SpeedCount[0]-SpeedCount[1]; 
+    if (RoundMarkerDetected) {
+      if (SpeedCountDifference[0] > SpeedCountDifference[1]) {RoundMarkerDetected = false;}
+    }
+    else {
+      // no speed, very low speed < 50% compared to previous interval or long white/reflective stripe on rail
+      if (2*SpeedCountDifference[0] < SpeedCountDifference[1]) {
+        Serial.println("Indication of RoundMarker found!");
+        RoundMarkerDetected = true;  
+        SpeedCountLastTotal = SpeedCountTotal;
+        SpeedCountTotal = 0;
+        SpeedCountLastSeconds = float(millis() - SpeedCountStartMilli)/1000; //convert last record in millis to seconds
+        SpeedCountStartMilli = millis();
+        LastSpeed = SpeedCountLastTotal * SpeedCountDistance / SpeedCountLastSeconds; //calculate speed of last record
+        LastSpeedAtScale = LastSpeed*Scale*3600/1000; // conversion from m/s to scale m/s to scale km/h 
       }
-      else {
-        // no speed, very low speed < 50% compared to previous interval or long white/reflective stripe on rail
-        if (2*SpeedCountDifference[0] < SpeedCountDifference[1]) {
-          Serial.println("Criterium for RoundMarker found!");
-          RoundMarkerDetected = true;  
-          SpeedCountLastTotal = SpeedCountTotal;
-          SpeedCountTotal = 0;
-          SpeedCountLastSeconds = float(millis() - SpeedCountStartMilli)/1000; //convert last record in millis to seconds
-          SpeedCountStartMilli = millis();
-          LastSpeed = SpeedCountLastTotal * SpeedCountDistance / SpeedCountLastSeconds; //calculate speed of last record
-          LastSpeedAtScale = LastSpeed*Scale*3600/1000; // conversion from m/s to scale m/s to scale km/h 
-        }
-      }
-    } //end of IRSampleRecording commands
-  }  
+    }
+  } //end of SpeedCalculation  
 #endif
 
 #ifdef PowerSampling

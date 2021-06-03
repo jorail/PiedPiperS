@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <title>ESP32 Analog Input Reading JSON Message 2021-06-02 Version 215</title>
+  <title>ESP32 Analog Input Reading JSON Message 2021-06-03 Version 219</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8"/>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" type="text/css" href="control.css">
@@ -9,12 +9,79 @@
   table {vertical-align: top; padding: 2%; border-collapse: collapse;} tr {border-bottom: 2pt solid #ddd;} 
   tr:last-child { border-bottom: none; } td {padding-left: 2%;} </style>
   <script charset="utf-8" src="/chart.min.js"></script>
+<!-- for layout of on/off switch--><!--
+  <style> 
+      .onoffswitch {
+        position: relative; width: 20%;
+        -webkit-user-select:none; -moz-user-select:none; -ms-user-select: none;
+    }
+    .onoffswitch-checkbox {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+    .onoffswitch-label {
+        display: block; overflow: hidden; cursor: pointer;
+        border: 2px solid #999999; border-radius: 10px;
+    }
+    .onoffswitch-inner {
+        display: block; width: 200%; margin-left: -100%;
+        transition: margin 0.3s ease-in 0s;
+    }
+    .onoffswitch-inner:before, .onoffswitch-inner:after {
+        display: block; float: left; width: 50%; height: 30px; padding: 0; line-height: 30px;
+        font-size: 14px; color: white; font-family: Trebuchet, Arial, sans-serif; font-weight: bold;
+        box-sizing: border-box;
+    }
+    .onoffswitch-inner:before {
+        content: "an";
+        padding-left: 10px;
+        background-color: #34A7C1; color: #FFFFFF;
+    }
+    .onoffswitch-inner:after {
+        content: "aus";
+        padding-right: 10px;
+        background-color: #EEEEEE; color: #999999;
+        text-align: right;
+    }
+    .onoffswitch-switch {
+        display: block; width: 18px; margin: 6px;
+        background: #FFFFFF;
+        position: absolute; top: 0; bottom: 0;
+        right: 56px;
+        border: 2px solid #999999; border-radius: 20px;
+        transition: all 0.3s ease-in 0s; 
+    }
+    .onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-inner {
+        margin-left: 0;
+    }
+    .onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-switch {
+        right: 0px; 
+    }
+  </style>
+-->  
 </head>
-<body onload="loadChart();">
+<body onload="loadIRSampleData();">
     <h3>IR-Datenrekorder</h3>
-	<div><button id="irrecordingonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Recorder an/aus</button>   <!-- general external and internal switch for IR record supply and reading-->
+	<!-- general external and internal switch for IR record supply and reading-->
+	
+	<div><button id="irrecordingonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Recorder an/aus</button>   
 	<button id="iraveragesampleonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Mittelwert an/aus</button> </div>
-	<br>
+	<div>IR-low&nbsp;<input type="range" onchange="SetIRLowSliderValue(this)" id="IRLowSlider" min="150" max="2000" value="%SLIDERVALUE%" step="50" class="slider2"></div>
+	<div>IR-high<input type="range" onchange="SetIRHighSliderValue(this)" id="IRHighSlider" min="150" max="2000" value="%SLIDERVALUE%" step="50" class="slider2"></div>	
+	<!-- Rounded switch -->
+	<!--
+    <div class="onoffswitch">
+        <input type="checkbox" name="onoffswitch1" class="onoffswitch-checkbox" id="irrecordingonoff" tabindex="0" checked>
+        <label class="onoffswitch-label" for="irrecordingonoff">
+            <span class="onoffswitch-inner"></span>
+        </label>
+		<input type="checkbox" name="onoffswitch2" class="onoffswitch-checkbox" id="iraveragesampleonoff" tabindex="0" checked>
+        <label class="onoffswitch-label" for="iraveragesampleonoff">
+            <span class="onoffswitch-inner"></span>
+        </label>
+    </div>
+    -->
 	<table style= "width: 96%; text-align: left; font-size: 1.0rem; margin: 0 2% 0 2%;" >
 	<tr><td>IR-Recorder</td>             <td><span id="IRSampleRecording">%IRSAMPLERECORDING%</span></td> <td>1/0</td></tr>
 	<tr><td>IR-Mittelwert</td>           <td><span id="IRAverageSample">%IRAVERAGESAMPLE%</span></td>     <td>1/0</td></tr>
@@ -22,19 +89,16 @@
 	<tr style="border-bottom: 4pt double #ddd;">
 	<td>IR-high</td>                 <td><span id="IRhighValue">%IRhighValue%</span></td>                 <td>mV</td></tr>
 	</table>
-	<br>
 	<p style= "margin: 0 0 0 0;" > <span id="StatusText">%STATE%</span> &nbsp; </p>
 	<p style= "margin: 0 0 0 0; text-align: left;" > &nbsp; &nbsp; &nbsp; <span id="SpeedText">%SPEED%</span> &nbsp; </p>
-	<div><input type="range" onchange="GetPWMSliderValue(this)" id="pwmSlider" min="0" max="32" value="%SLIDERVALUE%" step="1" class="slider"></div>
+	<div><input type="range" onchange="SetPWMSliderValue(this)" id="pwmSlider" min="0" max="32" value="%SLIDERVALUE%" step="1" class="slider"></div>
     <div class="container">
 		  <canvas id="IRDataChart" width="92%" height="100"></canvas> 
     </div>
-	<div>X<input type="range" onchange="GetXDSliderValue(this)" id="XSlider" min="-500" max="0" value="%SLIDERVALUE%" step="20" class="slider2"></div>
-	<div>D<input type="range" onchange="GetXDSliderValue(this)" id="DSlider" min="20" max="500" value="%SLIDERVALUE%" step="20" class="slider2"></div>
+	<div>Position<input type="range" onchange="GetXDSliderValue(this)" id="XSlider" min="-500" max="0" value="%SLIDERVALUE%" step="20" class="slider2"></div>
+	<div>Spanne&nbsp;<input type="range" onchange="GetXDSliderValue(this)" id="DSlider" min="20" max="500" value="%SLIDERVALUE%" step="20" class="slider2"></div>
 	<br>
-	<div><button id="ledonoff" class="button orange" style="width: 45%; font-size: 1.7rem;">LED an/aus</button>     <button id="zerocounter" class="button darkred" style="width: 45%; font-size: 1.7rem;">Null-stellen</button></div>
 	<table style= "width: 96%; text-align: left; font-size: 1.0rem; margin: 0 2% 0 2%;" >
-	<br>
 	<tr><td>Zähler</td>                 <td><span id="CountValue">%CountValue%</span></td>                <td><small>Schwellen</small></td></tr>
 	<tr><td>IR-Signal</td>               <td><span id="IRAvgValue">%IRAvgValue%</span></td>               <td>V</td></tr>
 	<tr><td>Fahrstrecke</td>             <td><span id="DistanceValue">%DistanceValue%</span></td>         <td>m</td></tr>
@@ -43,7 +107,7 @@
 	<td><b>Modellgeschwin&shy;dig&shy;keit</b></td><td><span id="SpeedscaleValue" style="font-weight:bold;">%SpeadscaleValue%</span></td><td><b>km/h</b></td></tr>
 	<!--<tr><td>&nbsp;</td></tr>-->
 	<tr><td><b>Summenz&auml;hler</b></td><td>&nbsp;</td>                                                  <td>&nbsp;</td></tr>
-	<tr><td>Z&auml;hler</td>             <td><span id="Total" >%TOTAL%</span></td>                        <td><small>Schwellen</small></td></tr>
+	<tr><td><b>Z&auml;hler</b></td>             <td><span id="Total" style="font-weight:bold;">%TOTAL%</span></td> <td><small><b>Schwellen</b></small></td></tr>
 	<tr style="border-bottom: 4pt double #ddd;">
 	<td>Strecke</td>                     <td><span id="TotalDistance"  >%TOTALDISTANCE%</span></td>       <td>m</td></tr>
 	<tr><td><b>Letzte Runde</b></td>     <td>&nbsp;</td>                                                  <td>&nbsp;</td></tr>
@@ -57,30 +121,33 @@
 	<td><b>Ergebnis</b></td> <td><span id="CountRelative" style="font-weight:bold;">%CNTREL%</span></td> <td><b>%</b></td></tr>
 	<tr><form>
 	<td><label for="countrefrencevalue" style="text-align: left; font-size: 1.0rem;">Soll-Wert</label></td>
-	<td><input type="number" id="CountReference" style="text-align: left; font-size: 1.0rem; width: 2.5em;" name="countreferencevalue" value="564" step="1"></td>
+	<td><input type="number" id="CountReference" style="text-align: left; font-size: 1.0rem; width: 2.5em;" name="countreferencevalue" value="440" step="1"></td>
 	<td><small>Schwellen</small></td>
 	</form></tr> 
 	<tr><td>absoluter Fehler</td> <td><span id="CountDifference">%CNTDIFF%</span></td>     <td><small>Schwellen</small></td></tr>
 	<tr style="border-bottom: 4pt double #ddd;">
-	<td>relativer Fehler</td>     <td><span id="CountRelativeError">%ERRREL%</span></td> <td>%</td></tr>
+	<td><b>relativer Fehler</b></td>    <td><span id="CountRelativeError" style="font-weight:bold;">%ERRREL%</span></td> <td><b>%</b></td></tr>
 	<!--<tr><td>&nbsp;</td></tr>-->
 	</table>
 	<br>
+	<div><button id="ledonoff" class="button orange" style="width: 45%; font-size: 1.7rem;">LED an/aus</button>     <button id="zerocounter" class="button darkred" style="width: 45%; font-size: 1.7rem;">Null-stellen</button></div>
 	<div><button id="minus4" class="button red4">- - - -</button>    <button id="minus1" class="button red1">-</button>    <button id="plus1" class="button blue1">+</button>    <button id="plus4" class="button blue4">++++</button></div>
 	<div><button id="reverse" class="button orange">< ></button>     <button id="halt" class="button redlong">Halten</button>   <button id="stop" class="button darkred">Stopp!</button></div> 
 	<h2 style="font-size: 1.2rem; margin: 5% 5%;"><a href="/speed.html">Geschwindigkeitsdaten</a></h2>
 	<div><a href="/"><img src="/lok" alt="Loksteuerung" style="width:95%"></a></div>
 	<h2 style="font-size: 1.2rem; margin: 2% 5%;">Anleitung zum IR-Datenrekorder</h2>
 	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
-	Die Daten&uuml;bertragung und -anzeige werden durch den Schalter 'IR-Recorder' gleichzeitig im Microporzessor und in der Webseite angeschaltet. 
-	Erneutes Bet&auml;tigen stoppt die Daten&uuml;bertragung und die Aktualisierung der Anzeige. Der letzte Datensatz bleibt so f&uuml;r eine geneauere Auswertung erhalten.</p>
+	Die <b>Daten&uuml;bertragung und -anzeige mit einzelnen Messwerten im Diagramm</b> werden durch den Schalter 'IR-Recorder' gleichzeitig im Microporzessor und in der Webseite angeschaltet. 
+	Erneutes Bet&auml;tigen stoppt die Daten&uuml;bertragung und die Aktualisierung der Anzeige. Der letzte Datensatz im Diagramm bleibt so f&uuml;r eine geneauere Auswertung erhalten.</p>
 	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
-	Das <b>Diagramm</b> zeigt entweder Einzel- oder Mittelwerte der 500 j&uuml;ngsten Daten des IR-Sensors an (Schalter 'IR-Mittelwerte'). Die horizontale Achse kann 
+	Das Diagramm zeigt entweder Einzel- oder Mittelwerte der 500 j&uuml;ngsten Daten des IR-Sensors an (Schalter 'IR-Mittelwerte'). Die horizontale Achse kann 
 	mit den zwei Schiebe&shy;reglern hinsichtlich des Startposition im Datensatz (X) und der Anzahl der angezeigten Daten (D) angepasst werden. 
 	Der dargestllte Verlauf der IR-Messwerte kann zur Verbesserung der Erkennung der Bahn&shy;schwellen herangezogen werden. Hierzu k&ouml;nnen die IR-Schwellen&shy;werte (irlow, irhigh) 
-	zur Definition der dazwischen liegenden Trennzone (Deadband, siehe Anzeige im Diagramm) und/oder die gleitenden Mittel&shy;wert&shy;bildung (averaging) in der 
-	<a href="/ini.html">Datei lok.ini</a> angepasst werden.</p>
+	zur Definition der dazwischen liegenden Trennzone (Deadband, siehe Anzeige der Werte in der ersten Tablle und im Diagramm) &uuml;ber die zwei Schiebe&shy;regler oder in der 
+	<b><a href="/ini.html">Datei lok.ini</a></b> angepasst werden. Die gleitenden Mittel&shy;wert&shy;bildung kann &uuml;ber den Schalter aus- und angeschaltet werden. 
+	Die Anzahl der IR-Messwerte für die Mittelwertbildung kann in der Datei lok.ini eingestellt werden (averaging).</p>
 	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
+	<br>
 	Der <b>IR-Daten&shy;rekorder</b> summiert die Anzahl der erkannten Bahn&shy;schwellen in einer Runde. Im Vergleich zu einer bekannten Anzahl &uuml;berfahrener 
 	Bahn&shy;schwellen kann die Vollst&auml;ndigkeit der Z&auml;hlung &uuml;berpr&uuml;ft werden.</p>
 	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
@@ -107,6 +174,7 @@
 <script>
     // IRDataChart initialisation, formatting, data collection from JSON and handling, intervall updating
 	var irrecordreading = false;
+	var iraveraging = true;
 	var irsampleArray = [];
 	var irlowArray = [];
 	var irhighArray = [];
@@ -191,13 +259,13 @@
 		},
 	});
 	
-	var myVar = setInterval(loadChart, 2000); //update chart every 3000 milliseconds
+	var myVar = setInterval(loadIRSampleData, 2000); //update chart every 2000 milliseconds
 
 	function GetXDSliderValue(element) {
 	  var XSliderValue = document.getElementById("XSlider").value;  //-500 to -1
 	  var DSliderValue = document.getElementById("DSlider").value;  //1 to 500
-	  console.log('Adjust XsliderValue ='+XSliderValue);
-	  console.log('Adjust DsliderValue ='+DSliderValue);
+	  console.log('Adjust XSliderValue ='+XSliderValue);
+	  console.log('Adjust DSliderValue ='+DSliderValue);
 	  if (Math.abs(XSliderValue)<Math.round(DSliderValue)) {
 		XSliderValue = Math.round(-DSliderValue);
 	  }
@@ -210,14 +278,13 @@
 	  IRDataChart.update(); //update IRDataChart with new data
 	} 
 
-	function loadChart() { //fetches json data & calls dspChart() to render graph  {"speed":31,"currentspeed":167,"power":1.6711}
-	    if (irrecordreading == true) {
-		  var i, IRData, count, distance, speedmeasure, speedscale, total, totaldistance, lasttotal, lastseconds, lastdistance, lastspeed, lastspeedatscale, irsamplerecording, iraveragesample, irlow, irhigh;
-		  var requestURL = '/irsamplerecord'; //URL of the JSON data
-		  var request = new XMLHttpRequest({
+	function loadIRSampleData() { //fetches json data & calls dspChart() to render graph  {"speed":31,"currentspeed":167,"power":1.6711}
+	    var i, IRData, count, distance, speedmeasure, speedscale, total, totaldistance, lasttotal, lastseconds, lastdistance, lastspeed, lastspeedatscale, irsamplerecording, iraveragesample, irlow, irhigh;
+		var requestURL = '/irsamplerecord'; //URL of the JSON data
+		var request = new XMLHttpRequest({
 			mozSystem: true
-		  }); // create http request
-		  request.onreadystatechange = function() {
+		}); // create http request
+		request.onreadystatechange = function() {
 			if (request.readyState == 4 && request.status == 200) {
 			  //console.log(request.responseText);
 			  IRData = JSON.parse(request.responseText); //parse JSON string to IRData object
@@ -269,14 +336,16 @@
 			  irlow = IRData.irlow;               // ir_low_level, no sleeper detected, in mV
 			  irhigh = IRData.irhigh;             // ir_high_level, no sleeper detected, in mV
 			  
-			  //updating irdata for IRDataChart
-			  N = 500;
-			  for (i = 0; i < N; i++) {
-				  irsampleArray[i] = IRData.irsamplerecord[i];
-				  irlowArray[i] =irlow;
-				  irhighArray[i] =irhigh;
-			  }  
-			  IRDataChart.update(); //update IRDataChart with new data
+			  if (irsamplerecording == true) {	 
+				  //updating irdata for IRDataChart
+				  N = 500;
+				  for (i = 0; i < N; i++) {
+					  irsampleArray[i] = IRData.irsamplerecord[i];
+					  irlowArray[i] =irlow;
+					  irhighArray[i] =irhigh;
+				  }  
+				  IRDataChart.update(); //update IRDataChart with new data
+			  }
 			  
 			  //update value display in text
 			  document.getElementById('IRSampleRecording').innerHTML = Math.round(irsamplerecording);      // integer, 1=on, 0=off
@@ -303,10 +372,9 @@
 			  document.getElementById('CountDifference').innerHTML   = (lasttotal>countreference?"+":"") + Math.round(lasttotal-countreference); // integer,  precision 0, leading '+' sign
 			  document.getElementById('CountRelativeError').innerHTML= (lasttotal>countreference?"+":"") + Math.round((lasttotal/countreference - 1)*100*10)/10; // in %, precision 1, leading '+' sign		  
 			}
-		  }
-		  request.open('GET', requestURL);
-		  request.send(); // send the request
 		}
+		request.open('GET', requestURL);
+		request.send(); // send the request
 	}
 	//based on concept in https://stackoverflow.com/questions/51556002/live-update-the-charts-js-graph-on-a-web-page-using-json-data-received-from-a-re
 	//https://blog.heimetli.ch/chart-js-update.html
@@ -365,6 +433,7 @@
 	//document.getElementById('LastCommand').innerHTML = text.command; // <-- adjust this line to text.command;
 	console.log('');
   }
+ 
   function initButton() {
 	document.getElementById('minus4').addEventListener('click', minus4e);
 	document.getElementById('minus1').addEventListener('click', minus1e);
@@ -421,24 +490,35 @@
 	delay(1000);
   }
   function irrecordingonoffe(){
-    if (irrecordreading) {
+	    //irrecordreading = document.getElementById("irrecordingonoff");
+    if (irrecordreading) { //current status of internal javascript switch for reading sample record
 		websocket.send('r0');
-		console.log('WebSocket command sent r0'); //general .ino microprocessor .ino program switch for activating/deactivating sample record
-		//document.getElementById('LastCommand').innerHTML = 'sent r';
-		irrecordreading = false; //general internal javascript switch for reading sample record
+		console.log('WebSocket command sent r0'); //general ino program switch for activating/deactivating IR sample record
+		//document.getElementById('LastCommand').innerHTML = 'sent r0';
+		irrecordreading = false; //new general internal javascript switch for reading sample record
 	}
 	else {
 		websocket.send('r1');
-		console.log('WebSocket command sent r1'); //general .ino microprocessor .ino program switch for activating/deactivating sample record
-		//document.getElementById('LastCommand').innerHTML = 'sent r';
-		irrecordreading = true; //general internal javascript switch for reading sample record
+		console.log('WebSocket command sent r1'); //general .ino program switch for activating/deactivating IR sample record
+		//document.getElementById('LastCommand').innerHTML = 'sent r1';
+		irrecordreading = true; //new general internal javascript switch for reading sample record
 	}
 	delay(1000);
   }
   function iraveragesampleonoffe(){
-    websocket.send('a');
-	console.log('WebSocket command sent a');
-	//document.getElementById('LastCommand').innerHTML = 'sent a';
+    //iraveraging = document.getElementById("iraveragesampleonoff");
+    if (iraveraging) { //current internal javascript status for IR sample averaging button
+		websocket.send('a0');
+		console.log('WebSocket command sent a0'); //general .ino program switch for activating/deactivating IR sample averaging
+		//document.getElementById('LastCommand').innerHTML = 'sent a0';
+		iraveraging = false; //new internal javascript status for IR sample averaging button
+	}
+	else {
+		websocket.send('a1');
+		console.log('WebSocket command sent a1'); //general .ino program switch for activating/deactivating IR sample averaging
+		//document.getElementById('LastCommand').innerHTML = 'sent a1';
+		iraveraging = true; //new internal javascript status for IR sample averaging button
+	}
 	delay(1000);
   }
   function ledonoffe(){
@@ -453,13 +533,32 @@
 	//document.getElementById('LastCommand').innerHTML = 'sent z';
 	delay(1000);
   }
-  function GetPWMSliderValue(element) {
-    var sliderValue = document.getElementById("pwmSlider").value;
-    websocket.send("="+sliderValue); 
-    console.log('WebSocket command sent sliderValue ='+sliderValue);
+  function SetPWMSliderValue(element) {
+    var PWMsliderValue = document.getElementById("pwmSlider").value;
+    websocket.send("="+PWMsliderValue); 
+    console.log('WebSocket command sent sliderValue ='+PWMsliderValue);
     //document.getElementById('LastCommand').innerHTML = 'sent sliderValue = '+sliderValue;
     delay(1000);
   }
+  function SetIRLowSliderValue(element) {
+	var IRLowSliderValue = document.getElementById("IRLowSlider").value;  //150 to 2500
+	document.getElementById('IRlowValue').innerHTML        = Math.round(IRLowSliderValue);
+	console.log('Adjust IRLowSliderValue ='+IRLowSliderValue);
+	websocket.send('irl='+IRLowSliderValue);
+	console.log('WebSocket command sent l'+IRLowSliderValue);
+	//document.getElementById('LastCommand').innerHTML = 'sent: ----';
+	delay(1000);
+  } 
+  function SetIRHighSliderValue(element) {
+	var IRHighSliderValue = document.getElementById("IRHighSlider").value;  //150 to 2500
+	document.getElementById('IRhighValue').innerHTML        = Math.round(IRHighSliderValue);
+	console.log('Adjust IRHighSliderValue ='+IRHighSliderValue);
+	websocket.send('irh='+IRHighSliderValue);
+	console.log('WebSocket command sent h'+IRHighSliderValue);
+	//document.getElementById('LastCommand').innerHTML = 'sent: ----';
+	delay(1000);
+  } 
+  
 //	function UpdateStatusLines(statustxt,speedtxt,speedleveltxt) {
 //	  document.getElementById("StatusText").innerHTML = statustxt;
 //  }
