@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <title>ESP32 Analog Input Reading JSON Message 2021-06-03 Version 219</title>
+  <title>ESP32 Analog Input Reading JSON Message 2021-08-18 Version 236</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8"/>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" type="text/css" href="control.css">
@@ -65,8 +65,14 @@
     <h3>IR-Datenrekorder</h3>
 	<!-- general external and internal switch for IR record supply and reading-->
 	
-	<div><button id="irrecordingonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Recorder an/aus</button>   
-	<button id="iraveragesampleonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Mittelwert an/aus</button> </div>
+	<div> 
+	<button id="speedsamplingonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Sensor</button> 
+	<button id="irrecordingonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Recorder</button> 
+	</div>   
+	<div> 
+	<button id="iraveragesampleonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Mittelwert</button>
+	<button id="serialmonitoronoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">Serial-Monitor</button> 
+	</div>
 	<div>IR-low&nbsp;<input type="range" onchange="SetIRLowSliderValue(this)" id="IRLowSlider" min="150" max="2000" value="%SLIDERVALUE%" step="50" class="slider2"></div>
 	<div>IR-high<input type="range" onchange="SetIRHighSliderValue(this)" id="IRHighSlider" min="150" max="2000" value="%SLIDERVALUE%" step="50" class="slider2"></div>	
 	<!-- Rounded switch -->
@@ -83,8 +89,10 @@
     </div>
     -->
 	<table style= "width: 96%; text-align: left; font-size: 1.0rem; margin: 0 2% 0 2%;" >
+	<tr><td>IR-Sensor</td>               <td><span id="SpeedSampling">%SPEEDSAMPLING%</span></td>         <td>1/0</td></tr>
 	<tr><td>IR-Recorder</td>             <td><span id="IRSampleRecording">%IRSAMPLERECORDING%</span></td> <td>1/0</td></tr>
 	<tr><td>IR-Mittelwert</td>           <td><span id="IRAverageSample">%IRAVERAGESAMPLE%</span></td>     <td>1/0</td></tr>
+	<tr><td>Serial-Monitor</td>           <td><span id="SerialMonitor">%SERIALMONITOR%</span></td>        <td>1/0</td></tr>
 	<tr><td>IR-low</td>                  <td><span id="IRlowValue">%IRlowValue%</span></td>               <td>mV</td></tr>
 	<tr style="border-bottom: 4pt double #ddd;">
 	<td>IR-high</td>                 <td><span id="IRhighValue">%IRhighValue%</span></td>                 <td>mV</td></tr>
@@ -99,7 +107,8 @@
 	<div>Spanne&nbsp;<input type="range" onchange="GetXDSliderValue(this)" id="DSlider" min="20" max="500" value="%SLIDERVALUE%" step="20" class="slider2"></div>
 	<br>
 	<table style= "width: 96%; text-align: left; font-size: 1.0rem; margin: 0 2% 0 2%;" >
-	<tr><td>Zähler</td>                 <td><span id="CountValue">%CountValue%</span></td>                <td><small>Schwellen</small></td></tr>
+	<tr><td>IR-Frequenz</td>             <td><span id="IRSampleFreqValue">%IRSampleFreqValue%</span></td> <td>Hz</td></tr>	
+	<tr><td>Zähler</td>                  <td><span id="CountValue">%CountValue%</span></td>               <td><small>Schwellen</small></td></tr>
 	<tr><td>IR-Signal</td>               <td><span id="IRAvgValue">%IRAvgValue%</span></td>               <td>V</td></tr>
 	<tr><td>Fahrstrecke</td>             <td><span id="DistanceValue">%DistanceValue%</span></td>         <td>m</td></tr>
 	<tr><td>Geschwindigkeit</td>         <td><span id="SpeedmeasureValue">%SpeadmeasureValue%</span></td> <td>m/s</td></tr>
@@ -173,8 +182,10 @@
 	</p>-->
 <script>
     // IRDataChart initialisation, formatting, data collection from JSON and handling, intervall updating
+	var speedsampling = true;
 	var irrecordreading = false;
 	var iraveraging = true;
+	var serialmonitor = true;
 	var irsampleArray = [];
 	var irlowArray = [];
 	var irhighArray = [];
@@ -279,7 +290,7 @@
 	} 
 
 	function loadIRSampleData() { //fetches json data & calls dspChart() to render graph  {"speed":31,"currentspeed":167,"power":1.6711}
-	    var i, IRData, count, distance, speedmeasure, speedscale, total, totaldistance, lasttotal, lastseconds, lastdistance, lastspeed, lastspeedatscale, irsamplerecording, iraveragesample, irlow, irhigh;
+	    var i, IRData, irsamplefreq, count, distance, speedmeasure, speedscale, total, totaldistance, lasttotal, lastseconds, lastdistance, lastspeed, lastspeedatscale, irsamplerecording, iraveragesample, serialmonitor, irlow, irhigh;
 		var requestURL = '/irsamplerecord'; //URL of the JSON data
 		var request = new XMLHttpRequest({
 			mozSystem: true
@@ -290,23 +301,26 @@
 			  IRData = JSON.parse(request.responseText); //parse JSON string to IRData object
 			  console.log(IRData);
 			  
-			  /*oritinal JSON IRSampleRecordingon definition in PiedPiperS v210
+			  /*oritinal JSON IRSampleRecordingon definition in PiedPiperS v210, v234
+			    json2["irsamplefreq"]      = int(int(IRSampleCount[0]-IRSampleCount[1])/MainLoopFrequencySeconds);  //ir sample frequency in Hz
 				json2["count"]        = SpeedCount[0];       //railway sleeper counts
 				json2["iravg"]        = IRAverage;           //in mV
 				json2["distance"]     = float(SpeedCount[0])*SpeedCountDistance; //in m
 				json2["speedmeasure"] = Speed;               //measured speed m/s
 				json2["speedscale"]   = SpeedAtScale;        //measured speed converted to scale in km/h
 				
-				json2["total"]        = SpeedCountTotal;     //int
+				json2["total"]         = SpeedCountTotal;      //int
 				json2["totaldistance"] = float(SpeedCountTotal)*SpeedCountDistance; //in m  
-				json2["lasttotal"]    = SpeedCountLastTotal; //int    
+				json2["lasttotal"]    = SpeedCountLastTotal;   //int    
 				json2["lastseconds"]  = SpeedCountLastSeconds; //float   
 				json2["lastdistance"] = float(SpeedCountLastTotal)*SpeedCountDistance; //in m    
-				json2["lastspeed"]    = LastSpeed;           //float m/s
-				json2["lastspeedatscale"] = LastSpeedAtScale; //float in km/h at model scale
-			 
+				json2["lastspeed"]    = LastSpeed;             //float m/s
+				json2["lastspeedatscale"] = LastSpeedAtScale;  //float in km/h at model scale
+
+				json2["speedsampling"]     = int(SpeedSampling);      // SpeedSampling active =1, deactivated =0		 
 				json2["irsamplerecording"] = int(IRSampleRecording);  // IRSampleRecording active =1, deactivated =0
-				json2["iraveragesample"] = int(IRAverageSample);  // IRAverageSample active =1, deactivated =0
+				json2["iraveragesample"]   = int(IRAverageSample);    // IRAverageSample active =1, deactivated =0
+				json2["serialmonitor"]     = int(SerialMonitor);      // SerialMonitring   active =1, deactivated =0   
 				json2["irlow"]        = IRlow;               //ir_low_level, no sleeper detected in mV
 				json2["irhigh"]       = IRhigh;              //ir_high_level, sleeper detected in mV
 
@@ -317,6 +331,7 @@
 			  */
 			  
 			  //retrive and scale new data elements from IRData object
+			  irsamplefreq = IRData.irsamplefreq/100000; // number of IR samples per second /100000
 			  count = IRData.count/100000;        // number of railway sleepers detected /100000
 			  iravg = IRData.iravg/1000;          // averaged IR Signal converted from mV to V /1000
 			  distance = IRData.distance/1000;    // distance travelled, converted from m to km
@@ -331,8 +346,10 @@
 			  lastspeed = IRData.lastspeed;       // in m/s
 			  lastspeedatscale = IRData.lastspeedatscale; // in km/h at model scale	  
 			  
+			  speedsampling = IRData.speedsampling;          // SpeedSampling active =1, deactivated =0, bool converted to integer, 1/0
 			  irsamplerecording = IRData.irsamplerecording;  // IRSampleRecording active =1, deactivated =0, bool converted to integer, 1/0
-			  iraveragesample = IRData.iraveragesample;  // IRAverageSample active =1, deactivated =0, bool converted to integer, 1/0		  
+			  iraveragesample   = IRData.iraveragesample;    // IRAverageSample active =1, deactivated =0, bool converted to integer, 1/0
+              serialmonitor     = IRData.serialmonitor	     // Serial Monitor active =1, deactivated =0, bool converted to integer, 1/0		  
 			  irlow = IRData.irlow;               // ir_low_level, no sleeper detected, in mV
 			  irhigh = IRData.irhigh;             // ir_high_level, no sleeper detected, in mV
 			  
@@ -348,11 +365,14 @@
 			  }
 			  
 			  //update value display in text
+			  document.getElementById('SpeedSampling').innerHTML     = Math.round(speedsampling);          // integer, 1=on, 0=off
 			  document.getElementById('IRSampleRecording').innerHTML = Math.round(irsamplerecording);      // integer, 1=on, 0=off
 			  document.getElementById('IRAverageSample').innerHTML   = Math.round(iraveragesample);        // integer, 1=on, 0=off
+			  document.getElementById('SerialMonitor').innerHTML     = Math.round(serialmonitor);          // integer, 1=on, 0=off
 			  document.getElementById('IRlowValue').innerHTML        = Math.round(irlow);                  // in mV,    precision 0
 			  document.getElementById('IRhighValue').innerHTML       = Math.round(irhigh);                 // in mV,    precision 0
 			  
+			  document.getElementById('IRSampleFreqValue').innerHTML = Math.round(irsamplefreq*100000);    // in Hz, frequency of IR samples
 			  document.getElementById('CountValue').innerHTML        = Math.round(count*100000);           // in number of sleepers
 			  document.getElementById('IRAvgValue').innerHTML        = Math.round(iravg*100)/100;          // in V,    precision 2
 			  document.getElementById('DistanceValue').innerHTML     = Math.round(distance*1000*100)/100;  // in m,    precision 2 
@@ -430,7 +450,6 @@
 	var text = JSON.parse(event.data);
 	document.getElementById('StatusText').innerHTML = text.status;
 	document.getElementById('SpeedText').innerHTML = text.speed;
-	//document.getElementById('LastCommand').innerHTML = text.command; // <-- adjust this line to text.command;
 	console.log('');
   }
  
@@ -442,51 +461,60 @@
 	document.getElementById('reverse').addEventListener('click', reversee);
 	document.getElementById('halt').addEventListener('click', halte);
 	document.getElementById('stop').addEventListener('click', stope);
+	document.getElementById('speedsamplingonoff').addEventListener('click', speedsamplingonoffe);
 	document.getElementById('irrecordingonoff').addEventListener('click', irrecordingonoffe);
 	document.getElementById('iraveragesampleonoff').addEventListener('click', iraveragesampleonoffe);
+	document.getElementById('serialmonitoronoff').addEventListener('click', serialmonitoronoffe);
 	document.getElementById('ledonoff').addEventListener('click', ledonoffe);
 	document.getElementById('zerocounter').addEventListener('click', zerocountere);
   }
   function minus4e(){
     websocket.send('--------');
 	console.log('WebSocket command sent --------');
-	//document.getElementById('LastCommand').innerHTML = 'sent: ----';
 	delay(1000);
   }
   function minus1e(){
     websocket.send('--');
 	console.log('WebSocket command sent --');
-	//document.getElementById('LastCommand').innerHTML = 'sent: -';
 	delay(1000);
   }
   function plus1e(){
     websocket.send('++');
 	console.log('WebSocket command sent ++');
-	//document.getElementById('LastCommand').innerHTML = 'sent: +';
 	delay(1000);
   }
   function plus4e(){
     websocket.send('++++++++');
 	console.log('WebSocket command sent ++++++++');
-	//document.getElementById('LastCommand').innerHTML = 'sent ++++';
    delay(1000);
   }
   function reversee(){
     websocket.send('0<');
 	console.log('WebSocket command sent 0<');
-	//document.getElementById('LastCommand').innerHTML = 'sent 0<';
 	delay(1000);
   }
   function halte(){
     websocket.send('--------------------------------');
 	console.log('WebSocket command sent --------------------------------');
-	//document.getElementById('LastCommand').innerHTML = 'sent ----------------';
 	delay(1000);
   }
   function stope(){
     websocket.send('00');
 	console.log('WebSocket command sent 00');
-	//document.getElementById('LastCommand').innerHTML = 'sent 00';
+	delay(1000);
+  }
+  function speedsamplingonoffe(){
+	    //irrecordreading = document.getElementById("irrecordingonoff");
+    if (speedsampling) { //current status of internal javascript switch for SpeedSampling
+		websocket.send('s0');
+		console.log('WebSocket command sent s0'); //general ino program switch for activating/deactivating SpeedSampling
+		speedsampling = false; //general internal javascript switch for SpeedSampling
+	}
+	else {
+		websocket.send('s1');
+		console.log('WebSocket command sent s1'); //general .ino program switch for activating/deactivating SpeedSampling
+		speedsampling = true; //general internal javascript switch for SpeedSampling
+	}
 	delay(1000);
   }
   function irrecordingonoffe(){
@@ -494,14 +522,12 @@
     if (irrecordreading) { //current status of internal javascript switch for reading sample record
 		websocket.send('r0');
 		console.log('WebSocket command sent r0'); //general ino program switch for activating/deactivating IR sample record
-		//document.getElementById('LastCommand').innerHTML = 'sent r0';
-		irrecordreading = false; //new general internal javascript switch for reading sample record
+		irrecordreading = false; //general internal javascript switch for reading sample record
 	}
 	else {
 		websocket.send('r1');
 		console.log('WebSocket command sent r1'); //general .ino program switch for activating/deactivating IR sample record
-		//document.getElementById('LastCommand').innerHTML = 'sent r1';
-		irrecordreading = true; //new general internal javascript switch for reading sample record
+		irrecordreading = true; //general internal javascript switch for reading sample record
 	}
 	delay(1000);
   }
@@ -510,34 +536,42 @@
     if (iraveraging) { //current internal javascript status for IR sample averaging button
 		websocket.send('a0');
 		console.log('WebSocket command sent a0'); //general .ino program switch for activating/deactivating IR sample averaging
-		//document.getElementById('LastCommand').innerHTML = 'sent a0';
-		iraveraging = false; //new internal javascript status for IR sample averaging button
+		iraveraging = false; //internal javascript status for IR sample averaging button
 	}
 	else {
 		websocket.send('a1');
 		console.log('WebSocket command sent a1'); //general .ino program switch for activating/deactivating IR sample averaging
-		//document.getElementById('LastCommand').innerHTML = 'sent a1';
-		iraveraging = true; //new internal javascript status for IR sample averaging button
+		iraveraging = true; //internal javascript status for IR sample averaging button
+	}
+	delay(1000);
+  }
+  function serialmonitoronoffe(){
+    if (serialmonitor) { //current internal javascript status for IR sample averaging button
+		websocket.send('m0');
+		console.log('WebSocket command sent m0'); //general .ino program switch for activating/deactivating SerialMonitoring
+		serialmonitor = false; //internal javascript status for IR sample averaging button
+	}
+	else {
+		websocket.send('m1');
+		console.log('WebSocket command sent m1'); //general .ino program switch for activating/deactivating SerialMonitoring
+		serialmonitor = true; //internal javascript status for IR sample averaging button
 	}
 	delay(1000);
   }
   function ledonoffe(){
     websocket.send('l');
 	console.log('WebSocket command sent l');
-	//document.getElementById('LastCommand').innerHTML = 'sent l';
 	delay(1000);
   }  
   function zerocountere(){
     websocket.send('z');
 	console.log('WebSocket command sent z');
-	//document.getElementById('LastCommand').innerHTML = 'sent z';
 	delay(1000);
   }
   function SetPWMSliderValue(element) {
     var PWMsliderValue = document.getElementById("pwmSlider").value;
     websocket.send("="+PWMsliderValue); 
     console.log('WebSocket command sent sliderValue ='+PWMsliderValue);
-    //document.getElementById('LastCommand').innerHTML = 'sent sliderValue = '+sliderValue;
     delay(1000);
   }
   function SetIRLowSliderValue(element) {
@@ -546,7 +580,6 @@
 	console.log('Adjust IRLowSliderValue ='+IRLowSliderValue);
 	websocket.send('irl='+IRLowSliderValue);
 	console.log('WebSocket command sent l'+IRLowSliderValue);
-	//document.getElementById('LastCommand').innerHTML = 'sent: ----';
 	delay(1000);
   } 
   function SetIRHighSliderValue(element) {
@@ -555,7 +588,6 @@
 	console.log('Adjust IRHighSliderValue ='+IRHighSliderValue);
 	websocket.send('irh='+IRHighSliderValue);
 	console.log('WebSocket command sent h'+IRHighSliderValue);
-	//document.getElementById('LastCommand').innerHTML = 'sent: ----';
 	delay(1000);
   } 
   

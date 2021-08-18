@@ -2,7 +2,7 @@ PiedPiperS Version Track
 
 PiedPiperS
   This code is published with GNU General Public License GPL v3, 
-  Copyright (c) J. Ruppert, 2021-05, jorail [at] gmx.de
+  Copyright (c) J. Ruppert, 2021-08, jorail [at] gmx.de
   
   The program purpose is to control a model train motor with independent power supply
   e.g. from USB power bank for outdoors. Following options exist:
@@ -207,3 +207,24 @@ PiedPiperS
   214 2021-06-01 round count reference value in irsamplerecord.html, move IRSampleRecording commands to void SpeedCalculation, adjust threshold for RoundMarkerDetected flag
   215 2021-06-02 debug RoundMarkerDetection by introducint valarray SpeedCountDifference, debug samplerecorderonoff toggle by absolute websocket command 'r1'=on, 'r0'=off    
   216 2021-06-02 consolidated version for speedo branch
+  
+  speedo branch in github: https://github.com/jorail/PiedPiperS/tree/speedo, develop speed-o-meter with reflective ir detector on railway sleepers, debugging incomplete sleeper counting
+  217 2021-06-03 adjust transmission of irsamplerecord array, toggle ir sample averaging for railway sleeper detection
+  218 2021-06-03 add adjustment for IRlow and IRhigh from irsamplerecord.html via websocket message
+  219 2021-06-03 modify effect of flag IRSampleRecording: Extension to individual data record and json2 record submission
+  220 2021-06-04 change time recording back to individual records instead of 10-fold record averaging
+  221 2021-06-05 introduce switch for SpeedSampling in .ino and irsamplerecord.html
+
+  222 2021-06-06 place SpeedSampling in interrupt function IRAverageSample
+  223 2021-06-08 debug interrupt function
+  224 2021-06-12 define IRArray without valarry but instead with global variable IRArrayPointer 
+  225 2021-06-13 manage conflict of analogReading between TimerInterrupt and MotorCurrent Sampling by locking PortMultiplexer
+                 according to https://techtutorialsx.com/2017/10/07/esp32-arduino-timer-interrupts/
+  228 2021-08-10 testing attaching ISR timer interrupt to core 0
+  229 2021-08-11 debugging void SpeedSampling. For debugging analogRead in ISR timer interrupt refer to https://www.toptal.com/embedded/esp32-audio-sampling
+  230 2021-08-16
+  231 2021-08-17 using I2S AnalogReading DMA mode and ESP32 I2S example on HighFreq_ADC
+  232 2021-08-17 core0 solution with normal analogRead (no ISR timer interrupt, no IRAM attribute required)
+  235 2021-08-18 SpeedSamplingIRSensor running as parallel task on core0, IRsamplecounter
+  236 2021-08-18 optimse task and related IR recorder outputs
+  237 2021-08-18 optimse code and comments, delete ISR timer interrupt remains, ca. 6 kHz IRsensor sample frequency achieved, with main loop ca. 0.75 s and 1000 power samples/main 

@@ -112,6 +112,9 @@ reflective IR signal during train passage. The data of the sum-counter is than c
 for the restart of a new round. This allows for simple and repeated control of the completeness of counting with different deadband settings, speed levels,
 sensor position adjustments, environmental conditions.  
 
+Version 237 has overcome a problem with interrupted and incomplete counting of railway sleepers by assigning the analog reading of IR sensor data to a parallel task
+running on the second core0 of the ESP32 microprocessor. Complete sets of ca. 6000 Hz IR sensor samples are achieved.
+
 Please feel invited to pass your comments on github or via e-mail, if you have any suggestions for further improvement or
 new applications for PiedPiperS.
 
