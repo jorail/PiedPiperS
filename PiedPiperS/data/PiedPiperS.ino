@@ -92,21 +92,31 @@
   224 2021-06-12 define IRArray without valarry but instead with global variable IRArrayPointer 
   225 2021-06-13 manage conflict of analogReading between TimerInterrupt and MotorCurrent Sampling by locking PortMultiplexer
                  according to https://techtutorialsx.com/2017/10/07/esp32-arduino-timer-interrupts/
+  226            consolidated
+      
   228 2021-08-10 testing attaching ISR timer interrupt to core 0
   229 2021-08-11 debugging void SpeedSampling. For debugging analogRead in ISR timer interrupt refer to https://www.toptal.com/embedded/esp32-audio-sampling
   230 2021-08-16
+  
   231 2021-08-17 using I2S AnalogReading DMA mode and ESP32 I2S example on HighFreq_ADC
+  
   232 2021-08-17 core0 solution with normal analogRead (no ISR timer interrupt, no IRAM attribute required)
   235 2021-08-18 SpeedSamplingIRSensor running as parallel task on core0, IRsamplecounter
   236 2021-08-18 optimse task and related IR recorder outputs
   237 2021-08-18 optimse code and comments, delete ISR timer interrupt remains, ca. 6 kHz IRsensor sample frequency achieved, with main loop ca. 0.75 s and 1000 power samples/main loop
+  238 2021-08-19 consolidated
+  239 2021-08-19 optimised lok.ini parameters, ca. 5.7 kHz IRsensor sample frequency achieved, with main loop ca. 1.76 s and 2000 power samples/main loop, irlow 0.5 V irhigh 0.7 V
+  240 2021-08-19 optimise de-noising of IRsensor readings by median filter, did not work well with small number of samples for determination
+  241 2021-08-19 optimise de-noising with option to skip min and max from IRSensor reading for averaging
+  242 2021-08-19 optimise de-noising with option to skip min and max from IRSensor reading for averaging, ca. 5.6 kHz IRsensor sample frequency achieved, with main loop ca. 1.75 s and 2500 power samples/main loop, irlow 0.5 V irhigh 0.8 V
+                 potential further improvment of de-noising: count sleepers only after 3 readings above/below deadband
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 237, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-08-18";
+String SKETCH_INFO = "PiedPiperS.ino, Version 242, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-08-19";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -173,6 +183,9 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 237, GNU General Public License Ve
   //v235, for feeding watchdog timer in task on core0, https://forum.arduino.cc/t/esp32-a-better-way-than-vtaskdelay-to-get-around-watchdog-crash/596889/13
   #include "soc/timer_group_struct.h"
   #include "soc/timer_group_reg.h"
+
+  //v240, for calculating median on analog readings (instead of average) in SpeedSampleIRSensor, i.e. for denoising the voltage readings, https://github.com/luisllamasbinaburo/Arduino-QuickMedian
+  //#include "QuickMedianLib.h"
   
   //#include "driver/pcnt.h"  // ESP32 library for pulse count
   // e.g. stored in following path C:\Users\User\Documents\Arduino\hardware\arduino-esp32-master\tools\sdk\include\driver\driver\pcnt.h
@@ -293,7 +306,7 @@ const int MAX_CHARS      = 65;   // Max size of the input command buffer
 
   //global variables for SpeedSampling
   int SpeedSampleFrequency = 5000; //Frequency of monitoring IR sensor for speed sampling, ca. 15000 Hz, with averaging of 3 samples resulting effectively in 5000 Hz
-  int IRSampleAveraging = 3;  //attenuation of IR signal, ajust according to max. speed counting frequency, default 2, increase if signal is very noisy
+  int IRSampleAveraging = 5;  //attenuation of IR signal, ajust according to max. speed counting frequency, default 5, increase if signal is very noisy
   int SpeedSampleLoopCounts = int(MainLoopFrequency/SpeedSampleFrequency);
   int SpeedLEDLoopCounts    = int(SpeedSampleLoopCounts*IRSampleAveraging);
   bool SpeedLED = true; //for switching on/off speed LED indicator in case of railway sleeper detected by reflective IR sensor
@@ -317,7 +330,8 @@ const int MAX_CHARS      = 65;   // Max size of the input command buffer
   volatile int IRArrayPointer; // indicates next position for overwriting
   volatile int IRAverage = 0;
   volatile bool IRAverageSample = false; // IRAverageSample for IR sample recorder: false = raw IR signal, true = use averaged sample
-  volatile bool SleeperDetected = true; //start with true value, in order to avoid rising edge count at startup
+  volatile bool IRSkipMinMax = false;    // IRAverageSample for IR sample recorder: false = use averaged sample, true = skip min and max values for determining the average (introduced in version v241)
+  volatile bool SleeperDetected = true;  //start with true value, in order to avoid rising edge count at startup
   volatile unsigned long SpeedCounter = 0;
 
   // SpeedSampleIRSensorTask settings https://www.digikey.de/en/maker/projects/introduction-to-rtos-solution-to-part-12-multicore-systems/369936f5671d4207a2c954c0637e7d50
@@ -660,6 +674,12 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
     }
     else if (client_message[0]=='a' && client_message[1]=='0') { //IR average sample off from irsamplerecorder.html
       IRAverageSample = false;
+    }
+    else if (client_message[0]=='x' && client_message[1]=='1') { //IR average sample with skipping of min max values on from irsamplerecorder.html
+      IRSkipMinMax = true;
+    }
+    else if (client_message[0]=='x' && client_message[1]=='0') { //IR average sample with skipping of min max values off from irsamplerecorder.html
+      IRSkipMinMax = false;
     }
     else if (client_message[0]=='m' && client_message[1]=='1') { //Switch on Serial monitoring with Serial.print output in MonitorGlobalVariables on from irsamplerecorder.html
       SerialMonitor = true;
@@ -1027,25 +1047,6 @@ void iniSetup() {
 }
 
 #ifdef SpeedSampling
-
-/*
-void SpeedSamplingSetup(void *parameters) {
-  //this part is normally placed in setup(), here it is called from setup() in a task, that is pinned to ESP32 core 0
-  //thus the timer interrupt createded in the following lines is also allocated at core 0
-  //in order to prevent conflicts with the async web server running on core 1
-  //https://www.digikey.de/en/maker/projects/introduction-to-rtos-solution-to-part-12-multicore-systems/369936f5671d4207a2c954c0637e7d50
-
-  void IRAM_ATTR SpeedSamplingIRSensor();  //define empty function for attachment to timer, code is filled in at the end of setup
-  
-  //trigger SpeedSamplingIRSensor by Timer Interrupt
-  SpeedSampleTimer = timerBegin(0, 80, true); //prescaler set from 80 MHz to 1 MHz = microseconds
-  timerAttachInterrupt(SpeedSampleTimer, &SpeedSamplingIRSensor, true);
-  timerAlarmWrite(SpeedSampleTimer, 200, true); //5000 Hz sampling
-  timerAlarmEnable(SpeedSampleTimer);
-
-  while (1) {delay(1000);}  //empty loop for running on core 0
-}
-*/
 
 /*
 //v231
@@ -1465,6 +1466,7 @@ void setup() {
         response->printf("<tr><td>IR-Sensor f&uuml;r Geschwind&shy;ig&shy;keits&shy;messung erfassen</td> <td>%i</td></tr>",SpeedSamplingOnOff);  
         response->printf("<tr><td>IR-Rekorder f&uuml;r Mess&shy;wert&shy;anzeige</td> <td>%i</td></tr>",IRSampleRecording);  
         response->printf("<tr><td>IR-Mittelwert bilden</td>    <td>%i</td></tr>", IRAverageSample);  
+        response->printf("<tr><td>   ohne Min-Max-Werte</td>   <td>%i</td></tr>", IRSkipMinMax);  
         response->printf("<tr><td>Ausgaben f&uuml; serielles Monitoring</td>    <td>%i</td></tr>", SerialMonitor);                   
       #endif
       #ifdef ESP32
@@ -1736,6 +1738,7 @@ void setup() {
     json2["speedsampling"]     = int(SpeedSamplingOnOff);// SpeedSampling active =1, deactivated =0
     json2["irsamplerecording"] = int(IRSampleRecording); // IRSampleRecording active =1, deactivated =0
     json2["iraveragesample"]   = int(IRAverageSample);   // IRAverageSample   active =1, deactivated =0
+    json2["irskipminmax"]      = int(IRSkipMinMax);      // IRSkipMinMax      active =1, deactivated =0
     json2["serialmonitor"]     = int(SerialMonitor);     // SerialMonitring   active =1, deactivated =0   
     json2["irlow"]             = IRlow;                  //ir_low_level, no sleeper detected in mV
     json2["irhigh"]            = IRhigh;                 //ir_high_level, sleeper detected in mV
@@ -1877,14 +1880,40 @@ void SpeedSamplingIRSensor( void * pvParameters ) {  // Task SpeedSamplingIRSens
       //Serial.print("3="); 
       //Serial.println(IRArray[IRArrayPointer]);
       //Serial.print(" ");
-      IRAverage = 0;
-      //Serial.print("4"); 
-      for (int i=0; i<IRSampleAveraging; i++) {
-        IRAverage = IRAverage + IRArray[i];
+
+      if(IRSkipMinMax) {
+        //v241, determine and skip min max values from average
+        IRAverage = 0;
+        //Serial.print("4");
+        int max_v=0;    //mV
+        int min_v=3300; //mV 
+        for (int i=0; i<IRSampleAveraging; i++) {
+          if (IRArray[i]<min_v) {min_v = IRArray[i];}
+          if (IRArray[i]>max_v) {max_v = IRArray[i];}    
+          IRAverage = IRAverage + IRArray[i];
+        }
+        IRAverage -= min_v; //skip min
+        IRAverage -= max_v; //skip max
+        //Serial.print("5"); 
+        IRAverage = int(IRAverage/(IRSampleAveraging-2));  //skip min and max means sample number-2
+        //Serial.print("6"); 
       }
-      //Serial.print("5"); 
-      IRAverage = int(IRAverage/IRSampleAveraging);
-      //Serial.print("6"); 
+      else {
+        //v216 to v239
+        IRAverage = 0;
+        //Serial.print("4"); 
+        for (int i=0; i<IRSampleAveraging; i++) {
+          IRAverage = IRAverage + IRArray[i];
+        }
+        //Serial.print("5"); 
+        IRAverage = int(IRAverage/IRSampleAveraging);
+        //Serial.print("6"); 
+      }
+      /* 
+      //v240, optimise de-noising of IRsensor readings by median filter (instead of arithmetic averaging)
+      IRAverage = QuickMedian<volatile int>::GetMedian(IRArray, IRSampleAveraging); 
+      */
+            
       if (IRAverage < IRlow) {      //below low level threshold
         //Serial.print("7low"); 
         if (SleeperDetected) {      //falling edge IR signal detected

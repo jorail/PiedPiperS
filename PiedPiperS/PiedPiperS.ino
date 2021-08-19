@@ -108,13 +108,15 @@
   239 2021-08-19 optimised lok.ini parameters, ca. 5.7 kHz IRsensor sample frequency achieved, with main loop ca. 1.76 s and 2000 power samples/main loop, irlow 0.5 V irhigh 0.7 V
   240 2021-08-19 optimise de-noising of IRsensor readings by median filter, did not work well with small number of samples for determination
   241 2021-08-19 optimise de-noising with option to skip min and max from IRSensor reading for averaging
+  242 2021-08-19 optimise de-noising with option to skip min and max from IRSensor reading for averaging, ca. 5.6 kHz IRsensor sample frequency achieved, with main loop ca. 1.75 s and 2500 power samples/main loop, irlow 0.5 V irhigh 0.8 V
+                 potential further improvment of de-noising: count sleepers only after 3 readings above/below deadband
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 241, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-08-19";
+String SKETCH_INFO = "PiedPiperS.ino, Version 242, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-08-19";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
