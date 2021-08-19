@@ -92,21 +92,26 @@
   224 2021-06-12 define IRArray without valarry but instead with global variable IRArrayPointer 
   225 2021-06-13 manage conflict of analogReading between TimerInterrupt and MotorCurrent Sampling by locking PortMultiplexer
                  according to https://techtutorialsx.com/2017/10/07/esp32-arduino-timer-interrupts/
+  226            consolidated
+      
   228 2021-08-10 testing attaching ISR timer interrupt to core 0
   229 2021-08-11 debugging void SpeedSampling. For debugging analogRead in ISR timer interrupt refer to https://www.toptal.com/embedded/esp32-audio-sampling
   230 2021-08-16
+  
   231 2021-08-17 using I2S AnalogReading DMA mode and ESP32 I2S example on HighFreq_ADC
+  
   232 2021-08-17 core0 solution with normal analogRead (no ISR timer interrupt, no IRAM attribute required)
   235 2021-08-18 SpeedSamplingIRSensor running as parallel task on core0, IRsamplecounter
   236 2021-08-18 optimse task and related IR recorder outputs
   237 2021-08-18 optimse code and comments, delete ISR timer interrupt remains, ca. 6 kHz IRsensor sample frequency achieved, with main loop ca. 0.75 s and 1000 power samples/main loop
+  238 2021-08-19 consolidated
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 237, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-08-18";
+String SKETCH_INFO = "PiedPiperS.ino, Version 238, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-08-19";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -1027,25 +1032,6 @@ void iniSetup() {
 }
 
 #ifdef SpeedSampling
-
-/*
-void SpeedSamplingSetup(void *parameters) {
-  //this part is normally placed in setup(), here it is called from setup() in a task, that is pinned to ESP32 core 0
-  //thus the timer interrupt createded in the following lines is also allocated at core 0
-  //in order to prevent conflicts with the async web server running on core 1
-  //https://www.digikey.de/en/maker/projects/introduction-to-rtos-solution-to-part-12-multicore-systems/369936f5671d4207a2c954c0637e7d50
-
-  void IRAM_ATTR SpeedSamplingIRSensor();  //define empty function for attachment to timer, code is filled in at the end of setup
-  
-  //trigger SpeedSamplingIRSensor by Timer Interrupt
-  SpeedSampleTimer = timerBegin(0, 80, true); //prescaler set from 80 MHz to 1 MHz = microseconds
-  timerAttachInterrupt(SpeedSampleTimer, &SpeedSamplingIRSensor, true);
-  timerAlarmWrite(SpeedSampleTimer, 200, true); //5000 Hz sampling
-  timerAlarmEnable(SpeedSampleTimer);
-
-  while (1) {delay(1000);}  //empty loop for running on core 0
-}
-*/
 
 /*
 //v231
