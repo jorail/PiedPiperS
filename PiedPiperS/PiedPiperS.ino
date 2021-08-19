@@ -105,13 +105,14 @@
   236 2021-08-18 optimse task and related IR recorder outputs
   237 2021-08-18 optimse code and comments, delete ISR timer interrupt remains, ca. 6 kHz IRsensor sample frequency achieved, with main loop ca. 0.75 s and 1000 power samples/main loop
   238 2021-08-19 consolidated
+  239 2021-08-19 optimised lok.ini parameters, ca. 5.7 kHz IRsensor sample frequency achieved, with main loop ca. 1.76 s and 2000 power samples/main loop, irlow 0.5 V irhigh 0.7 V
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 238, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-08-19";
+String SKETCH_INFO = "PiedPiperS.ino, Version 239, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-08-19";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
