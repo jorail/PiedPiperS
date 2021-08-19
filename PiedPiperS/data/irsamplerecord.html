@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <title>ESP32 Analog Input Reading JSON Message 2021-08-18 Version 236</title>
+  <title>ESP32 Analog Input Reading JSON Message 2021-08-19 Version 241</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8"/>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" type="text/css" href="control.css">
@@ -71,6 +71,7 @@
 	</div>   
 	<div> 
 	<button id="iraveragesampleonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Mittelwert</button>
+	<button id="irskipminmaxonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">ohne Min/Max</button>
 	<button id="serialmonitoronoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">Serial-Monitor</button> 
 	</div>
 	<div>IR-low&nbsp;<input type="range" onchange="SetIRLowSliderValue(this)" id="IRLowSlider" min="150" max="2000" value="%SLIDERVALUE%" step="50" class="slider2"></div>
@@ -92,7 +93,8 @@
 	<tr><td>IR-Sensor</td>               <td><span id="SpeedSampling">%SPEEDSAMPLING%</span></td>         <td>1/0</td></tr>
 	<tr><td>IR-Recorder</td>             <td><span id="IRSampleRecording">%IRSAMPLERECORDING%</span></td> <td>1/0</td></tr>
 	<tr><td>IR-Mittelwert</td>           <td><span id="IRAverageSample">%IRAVERAGESAMPLE%</span></td>     <td>1/0</td></tr>
-	<tr><td>Serial-Monitor</td>           <td><span id="SerialMonitor">%SERIALMONITOR%</span></td>        <td>1/0</td></tr>
+	<tr><td>   ohne Min/Max</td>         <td><span id="IRSkipMinMax">%IRSKIPMINMAX%</span></td>           <td>1/0</td></tr>	
+	<tr><td>Serial-Monitor</td>          <td><span id="SerialMonitor">%SERIALMONITOR%</span></td>         <td>1/0</td></tr>
 	<tr><td>IR-low</td>                  <td><span id="IRlowValue">%IRlowValue%</span></td>               <td>mV</td></tr>
 	<tr style="border-bottom: 4pt double #ddd;">
 	<td>IR-high</td>                 <td><span id="IRhighValue">%IRhighValue%</span></td>                 <td>mV</td></tr>
@@ -185,6 +187,7 @@
 	var speedsampling = true;
 	var irrecordreading = false;
 	var iraveraging = true;
+	var irskippingminmax = false;
 	var serialmonitor = true;
 	var irsampleArray = [];
 	var irlowArray = [];
@@ -290,7 +293,7 @@
 	} 
 
 	function loadIRSampleData() { //fetches json data & calls dspChart() to render graph  {"speed":31,"currentspeed":167,"power":1.6711}
-	    var i, IRData, irsamplefreq, count, distance, speedmeasure, speedscale, total, totaldistance, lasttotal, lastseconds, lastdistance, lastspeed, lastspeedatscale, irsamplerecording, iraveragesample, serialmonitor, irlow, irhigh;
+	    var i, IRData, irsamplefreq, count, distance, speedmeasure, speedscale, total, totaldistance, lasttotal, lastseconds, lastdistance, lastspeed, lastspeedatscale, irsamplerecording, iraveragesample, irskipminmax, serialmonitor, irlow, irhigh;
 		var requestURL = '/irsamplerecord'; //URL of the JSON data
 		var request = new XMLHttpRequest({
 			mozSystem: true
@@ -320,6 +323,7 @@
 				json2["speedsampling"]     = int(SpeedSampling);      // SpeedSampling active =1, deactivated =0		 
 				json2["irsamplerecording"] = int(IRSampleRecording);  // IRSampleRecording active =1, deactivated =0
 				json2["iraveragesample"]   = int(IRAverageSample);    // IRAverageSample active =1, deactivated =0
+				json2["irskipminmax"]      = int(IRSkipMinMax);      // IRSkipMinMax      active =1, deactivated =0
 				json2["serialmonitor"]     = int(SerialMonitor);      // SerialMonitring   active =1, deactivated =0   
 				json2["irlow"]        = IRlow;               //ir_low_level, no sleeper detected in mV
 				json2["irhigh"]       = IRhigh;              //ir_high_level, sleeper detected in mV
@@ -346,9 +350,10 @@
 			  lastspeed = IRData.lastspeed;       // in m/s
 			  lastspeedatscale = IRData.lastspeedatscale; // in km/h at model scale	  
 			  
-			  speedsampling = IRData.speedsampling;          // SpeedSampling active =1, deactivated =0, bool converted to integer, 1/0
+			  speedsampling     = IRData.speedsampling;      // SpeedSampling active =1, deactivated =0, bool converted to integer, 1/0
 			  irsamplerecording = IRData.irsamplerecording;  // IRSampleRecording active =1, deactivated =0, bool converted to integer, 1/0
 			  iraveragesample   = IRData.iraveragesample;    // IRAverageSample active =1, deactivated =0, bool converted to integer, 1/0
+			  irskipminmax      = IRData.irskipminmax;       // IRSkipMinMax active =1, deactivated =0, bool converted to integer, 1/0
               serialmonitor     = IRData.serialmonitor	     // Serial Monitor active =1, deactivated =0, bool converted to integer, 1/0		  
 			  irlow = IRData.irlow;               // ir_low_level, no sleeper detected, in mV
 			  irhigh = IRData.irhigh;             // ir_high_level, no sleeper detected, in mV
@@ -368,6 +373,7 @@
 			  document.getElementById('SpeedSampling').innerHTML     = Math.round(speedsampling);          // integer, 1=on, 0=off
 			  document.getElementById('IRSampleRecording').innerHTML = Math.round(irsamplerecording);      // integer, 1=on, 0=off
 			  document.getElementById('IRAverageSample').innerHTML   = Math.round(iraveragesample);        // integer, 1=on, 0=off
+			  document.getElementById('IRSkipMinMax').innerHTML      = Math.round(irskipminmax);           // integer, 1=on, 0=off
 			  document.getElementById('SerialMonitor').innerHTML     = Math.round(serialmonitor);          // integer, 1=on, 0=off
 			  document.getElementById('IRlowValue').innerHTML        = Math.round(irlow);                  // in mV,    precision 0
 			  document.getElementById('IRhighValue').innerHTML       = Math.round(irhigh);                 // in mV,    precision 0
@@ -464,6 +470,7 @@
 	document.getElementById('speedsamplingonoff').addEventListener('click', speedsamplingonoffe);
 	document.getElementById('irrecordingonoff').addEventListener('click', irrecordingonoffe);
 	document.getElementById('iraveragesampleonoff').addEventListener('click', iraveragesampleonoffe);
+	document.getElementById('irskipminmaxonoff').addEventListener('click', irskipminmaxonoffe);
 	document.getElementById('serialmonitoronoff').addEventListener('click', serialmonitoronoffe);
 	document.getElementById('ledonoff').addEventListener('click', ledonoffe);
 	document.getElementById('zerocounter').addEventListener('click', zerocountere);
@@ -542,6 +549,21 @@
 		websocket.send('a1');
 		console.log('WebSocket command sent a1'); //general .ino program switch for activating/deactivating IR sample averaging
 		iraveraging = true; //internal javascript status for IR sample averaging button
+	}
+	delay(1000);
+  }
+  function irskipminmaxonoffe(){
+    console.log('function irskipminmaxonoffe')
+    //irskipminmax = document.getElementById("irskipminmaxonoff");
+    if (irskippingminmax) { //current internal javascript status for skipping min max in IR sample averaging button
+		websocket.send('x0');
+		console.log('WebSocket command sent x0'); //general .ino program switch for activating/deactivating skipping min max in IR sample averaging
+		irskippingminmax = false; //internal javascript status for skipping min max in IR sample averaging button
+	}
+	else {
+		websocket.send('x1');
+		console.log('WebSocket command sent x1'); //general .ino program switch for activating/deactivating skipping min max in IR sample averaging
+		irskippingminmax = true; //internal javascript status for skipping min max in IR sample averaging button
 	}
 	delay(1000);
   }
