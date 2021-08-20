@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <title>ESP32 Analog Input Reading JSON Message 2021-08-19 Version 241</title>
+  <title>ESP32 Analog Input Reading JSON Message 2021-08-20 Version 243</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8"/>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" type="text/css" href="control.css">
@@ -144,19 +144,27 @@
 	<div><button id="ledonoff" class="button orange" style="width: 45%; font-size: 1.7rem;">LED an/aus</button>     <button id="zerocounter" class="button darkred" style="width: 45%; font-size: 1.7rem;">Null-stellen</button></div>
 	<div><button id="minus4" class="button red4">- - - -</button>    <button id="minus1" class="button red1">-</button>    <button id="plus1" class="button blue1">+</button>    <button id="plus4" class="button blue4">++++</button></div>
 	<div><button id="reverse" class="button orange">< ></button>     <button id="halt" class="button redlong">Halten</button>   <button id="stop" class="button darkred">Stopp!</button></div> 
+	<h2 style="font-size: 1.2rem; margin: 5% 5%;"><a href="/info">Infos zur Loksteuerung</a></h2>
+	<h2 style="font-size: 1.2rem; margin: 5% 5%;"><a href="/monitor">Programmvariablen</a></h2>
 	<h2 style="font-size: 1.2rem; margin: 5% 5%;"><a href="/speed.html">Geschwindigkeitsdaten</a></h2>
 	<div><a href="/"><img src="/lok" alt="Loksteuerung" style="width:95%"></a></div>
 	<h2 style="font-size: 1.2rem; margin: 2% 5%;">Anleitung zum IR-Datenrekorder</h2>
 	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
-	Die <b>Daten&uuml;bertragung und -anzeige mit einzelnen Messwerten im Diagramm</b> werden durch den Schalter 'IR-Recorder' gleichzeitig im Microporzessor und in der Webseite angeschaltet. 
+	Die <b>Messungen des reflektierten Infrarotlichts (IR)</b> erfolgt parallel zur Hauptprogramm&shy;schleife auf einem zweiten Prozessor&shy;kern (core0). Er liest das elektronisch 
+	verst&auml;rkte analoge Signal des IR-Sensors in mV in einer eigenst&auml;ndigen Aufgabe (Task) mit hoher Frequenz von 5 bis 6 kHz aus. Je nach Einstellung kann eine 
+	in der .ini-Datei vorgegebene Anzahl an Messwerten gemittelt werden. Die Minmal- und Maximalwerte k&ouuml;nnen dabei ignoriert werden, um das Rauschen in der 
+	Signal&shy;spannung weiter zu verringern. Die Schienen&shy;schwellen werden erkannt und gez&uuml;hlt, wenn die so bestimmten Messwerte zwei vorgegebene Schwellwerte 
+	einer Trennzone &uuml;ber- und wieder unterschreiten.
+	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
+	Die <b>Daten&uuml;bertragung und -anzeige der Messwerten im Diagramm</b> werden durch den Schalter 'IR-Recorder' gleichzeitig im Microporzessor und in der Webseite angeschaltet. 
 	Erneutes Bet&auml;tigen stoppt die Daten&uuml;bertragung und die Aktualisierung der Anzeige. Der letzte Datensatz im Diagramm bleibt so f&uuml;r eine geneauere Auswertung erhalten.</p>
 	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
 	Das Diagramm zeigt entweder Einzel- oder Mittelwerte der 500 j&uuml;ngsten Daten des IR-Sensors an (Schalter 'IR-Mittelwerte'). Die horizontale Achse kann 
 	mit den zwei Schiebe&shy;reglern hinsichtlich des Startposition im Datensatz (X) und der Anzahl der angezeigten Daten (D) angepasst werden. 
-	Der dargestllte Verlauf der IR-Messwerte kann zur Verbesserung der Erkennung der Bahn&shy;schwellen herangezogen werden. Hierzu k&ouml;nnen die IR-Schwellen&shy;werte (irlow, irhigh) 
-	zur Definition der dazwischen liegenden Trennzone (Deadband, siehe Anzeige der Werte in der ersten Tablle und im Diagramm) &uuml;ber die zwei Schiebe&shy;regler oder in der 
-	<b><a href="/ini.html">Datei lok.ini</a></b> angepasst werden. Die gleitenden Mittel&shy;wert&shy;bildung kann &uuml;ber den Schalter aus- und angeschaltet werden. 
-	Die Anzahl der IR-Messwerte für die Mittelwertbildung kann in der Datei lok.ini eingestellt werden (averaging).</p>
+	Der dargestllte Verlauf der IR-Messwerte kann zur Verbesserung der Erkennung der Bahn&shy;schwellen und Genauigkeit des Z&auml;hlens genutzt werden. 
+	Hierzu k&ouml;nnen die IR-Schwellen&shy;werte (IR-low, IR-high) zur Definition der dazwischen liegenden Trennzone (Deadband, siehe Anzeige der Werte in der ersten Tablle und im Diagramm) 
+	&uuml;ber die zwei Schiebe&shy;regler oder in der <b><a href="/ini.html">Datei lok.ini</a></b> angepasst werden. Die gleitenden Mittel&shy;wert&shy;bildung kann &uuml;ber den Schalter 
+	aus- und angeschaltet werden. Die Anzahl der IR-Messwerte für die Mittelwertbildung kann in der Datei lok.ini eingestellt werden (averaging).</p>
 	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
 	<br>
 	Der <b>IR-Daten&shy;rekorder</b> summiert die Anzahl der erkannten Bahn&shy;schwellen in einer Runde. Im Vergleich zu einer bekannten Anzahl &uuml;berfahrener 

@@ -100,8 +100,8 @@
   
   231 2021-08-17 using I2S AnalogReading DMA mode and ESP32 I2S example on HighFreq_ADC
   
-  232 2021-08-17 core0 solution with normal analogRead (no ISR timer interrupt, no IRAM attribute required)
-  235 2021-08-18 SpeedSamplingIRSensor running as parallel task on core0, IRsamplecounter
+  232 2021-08-17 core0 solution with normal analogRead (no ISR timer interrupt, no IRAM attribute required). 
+  235 2021-08-18 SpeedSamplingIRSensor running as parallel task on core0 (https://randomnerdtutorials.com/esp32-dual-core-arduino-ide/, https://www.digikey.de/en/maker/projects/introduction-to-rtos-solution-to-part-12-multicore-systems/369936f5671d4207a2c954c0637e7d50), IRsamplecounter
   236 2021-08-18 optimse task and related IR recorder outputs
   237 2021-08-18 optimse code and comments, delete ISR timer interrupt remains, ca. 6 kHz IRsensor sample frequency achieved, with main loop ca. 0.75 s and 1000 power samples/main loop
   238 2021-08-19 consolidated
@@ -110,18 +110,28 @@
   241 2021-08-19 optimise de-noising with option to skip min and max from IRSensor reading for averaging
   242 2021-08-19 optimise de-noising with option to skip min and max from IRSensor reading for averaging, ca. 5.6 kHz IRsensor sample frequency achieved, with main loop ca. 1.75 s and 2500 power samples/main loop, irlow 0.5 V irhigh 0.8 V
                  potential further improvment of de-noising: count sleepers only after 3 readings above/below deadband
+  243 2021-08-20 code cleaned
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 242, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-08-19";
+String SKETCH_INFO = "PiedPiperS.ino, Version 243, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-08-20";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
 #define TLE5206        //option to adjust code for interaction with different type of MotorIC        
                        //(default or comment out or empty, i.e. the else option in the if statement = L293D)
+#define  PowerSampling  //motor power sampling with ESP32
+                       //motor voltage sampling on GBIO pin 34, ADC1_Ch6, up to ca. 1.5 V on 1 kOhm resistor of 1:11 voltage split, i.e. ca. 0 to 1.5 Vdc 
+                       //motor current sampling on GBIO pin 35, ADC1_Ch7, up to ca. 0.5 A on 1 Ohm resistor, i.e. ca. 0 to 0.5 Vdc 
+#define  SpeedSampling //monitor speed on track by detecting railway sleeper passage with reflective infrared (IR) detector and ESP32
+                       //IR detecter input on GPIO pin 39, ADC1_Ch3, mode INPUT with external pullup resistor ca. 33 kOhm
+                       //IR detector signal is amplified by a transistor, to form a low (reflective ground, transistor links pin 39 to ground) 
+                       //and high voltage levels (unreflective railway sleeper, transistor inactive, ca. 1.5 V by external 33 kOhm pullup resistor) 
+                       //the external pullup resistor can be adjusted to about 27 to 47 kOhm
+                       //Reading in parallel task running on core0 results in 5 to 6 kHz sample rate.
 //#define ToneSampling //###### comment out, conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
                        //this option adjusts code for tone sampling, for use with additional electret microphone on analogue input, 
                        //sound sampling, FFT analysis and tone signal identification 
@@ -129,22 +139,6 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 242, GNU General Public License Ve
                        //https://github.com/jorail/PiedPiper
                        //it has not been thoroughly tested in combination with PiedPiperS, version 60 through version 148 and later
                        //https://github.com/jorail/PiedPiperS
-#define  PowerSampling  //motor power sampling with ESP32
-                       //motor voltage sampling on GBIO pin 34, ADC1_Ch6, up to ca. 1.5 V on 1 kOhm resistor of 1:11 voltage split, i.e. ca. 0 to 1.5 Vdc 
-                       //motor current sampling on GBIO pin 35, ADC1_Ch7, up to ca. 0.5 A on 1 Ohm resistor, i.e. ca. 0 to 0.5 Vdc 
-
-#define  SpeedSampling //monitor speed on track by detecting railway sleeper passage with reflective infrared (IR) detector and ESP32
-                       //IR detecter input on GPIO pin 39, ADC1_Ch3, mode INPUT with external pullup resistor ca. 33 kOhm
-                       //IR detector signal is amplified by a transistor, to form a low (reflective ground, transistor links pin 39 to ground) 
-                       //and high voltage levels (unreflective railway sleeper, transistor inactive, ca. 1.5 V by external 33 kOhm pullup resistor) 
-                       //the external pullup resistor can be adjusted to about 27 to 47 kOhm
-                       //The alternative option via digital reading and ESP32 pulse count was not successful, 
-                       //due to missing hysteresis or deadband between low and high. 
-#ifdef  SpeedSampling
-  bool TextStatusSpeedSampling = true;
-#else                       
-  bool TextStatusSpeedSampling = false;
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Select libraries
@@ -183,27 +177,9 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 242, GNU General Public License Ve
   //v235, for feeding watchdog timer in task on core0, https://forum.arduino.cc/t/esp32-a-better-way-than-vtaskdelay-to-get-around-watchdog-crash/596889/13
   #include "soc/timer_group_struct.h"
   #include "soc/timer_group_reg.h"
-
-  //v240, for calculating median on analog readings (instead of average) in SpeedSampleIRSensor, i.e. for denoising the voltage readings, https://github.com/luisllamasbinaburo/Arduino-QuickMedian
-  //#include "QuickMedianLib.h"
-  
-  //#include "driver/pcnt.h"  // ESP32 library for pulse count
-  // e.g. stored in following path C:\Users\User\Documents\Arduino\hardware\arduino-esp32-master\tools\sdk\include\driver\driver\pcnt.h
-  // when in the Arduino IDE properties the sketchbook storage location is set to C:\Users\User\Documents\Arduino
-  
-  // v229, for IRAM attribute analog reading function
-  //#include <soc/sens_reg.h>     //for SENS variable reading ADC value, https://www.toptal.com/embedded/esp32-audio-sampling
-  //#include <soc/sens_struct.h>  //for SENS variable reading ADC value, https://www.toptal.com/embedded/esp32-audio-sampling
-
-  /*
-  //v231, for I2S ADC DMA mode high frequency reading
-  #include <driver/i2s.h>
-  #define I2S_SAMPLE_RATE 78125
-  #define ADC_INPUT ADC1_CHANNEL_4 //pin 32
-  #define OUTPUT_PIN 27
-  #define OUTPUT_VALUE 3800
-  #define READ_DELAY 9000 //microseconds
-  */
+  bool TextStatusSpeedSampling = true; //amending text message for notification to clients()
+#else                       
+  bool TextStatusSpeedSampling = false;  
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -319,13 +295,13 @@ const int MAX_CHARS      = 65;   // Max size of the input command buffer
   float SpeedAtScale = 0; // in km/h at model scale
   float Scale = 87; //model scale, Spur 1 = 32, H0 = 87, TT = 120, N = 160
     
-  //global variables for Timer Interrupt function SpeedSamplingIRSensor()
+  //global variables for core0 task SpeedSamplingIRSensor() analog readings
   //all variables are "one-way" i.e. no shared writing on variables between interrupt and main loop
-  //interrupt function reads from:
+  //task is reading from variables:
   volatile int ir_sensor = 39; // GPIO pin 39 is depicted with 'VN' on ESP32 DevKit V1 board
   volatile int IRlow = 600;    //IR analog signal high level threshold in mV, choose value > 150 mV due to analogue input reading offset, default 600 mV
   volatile int IRhigh = 1100;  //IR analog signal high level threshold in mV, default 1100 mV
-  //interrupt function writes to:
+  //task writes to variables:
   volatile int IRArray[10];    //maximum of 10 for IRSampleAveraging, but only those defined by IRSampleAveraging will be in use in Interrupt Function SpeedSamplingIRSensor()
   volatile int IRArrayPointer; // indicates next position for overwriting
   volatile int IRAverage = 0;
@@ -334,13 +310,12 @@ const int MAX_CHARS      = 65;   // Max size of the input command buffer
   volatile bool SleeperDetected = true;  //start with true value, in order to avoid rising edge count at startup
   volatile unsigned long SpeedCounter = 0;
 
-  // SpeedSampleIRSensorTask settings https://www.digikey.de/en/maker/projects/introduction-to-rtos-solution-to-part-12-multicore-systems/369936f5671d4207a2c954c0637e7d50
-  TaskHandle_t SpeedSampleIRSensorTaskHandle; //Task created to setup parallel processing of analogReading of IR sensor on core 0, v232
+  // SpeedSampleIRSensorTask settings https://www.digikey.de/en/maker/projects/introduction-to-rtos-solution-to-part-12-multicore-systems/369936f5671d4207a2c954c0637e7d50, https://randomnerdtutorials.com/esp32-dual-core-arduino-ide/
+  TaskHandle_t SpeedSampleIRSensorTaskHandle; //Task created to setup parallel processing of analogReading of IR sensor on core0, v232
   portMUX_TYPE analogReadMux = portMUX_INITIALIZER_UNLOCKED; //preventing analogReading conflicts between task on core0 and main loop functions on core1, compare ISR timer interrupt application in https://techtutorialsx.com/2017/10/07/esp32-arduino-timer-interrupts/
-  //void IRAM_ATTR SpeedSamplingIRSensor(); //define empty function name before task or interrupt attachment
-  //uint16_t adc_reading; //v231, for I2S ADC DMA mode high frequency reading
+  //void IRAM_ATTR SpeedSamplingIRSensor(); //define empty function name before task attachment (was needed in case of timer interrupt, not required for core0 parallel task)
     
-  //IRSampleRecording
+  //IR Sample recording and assessment
   unsigned long IRSampleCounter = 0; // counting number of effective analogReadings on IRSensor
   bool IRSampleRecording = false;
   int IRSampleRecord[500]; //array for display of 500 (nearly consecutive) original IRSensor samples, recorded in main loop from current values produced in parallel core0 task with similar frequency
@@ -350,9 +325,7 @@ const int MAX_CHARS      = 65;   // Max size of the input command buffer
   float SpeedCountLastSeconds = 0;
   float LastSpeed = 0; // in m/s, as of last IRSampleRecording: SpeedCountLastTotal*SpeedCountDistance/SpeedCountLastSeconds
   float LastSpeedAtScale = 0; // in km/h at model scale
-
   bool RoundMarkerDetected = false; //Detection of RoundMarker (= strech with white reflective track ground, paper or tape on track)
-
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -362,7 +335,6 @@ const int MAX_CHARS      = 65;   // Max size of the input command buffer
 // Some values relate to the spectrum display. 
 // ////////////////////////////////////////////////////////////////////////////////
 #ifdef ToneSampling
- 
   //toneLoop, parameters for tone signal detection
   int SAMPLE_RATE_HZ = 5120;             // Sample rate of the audio in hertz. Default= 9000 Hz => resolution 37 Hz; increased resolution = 5120 => resolution = 20 Hz => highest detectable frequency = 2500 Hz
   const int FFT_SIZE = 256;              // Size of the FFT.  Realistically can only be at most 256 = default: Frequency bin siez (Hz) = SAMPLE_RATE_HZ/FFT_SIZE
@@ -1045,64 +1017,6 @@ void iniSetup() {
 //end of iniSetup()
 #endif
 }
-
-#ifdef SpeedSampling
-
-/*
-//v231
-void i2sInit()
-{
-   i2s_config_t i2s_config = {
-    .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_ADC_BUILT_IN),
-    .sample_rate =  I2S_SAMPLE_RATE,              // The format of the signal using ADC_BUILT_IN
-    .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT, // is fixed at 12bit, stereo, MSB
-    .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
-    .communication_format = I2S_COMM_FORMAT_I2S_MSB,
-    .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-    .dma_buf_count = 4,
-    .dma_buf_len = 8,
-    .use_apll = false,
-    .tx_desc_auto_clear = false,
-    .fixed_mclk = 0
-   };
-   i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
-   i2s_set_adc_mode(ADC_UNIT_1, ADC_INPUT);
-   i2s_adc_enable(I2S_NUM_0);
-}
-
-//v231
-void I2S_ADC_reader(void *pvParameters) {
-  uint32_t read_counter = 0;
-  uint64_t read_sum = 0;
-  // The 4 high bits are the channel, and the data is inverted
-  uint16_t offset = (int)ADC_INPUT * 0x1000 + 0xFFF;
-  size_t bytes_read;
-  while(1){
-    uint16_t buffer[2] = {0};
-    i2s_read(I2S_NUM_0, &buffer, sizeof(buffer), &bytes_read, 15);
-    //Serial.printf("%d  %d\n", offset - buffer[0], offset - buffer[1]);
-    if (bytes_read == sizeof(buffer)) {
-      read_sum += offset - buffer[0];
-      read_sum += offset - buffer[1];
-      read_counter++;
-    } else {
-      Serial.println("buffer empty");
-    }
-    if (read_counter == I2S_SAMPLE_RATE) {
-      adc_reading = read_sum / I2S_SAMPLE_RATE / 2;
-      //Serial.printf("avg: %d millis: ", adc_reading);
-      //Serial.println(millis());
-      read_counter = 0;
-      read_sum = 0;
-      i2s_adc_disable(I2S_NUM_0);
-      delay(READ_DELAY);
-      i2s_adc_enable(I2S_NUM_0);
-    }
-  }
-}
-*/
-#endif
-
 void SetupLoopCounts() {
   #ifdef SpeedSampling
     if(SpeedSampleFrequency<1) {SpeedSampleFrequency=1;}  
@@ -1439,6 +1353,7 @@ void setup() {
       response->printf("<p>%s</p>", SKETCH_INFO.c_str());
       response->printf("<p>%i WLAN-Nutzer (Stations connected to Access Point)</p>", WiFi.softAPgetStationNum());
       response->printf("<p> </p>"); 
+      response->printf("<h2><a href='/monitor'>Aktualisieren: Sende '?'</a></h2>");
       response->printf("<table style=\"width:100%%\">");    
       response->printf("<tr><th>Hauptprogramm</th></tr>"); 
       response->printf("<tr><td>Programmschleife</td>    <td>%i von %i</td></tr>", LoopCount, MainLoopFrequency);  
@@ -1465,8 +1380,8 @@ void setup() {
       #ifdef SpeedSampling
         response->printf("<tr><td>IR-Sensor f&uuml;r Geschwind&shy;ig&shy;keits&shy;messung erfassen</td> <td>%i</td></tr>",SpeedSamplingOnOff);  
         response->printf("<tr><td>IR-Rekorder f&uuml;r Mess&shy;wert&shy;anzeige</td> <td>%i</td></tr>",IRSampleRecording);  
-        response->printf("<tr><td>IR-Mittelwert bilden</td>    <td>%i</td></tr>", IRAverageSample);  
-        response->printf("<tr><td>   ohne Min-Max-Werte</td>   <td>%i</td></tr>", IRSkipMinMax);  
+        response->printf("<tr><td>IR-Mittelwert bilden</td>    <td>%i</td></tr>", IRAverageSample*IRSampleAveraging);  
+        response->printf("<tr><td>   ohne Min-Max-Werte</td>   <td>%i</td></tr>", IRSkipMinMax*(-2));  
         response->printf("<tr><td>Ausgaben f&uuml; serielles Monitoring</td>    <td>%i</td></tr>", SerialMonitor);                   
       #endif
       #ifdef ESP32
@@ -1489,10 +1404,12 @@ void setup() {
       response->printf("<tr><td>Ton-Aktivit&auml;ts-z&auml;hler </td>  <td>%i</td></tr>",TONE_ACTIVE_COUNT); 
       TONE_ACTIVE_COUNT =0;  
       response->printf("</table>");     
-      response->printf("<p> </p>");      
-      response->printf("<h2><a href='/monitor'>Aktualisieren: Sende '?'</a></h2>");
+      response->printf("<p> </p>");
+      response->printf("<h2><a href='/info'>Infos zur Loksteuerung</a></h2>");      
       response->printf("<h2><a href='/lok.ini'>Programmeinstellung: lok.ini</a></h2>");
       response->printf("<h2><a href='/power.html'>Leistungsaufnahme des Lokmotors</a></h2>");
+      response->printf("<h2><a href='/speed.html'>Geschwindigkeit der Lokomotive</a></h2>");
+      response->printf("<h2><a href='/irsamplerecord.html'>IR-Datenrekorder</a></h2>");   
       response->printf("<div><a href='/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>");
       response->printf("<p> </p>");      
       response->printf("<p><a href='/ini.html' style=\"color: gray; font-size: 1.0rem;\">Programmeinstellungen in lok.ini anpassen</a></p>");
@@ -1803,11 +1720,7 @@ void setup() {
 #endif
 
 #ifdef SpeedSampling
-  //v231, I2S DMA mode high speed analog reading of ADC, compare I2S example in ESP32 examples for Arduino-IDE
-  //i2sInit(); // Initialize the I2S peripheral
-  //xTaskCreatePinnedToCore(I2S_ADC_reader, "ADC_reader", 2048, NULL, 1, NULL, 0); // Create a task that will read the data
-
-  //v236
+  //v236, setup parallel task for SpeedSamplingIRSensor analog readings attached to core0
   xTaskCreatePinnedToCore(
       SpeedSamplingIRSensor,          // Function to implement the analogRead task on core 0 
       "SpeedSamplinigSetupInterrupt", // Name of the task
@@ -1834,28 +1747,9 @@ void setup() {
 //end of setup() function
 
 #ifdef SpeedSampling
-/*
-//  reading ADC in IRAM subroutine from SENS variable
-//  https://www.toptal.com/embedded/esp32-audio-sampling
-int IRAM_ATTR local_adc1_read(int channel) {
-    uint16_t adc_value;
-    SENS.sar_meas_start1.sar1_en_pad = (1 << channel); // only one channel is selected
-    while (SENS.sar_slave_addr1.meas_status != 0);
-    SENS.sar_meas_start1.meas1_start_sar = 0;
-    SENS.sar_meas_start1.meas1_start_sar = 1;
-    while (SENS.sar_meas_start1.meas1_done_sar == 0);  // source of wdt error
-    adc_value = SENS.sar_meas_start1.meas1_data_sar;
-    return adc_value;
-}
-*/
-
 // Sampling IR signal for detecting railway sleepers from ADC1_Ch3 = GPIO pin 39, transient voltage between low and medium high level = ca. 2500 mV 
-// implemented as of v232:
-// running as parallel task on core0 with one tick delay, https://randomnerdtutorials.com/esp32-dual-core-arduino-ide/
-// not implemented: 
-// interrupt program as of version 221 according to https://techtutorialsx.com/2017/10/07/esp32-arduino-timer-interrupts/ and 
-// https://diyprojects.io/esp32-timers-alarms-interrupts-arduino-code/
-// for debugging analogRead in ISR timer interrupt refer to https://www.toptal.com/embedded/esp32-audio-sampling
+// implemented as of v232: running as parallel task on core0 with one tick delay, https://randomnerdtutorials.com/esp32-dual-core-arduino-ide/, 
+// https://www.digikey.de/en/maker/projects/introduction-to-rtos-solution-to-part-12-multicore-systems/369936f5671d4207a2c954c0637e7d50
 
 void SpeedSamplingIRSensor( void * pvParameters ) {  // Task SpeedSamplingIRSensor running on core0
   //Serial.print("+ SpeedSamplingIRSensor: "); 
@@ -1868,23 +1762,16 @@ void SpeedSamplingIRSensor( void * pvParameters ) {  // Task SpeedSamplingIRSens
     
     if(IRAverageSample) { //averaged IR signal for SleeperDetection  
       IRArrayPointer++;
-      //Serial.print("1"); 
       if (IRArrayPointer >= IRSampleAveraging) {IRArrayPointer =0;}
-      //Serial.print("2"); 
       portENTER_CRITICAL_ISR(&analogReadMux); //prevent TimerInterrupt conflict with other analogReadings
       IRArray[IRArrayPointer] = int(analogRead(ir_sensor)*0.816 +143); //approximate conversion to mV, parameterised 12.5.2021
-      //IRArray[IRArrayPointer] = int(local_adc1_read(ir_sensor)*0.816 +143); //approximate conversion to mV, parameterised 12.5.2021
       portEXIT_CRITICAL_ISR(&analogReadMux);
       if(IRSampleCounter>4000000000) {IRSampleCounter=0;} //overflow portection
       IRSampleCounter++;
-      //Serial.print("3="); 
-      //Serial.println(IRArray[IRArrayPointer]);
-      //Serial.print(" ");
 
       if(IRSkipMinMax) {
         //v241, determine and skip min max values from average
         IRAverage = 0;
-        //Serial.print("4");
         int max_v=0;    //mV
         int min_v=3300; //mV 
         for (int i=0; i<IRSampleAveraging; i++) {
@@ -1894,51 +1781,37 @@ void SpeedSamplingIRSensor( void * pvParameters ) {  // Task SpeedSamplingIRSens
         }
         IRAverage -= min_v; //skip min
         IRAverage -= max_v; //skip max
-        //Serial.print("5"); 
         IRAverage = int(IRAverage/(IRSampleAveraging-2));  //skip min and max means sample number-2
-        //Serial.print("6"); 
       }
       else {
-        //v216 to v239
+        //v216 to v239, normal arithmetic mean averageing of all IR samples 
         IRAverage = 0;
-        //Serial.print("4"); 
         for (int i=0; i<IRSampleAveraging; i++) {
           IRAverage = IRAverage + IRArray[i];
         }
-        //Serial.print("5"); 
         IRAverage = int(IRAverage/IRSampleAveraging);
-        //Serial.print("6"); 
       }
-      /* 
-      //v240, optimise de-noising of IRsensor readings by median filter (instead of arithmetic averaging)
-      IRAverage = QuickMedian<volatile int>::GetMedian(IRArray, IRSampleAveraging); 
-      */
-            
+
+      //assess IR average for detection of railway sleepters      
       if (IRAverage < IRlow) {      //below low level threshold
-        //Serial.print("7low"); 
         if (SleeperDetected) {      //falling edge IR signal detected
-          //Serial.print("8"); 
           SleeperDetected = false;  // reset status
-          //Serial.print("9");
         }
       }   
       else if (IRAverage > IRhigh) {// above high level threshold detected
-         //Serial.print("7high");
          if (!SleeperDetected) {    // rising edge IR signal detected
-           //Serial.print("8"); 
            SleeperDetected = true;  // set status
-           //Serial.print("++count");
            ++SpeedCounter;          // increase counter +1
-           //Serial.print("9");
         }
       }   
     }
     else { //use individual IR signal for SleeperDetection, no shift of Valarray IRArray requierd 
       portENTER_CRITICAL_ISR(&analogReadMux); //prevent TimerInterrupt conflict with other analogReadings    
       IRArray[0] = int(analogRead(ir_sensor)*0.816 +143); //approximate conversion to mV, parameterised 12.5.2021    
-      //IRArray[0] = int(local_adc1_read(ir_sensor)*0.816 +143); //approximate conversion to mV, parameterised 12.5.2021 
       IRSampleCounter++;
-      portEXIT_CRITICAL_ISR(&analogReadMux);    
+      portEXIT_CRITICAL_ISR(&analogReadMux);   
+
+      //assess IR individual sample for detection of railway sleepters     
       if (IRArray[0] < IRlow) {      //below low level threshold
         if (SleeperDetected) {       //falling edge IR signal detected
           SleeperDetected = false;   // reset status
@@ -1951,7 +1824,6 @@ void SpeedSamplingIRSensor( void * pvParameters ) {  // Task SpeedSamplingIRSens
         }
       }
     }
-    //Serial.println(" | +eo SpeedSamplingIRSensor");  
   }
 }
 #endif
@@ -2002,16 +1874,14 @@ void loop() {
     
     #ifdef SpeedSampling
     if (SpeedSamplingOnOff) {
-      /* //deactivated, as SpeedSamplingIRSensor is running in seperate task on core0 in v233 or alternatively triggerd by ESP32 TimerInterrupt in version 222 and after, see end of setup loop §§§§§§§§§
-      SpeedSamplingIRSensor();
-      */   
+      //SpeedSamplingIRSensor(); //deactivated, as SpeedSamplingIRSensor() is running in parallel task on core0 as of v233 and after or alternatively triggerd by ESP32 TimerInterrupt in version v222 to v231, see end of setup loop
       if (IRSampleRecording) {
         // devide LoopCount to streches of 500 data points
         if(!IRAverageSample) { //raw IR signal for sample record
-          IRSampleRecord[LoopCount % (500)] = IRArray[0]; //§§§§§§§§§§§§
+          IRSampleRecord[LoopCount % (500)] = IRArray[0]; //copy individual IR sample value from parallel task readings to recorder
         }
         else {  // use averaged IR signal for sample record
-          IRSampleRecord[LoopCount % (500)] = IRAverage; //§§§§§§§§§§§§§§§§    
+          IRSampleRecord[LoopCount % (500)] = IRAverage; //copy averaged IR samples value from parallel task readings to recorder
         }
       }
     }
@@ -2028,7 +1898,6 @@ void loop() {
   #endif
   
       if (LoopCount % MonitorLoopCounts == 0) {
-        //Serial.print("M"); //### for Serial monitoring ###
         #if defined(ESP32) && defined(TLE5206) //motor IC TLE5206 offers a comprehensive error flag output
           if (!digitalRead(error_motoric)) {   //TLE5206 error indicated if error_motoric = LOW
             motor_set(0);                      //emergency break
@@ -2127,7 +1996,7 @@ void loop() {
     MotorCurrentArray = MotorCurrentArray.shift(-1);   
     //linear parametrisation of analog reading, squared for True-RMS average calculation
     portENTER_CRITICAL(&analogReadMux); //prevent conflict with analogReading in TimerInterrupt
-    //§§§§§§§§§§§§§§§§§§ Potential for integration in SpeedSamplingIRSensor task on core0, but works nicely here on core1 in v236, integration would render ADCMux obsolete 
+    //§§§§§§§§§§§§§§§§§§ Potential for integrating the analog readings in SpeedSamplingIRSensor task on core0, but works nicely here on core1 in v236, integration could render ADCMux obsolete 
     MotorVoltageArray[0] = int(sq((float(analogRead(motor_voltage)) * MotorVoltageSlope + MotorVoltageOffset)/10)); //devision by 10 in order to fit MotorVoltageArray.sum in integer range      
     MotorCurrentArray[0] = int(sq(float(analogRead(motor_current)) * MotorCurrentSlope + MotorCurrentOffset));  
     portEXIT_CRITICAL(&analogReadMux);
