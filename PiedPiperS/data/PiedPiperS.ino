@@ -109,15 +109,16 @@
   240 2021-08-19 optimise de-noising of IRsensor readings by median filter, did not work well with small number of samples for determination
   241 2021-08-19 optimise de-noising with option to skip min and max from IRSensor reading for averaging
   242 2021-08-19 optimise de-noising with option to skip min and max from IRSensor reading for averaging, ca. 5.6 kHz IRsensor sample frequency achieved, with main loop ca. 1.75 s and 2500 power samples/main loop, irlow 0.5 V irhigh 0.8 V
-                 potential further improvment of de-noising: count sleepers only after 3 readings above/below deadband
+                 §§§potential further improvment of de-noising: count sleepers only after 3 readings above/below deadband
   243 2021-08-20 code cleaned
+  244 2021-08-21 add general switch for 'SpeedSamplingOnOff' in task on core0
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 243, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-08-20";
+String SKETCH_INFO = "PiedPiperS.ino, Version 244, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-08-21";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
@@ -1759,71 +1760,74 @@ void SpeedSamplingIRSensor( void * pvParameters ) {  // Task SpeedSamplingIRSens
     TIMERG0.wdt_wprotect=TIMG_WDT_WKEY_VALUE; // write enable
     TIMERG0.wdt_feed=1;                       // feed WDT
     TIMERG0.wdt_wprotect=0;                   // write protect
-    
-    if(IRAverageSample) { //averaged IR signal for SleeperDetection  
-      IRArrayPointer++;
-      if (IRArrayPointer >= IRSampleAveraging) {IRArrayPointer =0;}
-      portENTER_CRITICAL_ISR(&analogReadMux); //prevent TimerInterrupt conflict with other analogReadings
-      IRArray[IRArrayPointer] = int(analogRead(ir_sensor)*0.816 +143); //approximate conversion to mV, parameterised 12.5.2021
-      portEXIT_CRITICAL_ISR(&analogReadMux);
-      if(IRSampleCounter>4000000000) {IRSampleCounter=0;} //overflow portection
-      IRSampleCounter++;
 
-      if(IRSkipMinMax) {
-        //v241, determine and skip min max values from average
-        IRAverage = 0;
-        int max_v=0;    //mV
-        int min_v=3300; //mV 
-        for (int i=0; i<IRSampleAveraging; i++) {
-          if (IRArray[i]<min_v) {min_v = IRArray[i];}
-          if (IRArray[i]>max_v) {max_v = IRArray[i];}    
-          IRAverage = IRAverage + IRArray[i];
+    if (SpeedSamplingOnOff) {
+      if(IRAverageSample) { //averaged IR signal for SleeperDetection  
+        IRArrayPointer++;
+        if (IRArrayPointer >= IRSampleAveraging) {IRArrayPointer =0;}
+        portENTER_CRITICAL_ISR(&analogReadMux); //prevent TimerInterrupt conflict with other analogReadings
+        IRArray[IRArrayPointer] = int(analogRead(ir_sensor)*0.816 +143); //approximate conversion to mV, parameterised 12.5.2021
+        portEXIT_CRITICAL_ISR(&analogReadMux);
+        if(IRSampleCounter>4000000000) {IRSampleCounter=0;} //overflow portection
+        IRSampleCounter++;
+  
+        if(IRSkipMinMax) {
+          //v241, determine and skip min max values from average
+          IRAverage = 0;
+          int max_v=0;    //mV
+          int min_v=3300; //mV 
+          for (int i=0; i<IRSampleAveraging; i++) {
+            if (IRArray[i]<min_v) {min_v = IRArray[i];}
+            if (IRArray[i]>max_v) {max_v = IRArray[i];}    
+            IRAverage = IRAverage + IRArray[i];
+          }
+          IRAverage -= min_v; //skip min
+          IRAverage -= max_v; //skip max
+          IRAverage = int(IRAverage/(IRSampleAveraging-2));  //skip min and max means sample number-2
         }
-        IRAverage -= min_v; //skip min
-        IRAverage -= max_v; //skip max
-        IRAverage = int(IRAverage/(IRSampleAveraging-2));  //skip min and max means sample number-2
+        else {
+          //v216 to v239, normal arithmetic mean averageing of all IR samples 
+          IRAverage = 0;
+          for (int i=0; i<IRSampleAveraging; i++) {
+            IRAverage = IRAverage + IRArray[i];
+          }
+          IRAverage = int(IRAverage/IRSampleAveraging);
+        }
+  
+        //assess IR average for detection of railway sleepters      
+        if (IRAverage < IRlow) {      //below low level threshold
+          if (SleeperDetected) {      //falling edge IR signal detected
+            SleeperDetected = false;  // reset status
+          }
+        }   
+        else if (IRAverage > IRhigh) {// above high level threshold detected
+           if (!SleeperDetected) {    // rising edge IR signal detected
+             SleeperDetected = true;  // set status
+             ++SpeedCounter;          // increase counter +1
+          }
+        }   
       }
-      else {
-        //v216 to v239, normal arithmetic mean averageing of all IR samples 
-        IRAverage = 0;
-        for (int i=0; i<IRSampleAveraging; i++) {
-          IRAverage = IRAverage + IRArray[i];
+      else { //use individual IR signal for SleeperDetection, no shift of Valarray IRArray requierd 
+        portENTER_CRITICAL_ISR(&analogReadMux); //prevent TimerInterrupt conflict with other analogReadings    
+        IRArray[0] = int(analogRead(ir_sensor)*0.816 +143); //approximate conversion to mV, parameterised 12.5.2021    
+        IRSampleCounter++;
+        portEXIT_CRITICAL_ISR(&analogReadMux);   
+  
+        //assess IR individual sample for detection of railway sleepters     
+        if (IRArray[0] < IRlow) {      //below low level threshold
+          if (SleeperDetected) {       //falling edge IR signal detected
+            SleeperDetected = false;   // reset status
+          }
+        }   
+        else if (IRArray[0] > IRhigh) {// above high level threshold detected
+           if (!SleeperDetected) {     // rising edge IR signal detected
+             SleeperDetected = true;   // set status
+             ++SpeedCounter;           // increase counter +1
+          }
         }
-        IRAverage = int(IRAverage/IRSampleAveraging);
       }
-
-      //assess IR average for detection of railway sleepters      
-      if (IRAverage < IRlow) {      //below low level threshold
-        if (SleeperDetected) {      //falling edge IR signal detected
-          SleeperDetected = false;  // reset status
-        }
-      }   
-      else if (IRAverage > IRhigh) {// above high level threshold detected
-         if (!SleeperDetected) {    // rising edge IR signal detected
-           SleeperDetected = true;  // set status
-           ++SpeedCounter;          // increase counter +1
-        }
-      }   
     }
-    else { //use individual IR signal for SleeperDetection, no shift of Valarray IRArray requierd 
-      portENTER_CRITICAL_ISR(&analogReadMux); //prevent TimerInterrupt conflict with other analogReadings    
-      IRArray[0] = int(analogRead(ir_sensor)*0.816 +143); //approximate conversion to mV, parameterised 12.5.2021    
-      IRSampleCounter++;
-      portEXIT_CRITICAL_ISR(&analogReadMux);   
-
-      //assess IR individual sample for detection of railway sleepters     
-      if (IRArray[0] < IRlow) {      //below low level threshold
-        if (SleeperDetected) {       //falling edge IR signal detected
-          SleeperDetected = false;   // reset status
-        }
-      }   
-      else if (IRArray[0] > IRhigh) {// above high level threshold detected
-         if (!SleeperDetected) {     // rising edge IR signal detected
-           SleeperDetected = true;   // set status
-           ++SpeedCounter;           // increase counter +1
-        }
-      }
-    }
+    else {delay(100);} //empty loop in case SpeedSamplingOnOff is false
   }
 }
 #endif
