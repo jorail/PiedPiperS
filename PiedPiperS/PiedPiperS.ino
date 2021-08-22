@@ -97,9 +97,9 @@
   228 2021-08-10 testing attaching ISR timer interrupt to core 0
   229 2021-08-11 debugging void SpeedSampling. For debugging analogRead in ISR timer interrupt refer to https://www.toptal.com/embedded/esp32-audio-sampling
   230 2021-08-16
-  
   231 2021-08-17 using I2S AnalogReading DMA mode and ESP32 I2S example on HighFreq_ADC
-  
+
+  speedo branch in github: https://github.com/jorail/PiedPiperS/tree/speedo, develop speed-o-meter with reflective ir detector on railway sleepers, complete sleeper counting by parallel task on core0
   232 2021-08-17 core0 solution with normal analogRead (no ISR timer interrupt, no IRAM attribute required). 
   235 2021-08-18 SpeedSamplingIRSensor running as parallel task on core0 (https://randomnerdtutorials.com/esp32-dual-core-arduino-ide/, https://www.digikey.de/en/maker/projects/introduction-to-rtos-solution-to-part-12-multicore-systems/369936f5671d4207a2c954c0637e7d50), IRsamplecounter
   236 2021-08-18 optimse task and related IR recorder outputs

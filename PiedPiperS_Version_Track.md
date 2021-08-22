@@ -220,11 +220,23 @@ PiedPiperS
   224 2021-06-12 define IRArray without valarry but instead with global variable IRArrayPointer 
   225 2021-06-13 manage conflict of analogReading between TimerInterrupt and MotorCurrent Sampling by locking PortMultiplexer
                  according to https://techtutorialsx.com/2017/10/07/esp32-arduino-timer-interrupts/
+  226            consolidated
+				 
   228 2021-08-10 testing attaching ISR timer interrupt to core 0
   229 2021-08-11 debugging void SpeedSampling. For debugging analogRead in ISR timer interrupt refer to https://www.toptal.com/embedded/esp32-audio-sampling
   230 2021-08-16
   231 2021-08-17 using I2S AnalogReading DMA mode and ESP32 I2S example on HighFreq_ADC
+  
+  speedo branch in github: https://github.com/jorail/PiedPiperS/tree/speedo, develop speed-o-meter with reflective ir detector on railway sleepers, complete sleeper counting by parallel task on core0
   232 2021-08-17 core0 solution with normal analogRead (no ISR timer interrupt, no IRAM attribute required)
   235 2021-08-18 SpeedSamplingIRSensor running as parallel task on core0, IRsamplecounter
   236 2021-08-18 optimse task and related IR recorder outputs
   237 2021-08-18 optimse code and comments, delete ISR timer interrupt remains, ca. 6 kHz IRsensor sample frequency achieved, with main loop ca. 0.75 s and 1000 power samples/main 
+  238 2021-08-19 consolidated
+  239 2021-08-19 optimised lok.ini parameters, ca. 5.7 kHz IRsensor sample frequency achieved, with main loop ca. 1.76 s and 2000 power samples/main loop, irlow 0.5 V irhigh 0.7 V
+  240 2021-08-19 optimise de-noising of IRsensor readings by median filter, did not work well with small number of samples for determination
+  241 2021-08-19 optimise de-noising with option to skip min and max from IRSensor reading for averaging
+  242 2021-08-19 optimise de-noising with option to skip min and max from IRSensor reading for averaging, ca. 5.6 kHz IRsensor sample frequency achieved, with main loop ca. 1.75 s and 2500 power samples/main loop, irlow 0.5 V irhigh 0.8 V
+                 §§§potential further improvment of de-noising: count sleepers only after 3 readings above/below deadband
+  243 2021-08-20 code cleaned
+  244 2021-08-21 add general switch for 'SpeedSamplingOnOff' in task on core0
