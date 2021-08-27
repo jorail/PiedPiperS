@@ -113,7 +113,18 @@ for the restart of a new round. This allows for simple and repeated control of t
 sensor position adjustments, environmental conditions.  
 
 Version 237 has overcome a problem with interrupted and incomplete counting of railway sleepers by assigning the analog reading of IR sensor data to a parallel task
-running on the second core0 of the ESP32 microprocessor. Complete sets of ca. 6000 Hz IR sensor samples are achieved.
+running on the second core0 of the ESP32 microprocessor. Complete sets of ca. 6000 Hz IR sensor samples are achieved. 
+
+A complete instruction for building the ESP32 train control with step-up converter and motor control IC is provided as PDF file including photo documentation, 
+electronic parts list and circuit drawings.
+
+The options for power measurement and speed measurement are included as options 1 and 2. If you do not use these options, you can simplify the PiedPiperS.ino source code 
+by commenting out the two corresponding lines at the start of the source code before compilation:
+	#define  PowerSampling  //motor power sampling with ESP32
+	#define  SpeedSampling //monitor speed on track by detecting railway sleeper passage with reflective infrared (IR) detector and ESP32
+	
+Version 244 including theses options for power and speed measurements has been successfully finalised in branch 'speedo' and merged to Github PiedPiperS 'main' 
+without source code conflicts on 2021-08-27: https://github.com/jorail/PiedPiperS 
 
 Please feel invited to pass your comments on github or via e-mail, if you have any suggestions for further improvement or
 new applications for PiedPiperS.

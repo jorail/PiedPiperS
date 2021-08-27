@@ -111,7 +111,7 @@
   242 2021-08-19 optimise de-noising with option to skip min and max from IRSensor reading for averaging, ca. 5.6 kHz IRsensor sample frequency achieved, with main loop ca. 1.75 s and 2500 power samples/main loop, irlow 0.5 V irhigh 0.8 V
                  §§§potential further improvment of de-noising: count sleepers only after 3 readings above/below deadband
   243 2021-08-20 code cleaned
-  244 2021-08-21 add general switch for 'SpeedSamplingOnOff' in task on core0
+  244 2021-08-21 add general switch for 'SpeedSamplingOnOff' in task on core0, merged to Github PiedPiperS 'main' 2021-08-27: https://github.com/jorail/PiedPiperS
 */
 
 ////////////////////////////////////////////////////////////////////////////////
