@@ -120,7 +120,9 @@ electronic parts list and circuit drawings.
 
 The options for power measurement and speed measurement are included as options 1 and 2. If you do not use these options, you can simplify the PiedPiperS.ino source code 
 by commenting out the two corresponding lines at the start of the source code before compilation:
+
 	#define  PowerSampling  //motor power sampling with ESP32
+	
 	#define  SpeedSampling //monitor speed on track by detecting railway sleeper passage with reflective infrared (IR) detector and ESP32
 	
 Version 244 including theses options for power and speed measurements has been successfully finalised in branch 'speedo' and merged to Github PiedPiperS 'main' 
