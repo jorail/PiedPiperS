@@ -2,7 +2,6 @@ html {
   font-family: Helvetica;
   display: inline-block;
   margin: 2% auto;
-  text-align: block;
 }
 h1{
   font-size: 1.8rem;
@@ -12,7 +11,7 @@ h1{
 h2 {
   font-size: 0.8rem;
   text-align: left;
-  margin-left = 5%;
+  margin-left: 5%;
 }
 p{
   font-size: 1.3rem;
@@ -29,6 +28,10 @@ body {max-width: 380px; margin:2% auto; padding-bottom: 0px; text-align: center}
       outline: none; -webkit-transition: .2s; transition: opacity .2s;}
     .slider::-webkit-slider-thumb {-webkit-appearance: none; appearance: none; width: 35px; height: 35px; background: #008CBA; cursor: pointer;}
     .slider::-moz-range-thumb { width: 35px; height: 35px; background: #003249; cursor: pointer; } 
+    .slider2 { -webkit-appearance: none; margin: 14px; width: 74%; height: 10px; background: #d3d3d3;
+      outline: none; -webkit-transition: .2s; transition: opacity .2s;}
+    .slider2::-webkit-slider-thumb {-webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #404040; cursor: pointer;}
+    .slider2::-moz-range-thumb { width: 20px; height: 20px; background: #404040; cursor: pointer; } 	
 .button {
   display: inline-block;
   background-color: #008CBA;

@@ -89,6 +89,32 @@ The current and voltage measurements require the addition of 4 measuring resisto
 converted to display the power consumption of the motor online on the control panel. A dedicated /powerdata panel displays a chart.js diagram with
 joint trends of speed settings, voltage, current and power use. Data is requrested every second by get requrests and the servers response is sent as JSON message. 
 
+Optional, PiedPiPerS branch 'speedo', version 191, https://github.com/jorail/PiedPiperS/tree/speedo: 
+Speed measurement from optical reading of passing railroad sleepers
+Black or dark railway sleepers of the model railroad track are equally spaced. A reflective infrared (IR) sensor is used as sensor for their detection and 
+for analog input to GPIO39, ADC1_CH3. This amendment includes an additional website speed.html with online display of speeddata. The data is optained by the 
+request get /speeddata. Detection of sleepers can be indicted by LED on the microprocessor. The very simple electrical circuit required for this option is documented 
+(see 'doc' folder) and consists of following few parts: 
+1. reflective IR emitting and receiving diodes as sensor and as an integrated electronic part 
+2. simple amplifier, consisting of one small and ordinary transistor and two resistors
+
+The reflectiv IR sensor signal is converted to a frequency of passing railway sleepers and to a true speed over ground measurement in meters per second. 
+This speed data is continuously updated, converted to the model scale speed in km/h and displayed on the train control panel. Alternatively it can by analysed in a 
+chart.js diagram at speed.html together with the power data. 
+
+Version 208 has a complete redifiontion of main loop timing variables and corresponding changes to lok.ini definitions. This facilitates up to 5000 Hz IR sampling.
+
+The irsamplerecord.html, version 211, has a second chart display of single or average IR sample data. It allows for fine tuning of IR thresholds (IRlow, IRhigh) for
+defining the voltage deadbeand for effective railway sleepter detection. Furthermore, this IR data recorder allows to sum the railway sleeper count
+in one round, in order to check the completeness of the counting based on a known number of passed railway sleepers. The sum-counter is automatically
+interrupted by a streched reflective track ground (e.g. white paper or tape applied on track). Choose the length of this strech so, that it yields > 1 second 
+reflective IR signal during train passage. The data of the sum-counter is than copied and evaluated as dataset from 'last round' and the sum-counter is zeroed 
+for the restart of a new round. This allows for simple and repeated control of the completeness of counting with different deadband settings, speed levels,
+sensor position adjustments, environmental conditions.  
+
+Version 237 has overcome a problem with interrupted and incomplete counting of railway sleepers by assigning the analog reading of IR sensor data to a parallel task
+running on the second core0 of the ESP32 microprocessor. Complete sets of ca. 6000 Hz IR sensor samples are achieved.
+
 Please feel invited to pass your comments on github or via e-mail, if you have any suggestions for further improvement or
 new applications for PiedPiperS.
 

@@ -1,0 +1,629 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>ESP32 Analog Input Reading JSON Message 2021-08-20 Version 243</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8"/>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" type="text/css" href="control.css">
+  <style> h3 {margin: 0 0 0 0;} div {margin: 0 1% 0 1%;} 
+  table {vertical-align: top; padding: 2%; border-collapse: collapse;} tr {border-bottom: 2pt solid #ddd;} 
+  tr:last-child { border-bottom: none; } td {padding-left: 2%;} </style>
+  <script charset="utf-8" src="/chart.min.js"></script>
+<!-- for layout of on/off switch--><!--
+  <style> 
+      .onoffswitch {
+        position: relative; width: 20%;
+        -webkit-user-select:none; -moz-user-select:none; -ms-user-select: none;
+    }
+    .onoffswitch-checkbox {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+    .onoffswitch-label {
+        display: block; overflow: hidden; cursor: pointer;
+        border: 2px solid #999999; border-radius: 10px;
+    }
+    .onoffswitch-inner {
+        display: block; width: 200%; margin-left: -100%;
+        transition: margin 0.3s ease-in 0s;
+    }
+    .onoffswitch-inner:before, .onoffswitch-inner:after {
+        display: block; float: left; width: 50%; height: 30px; padding: 0; line-height: 30px;
+        font-size: 14px; color: white; font-family: Trebuchet, Arial, sans-serif; font-weight: bold;
+        box-sizing: border-box;
+    }
+    .onoffswitch-inner:before {
+        content: "an";
+        padding-left: 10px;
+        background-color: #34A7C1; color: #FFFFFF;
+    }
+    .onoffswitch-inner:after {
+        content: "aus";
+        padding-right: 10px;
+        background-color: #EEEEEE; color: #999999;
+        text-align: right;
+    }
+    .onoffswitch-switch {
+        display: block; width: 18px; margin: 6px;
+        background: #FFFFFF;
+        position: absolute; top: 0; bottom: 0;
+        right: 56px;
+        border: 2px solid #999999; border-radius: 20px;
+        transition: all 0.3s ease-in 0s; 
+    }
+    .onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-inner {
+        margin-left: 0;
+    }
+    .onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-switch {
+        right: 0px; 
+    }
+  </style>
+-->  
+</head>
+<body onload="loadIRSampleData();">
+    <h3>IR-Datenrekorder</h3>
+	<!-- general external and internal switch for IR record supply and reading-->
+	
+	<div> 
+	<button id="speedsamplingonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Sensor</button> 
+	<button id="irrecordingonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Recorder</button> 
+	</div>   
+	<div> 
+	<button id="iraveragesampleonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">IR-Mittelwert</button>
+	<button id="irskipminmaxonoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">ohne Min/Max</button>
+	<button id="serialmonitoronoff" class="button" style="color: black; background-color: #40e0d0; width: 45%; font-size: 1.2rem; padding: 9px 5px;">Serial-Monitor</button> 
+	</div>
+	<div>IR-low&nbsp;<input type="range" onchange="SetIRLowSliderValue(this)" id="IRLowSlider" min="150" max="2000" value="%SLIDERVALUE%" step="50" class="slider2"></div>
+	<div>IR-high<input type="range" onchange="SetIRHighSliderValue(this)" id="IRHighSlider" min="150" max="2000" value="%SLIDERVALUE%" step="50" class="slider2"></div>	
+	<!-- Rounded switch -->
+	<!--
+    <div class="onoffswitch">
+        <input type="checkbox" name="onoffswitch1" class="onoffswitch-checkbox" id="irrecordingonoff" tabindex="0" checked>
+        <label class="onoffswitch-label" for="irrecordingonoff">
+            <span class="onoffswitch-inner"></span>
+        </label>
+		<input type="checkbox" name="onoffswitch2" class="onoffswitch-checkbox" id="iraveragesampleonoff" tabindex="0" checked>
+        <label class="onoffswitch-label" for="iraveragesampleonoff">
+            <span class="onoffswitch-inner"></span>
+        </label>
+    </div>
+    -->
+	<table style= "width: 96%; text-align: left; font-size: 1.0rem; margin: 0 2% 0 2%;" >
+	<tr><td>IR-Sensor</td>               <td><span id="SpeedSampling">%SPEEDSAMPLING%</span></td>         <td>1/0</td></tr>
+	<tr><td>IR-Recorder</td>             <td><span id="IRSampleRecording">%IRSAMPLERECORDING%</span></td> <td>1/0</td></tr>
+	<tr><td>IR-Mittelwert</td>           <td><span id="IRAverageSample">%IRAVERAGESAMPLE%</span></td>     <td>1/0</td></tr>
+	<tr><td>   ohne Min/Max</td>         <td><span id="IRSkipMinMax">%IRSKIPMINMAX%</span></td>           <td>1/0</td></tr>	
+	<tr><td>Serial-Monitor</td>          <td><span id="SerialMonitor">%SERIALMONITOR%</span></td>         <td>1/0</td></tr>
+	<tr><td>IR-low</td>                  <td><span id="IRlowValue">%IRlowValue%</span></td>               <td>mV</td></tr>
+	<tr style="border-bottom: 4pt double #ddd;">
+	<td>IR-high</td>                 <td><span id="IRhighValue">%IRhighValue%</span></td>                 <td>mV</td></tr>
+	</table>
+	<p style= "margin: 0 0 0 0;" > <span id="StatusText">%STATE%</span> &nbsp; </p>
+	<p style= "margin: 0 0 0 0; text-align: left;" > &nbsp; &nbsp; &nbsp; <span id="SpeedText">%SPEED%</span> &nbsp; </p>
+	<div><input type="range" onchange="SetPWMSliderValue(this)" id="pwmSlider" min="0" max="32" value="%SLIDERVALUE%" step="1" class="slider"></div>
+    <div class="container">
+		  <canvas id="IRDataChart" width="92%" height="100"></canvas> 
+    </div>
+	<div>Position<input type="range" onchange="GetXDSliderValue(this)" id="XSlider" min="-500" max="0" value="%SLIDERVALUE%" step="20" class="slider2"></div>
+	<div>Spanne&nbsp;<input type="range" onchange="GetXDSliderValue(this)" id="DSlider" min="20" max="500" value="%SLIDERVALUE%" step="20" class="slider2"></div>
+	<br>
+	<table style= "width: 96%; text-align: left; font-size: 1.0rem; margin: 0 2% 0 2%;" >
+	<tr><td>IR-Frequenz</td>             <td><span id="IRSampleFreqValue">%IRSampleFreqValue%</span></td> <td>Hz</td></tr>	
+	<tr><td>Zähler</td>                  <td><span id="CountValue">%CountValue%</span></td>               <td><small>Schwellen</small></td></tr>
+	<tr><td>IR-Signal</td>               <td><span id="IRAvgValue">%IRAvgValue%</span></td>               <td>V</td></tr>
+	<tr><td>Fahrstrecke</td>             <td><span id="DistanceValue">%DistanceValue%</span></td>         <td>m</td></tr>
+	<tr><td>Geschwindigkeit</td>         <td><span id="SpeedmeasureValue">%SpeadmeasureValue%</span></td> <td>m/s</td></tr>
+	<tr style="border-bottom: 4pt double #ddd;">
+	<td><b>Modellgeschwin&shy;dig&shy;keit</b></td><td><span id="SpeedscaleValue" style="font-weight:bold;">%SpeadscaleValue%</span></td><td><b>km/h</b></td></tr>
+	<!--<tr><td>&nbsp;</td></tr>-->
+	<tr><td><b>Summenz&auml;hler</b></td><td>&nbsp;</td>                                                  <td>&nbsp;</td></tr>
+	<tr><td><b>Z&auml;hler</b></td>             <td><span id="Total" style="font-weight:bold;">%TOTAL%</span></td> <td><small><b>Schwellen</b></small></td></tr>
+	<tr style="border-bottom: 4pt double #ddd;">
+	<td>Strecke</td>                     <td><span id="TotalDistance"  >%TOTALDISTANCE%</span></td>       <td>m</td></tr>
+	<tr><td><b>Letzte Runde</b></td>     <td>&nbsp;</td>                                                  <td>&nbsp;</td></tr>
+	<tr><td><b>Z&auml;hler</b></td>      <td><span id="LastTotal" style="font-weight:bold;">%LASTTOTAL%</span></td> <td><b><small>Schwellen</small></b></td></tr>
+	<tr><td>Strecke</td>                 <td><span id="LastDistance">%LASTDISTANCE%</span></td>           <td>m</td></tr>
+	<tr><td>Zeit</td>                    <td><span id="LastSeconds">%LASTSECONDS%</span></td>             <td>s</td></tr>
+	<tr><td>Geschwindigkeit</td>         <td><span id="LastSpeed">%LASTSPEED%</span></td>                 <td>m/s</td></tr>
+	<tr style="border-bottom: 4pt double #ddd;">
+	<td>Modellgeschwin&shy;dig&shy;keit</td><td><span id="LastSpeedAtScale">%LASTSPEEDATSCALE%</span></td><td>km/h</td></tr>
+	<!--<tr><td>&nbsp;</td></tr>-->
+	<td><b>Ergebnis</b></td> <td><span id="CountRelative" style="font-weight:bold;">%CNTREL%</span></td> <td><b>%</b></td></tr>
+	<tr><form>
+	<td><label for="countrefrencevalue" style="text-align: left; font-size: 1.0rem;">Soll-Wert</label></td>
+	<td><input type="number" id="CountReference" style="text-align: left; font-size: 1.0rem; width: 2.5em;" name="countreferencevalue" value="440" step="1"></td>
+	<td><small>Schwellen</small></td>
+	</form></tr> 
+	<tr><td>absoluter Fehler</td> <td><span id="CountDifference">%CNTDIFF%</span></td>     <td><small>Schwellen</small></td></tr>
+	<tr style="border-bottom: 4pt double #ddd;">
+	<td><b>relativer Fehler</b></td>    <td><span id="CountRelativeError" style="font-weight:bold;">%ERRREL%</span></td> <td><b>%</b></td></tr>
+	<!--<tr><td>&nbsp;</td></tr>-->
+	</table>
+	<br>
+	<div><button id="ledonoff" class="button orange" style="width: 45%; font-size: 1.7rem;">LED an/aus</button>     <button id="zerocounter" class="button darkred" style="width: 45%; font-size: 1.7rem;">Null-stellen</button></div>
+	<div><button id="minus4" class="button red4">- - - -</button>    <button id="minus1" class="button red1">-</button>    <button id="plus1" class="button blue1">+</button>    <button id="plus4" class="button blue4">++++</button></div>
+	<div><button id="reverse" class="button orange">< ></button>     <button id="halt" class="button redlong">Halten</button>   <button id="stop" class="button darkred">Stopp!</button></div> 
+	<h2 style="font-size: 1.2rem; margin: 5% 5%;"><a href="/info">Infos zur Loksteuerung</a></h2>
+	<h2 style="font-size: 1.2rem; margin: 5% 5%;"><a href="/monitor">Programmvariablen</a></h2>
+	<h2 style="font-size: 1.2rem; margin: 5% 5%;"><a href="/speed.html">Geschwindigkeitsdaten</a></h2>
+	<div><a href="/"><img src="/lok" alt="Loksteuerung" style="width:95%"></a></div>
+	<h2 style="font-size: 1.2rem; margin: 2% 5%;">Anleitung zum IR-Datenrekorder</h2>
+	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
+	Die <b>Messungen des reflektierten Infrarotlichts (IR)</b> erfolgt parallel zur Hauptprogramm&shy;schleife auf einem zweiten Prozessor&shy;kern (core0). Er liest das elektronisch 
+	verst&auml;rkte analoge Signal des IR-Sensors in mV in einer eigenst&auml;ndigen Aufgabe (Task) mit hoher Frequenz von 5 bis 6 kHz aus. Je nach Einstellung kann eine 
+	in der .ini-Datei vorgegebene Anzahl an Messwerten gemittelt werden. Die Minmal- und Maximalwerte k&ouuml;nnen dabei ignoriert werden, um das Rauschen in der 
+	Signal&shy;spannung weiter zu verringern. Die Schienen&shy;schwellen werden erkannt und gez&uuml;hlt, wenn die so bestimmten Messwerte zwei vorgegebene Schwellwerte 
+	einer Trennzone &uuml;ber- und wieder unterschreiten.
+	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
+	Die <b>Daten&uuml;bertragung und -anzeige der Messwerten im Diagramm</b> werden durch den Schalter 'IR-Recorder' gleichzeitig im Microporzessor und in der Webseite angeschaltet. 
+	Erneutes Bet&auml;tigen stoppt die Daten&uuml;bertragung und die Aktualisierung der Anzeige. Der letzte Datensatz im Diagramm bleibt so f&uuml;r eine geneauere Auswertung erhalten.</p>
+	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
+	Das Diagramm zeigt entweder Einzel- oder Mittelwerte der 500 j&uuml;ngsten Daten des IR-Sensors an (Schalter 'IR-Mittelwerte'). Die horizontale Achse kann 
+	mit den zwei Schiebe&shy;reglern hinsichtlich des Startposition im Datensatz (X) und der Anzahl der angezeigten Daten (D) angepasst werden. 
+	Der dargestllte Verlauf der IR-Messwerte kann zur Verbesserung der Erkennung der Bahn&shy;schwellen und Genauigkeit des Z&auml;hlens genutzt werden. 
+	Hierzu k&ouml;nnen die IR-Schwellen&shy;werte (IR-low, IR-high) zur Definition der dazwischen liegenden Trennzone (Deadband, siehe Anzeige der Werte in der ersten Tablle und im Diagramm) 
+	&uuml;ber die zwei Schiebe&shy;regler oder in der <b><a href="/ini.html">Datei lok.ini</a></b> angepasst werden. Die gleitenden Mittel&shy;wert&shy;bildung kann &uuml;ber den Schalter 
+	aus- und angeschaltet werden. Die Anzahl der IR-Messwerte für die Mittelwertbildung kann in der Datei lok.ini eingestellt werden (averaging).</p>
+	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
+	<br>
+	Der <b>IR-Daten&shy;rekorder</b> summiert die Anzahl der erkannten Bahn&shy;schwellen in einer Runde. Im Vergleich zu einer bekannten Anzahl &uuml;berfahrener 
+	Bahn&shy;schwellen kann die Vollst&auml;ndigkeit der Z&auml;hlung &uuml;berpr&uuml;ft werden.</p>
+	<p style="text-align: left; font-size: 1.0rem; margin: 2% 2%;">
+	Der Summenz&auml;hler wird automatisch durch einen l&auml;ngeren 
+	Strecken&shy;abschnitt mit reflektier&shy;endem Gleisbett (z.B. wei&szlig;es Papier oder Klebeband auf dem Gleis) unterbrochen. Die L&auml;nge dieses Strecken&shy;abschnitts 
+	muss daf&uuml;r so gew&auml;hlt werden, dass er bei Zugdurch&shy;fahrt ca. eine Sekunde lang ein reflektier&shy;endes IR-Signal ergibt, 
+	d.h. entsprechend der Zeit zwischen den orangen Blitzen (= MainLoopFrequencySeconds). 
+	Wenn der Z&auml;hler pl&ouml;tzlich stoppt oder nur noch halb soviele Bahn&shy;schwellen findet wird dies als
+	Markierung zum Abschluss einer Runde erkannt. Die Daten des Summenz&auml;hlers 	werden dann in den <b>Datensatz der 'letzten Runde'</b> kopiert und 
+	die Fahrtdauer und Geschwind&shy;igkeit auf dieser Strecke ausgewertet. Wird eine bekannte Anzahl an Bahnschwellen für den Z&auml;hler vorgegeben, kann
+	der relative Fehler der Erfassung durch den IR-Sensor bestimmt werden. Der Summenz&auml;hler wird f&uuml;r eine neue Runde auf Null gesetzt. 
+	Dadurch k&ouml;nnen wiederholte und automatisierte Kontrollen der Vollst&auml;ndigkeit der Z&auml;hlung, ggf. bei unterschied&shy;lichen 
+	Deadband-Einstel&shy;lungen, Geschwind&shy;igkeits&shy;stufen, Feinein&shy;stellung der Position des Sensors, Umgebungs&shy;bedingungen durchgef&uuml;hrt werden.  
+	</p>
+	<!--<p>
+	The chart displays either single or average IR sample data. It allows for fine tuning of IR thresholds (IRlow, IRhigh) for
+	defining the voltage deadbeand for effective railway sleepter detection. Furthermore, this IR data recorder allows to sum the railway sleeper count
+	in one round, in order to check the completeness of the counting based on a known number of passed railway sleepers. The sum-counter is automatically
+	interrupted by a streched reflective track ground (e.g. white paper or tape applied on track). Choose the length of this strech so, that it yields > 1 second 
+	reflective IR signal during train passage. The data of the sum-counter is than copied and evaluated as dataset from 'last round' and the sum-counter is zeroed 
+	for the restart of a new round. This allows for simple and repeated control of the completeness of counting with different deadband settings, speed levels,
+	sensor position adjustments, environmental conditions.  
+	</p>-->
+<script>
+    // IRDataChart initialisation, formatting, data collection from JSON and handling, intervall updating
+	var speedsampling = true;
+	var irrecordreading = false;
+	var iraveraging = true;
+	var irskippingminmax = false;
+	var serialmonitor = true;
+	var irsampleArray = [];
+	var irlowArray = [];
+	var irhighArray = [];
+	var labelsArray = [];
+	var N = 500;
+	for (i = 0; i < N; i++) {
+	  irsampleArray.push(0);
+	  irlowArray.push(0);
+	  irhighArray.push(0);
+	  labelsArray.push(i-N);
+	}
+	
+	//display IRDataChart
+	Chart.defaults.color = "rgba(0, 0, 0, 1)"; //black text color
+	Chart.defaults.font.size = 14;
+	var ctx = document.getElementById('IRDataChart').getContext('2d');
+	var IRDataChart = new Chart(ctx, {
+		type: 'line',
+		data: {
+		  labels: labelsArray,  //x-axis is defined as 'category' axis not as linear value axis, this allows for a simplified single dimension array in the data structure, ok for indicating 5000 ir samples
+		  datasets: [{
+			label: 'IR-Sensor Messwerte (mV, Einzel-/Mittelwerte)', 
+			data: irsampleArray,    //single dimension array in the data structure
+			backgroundColor: "rgba(0, 255, 0, 0.5)", 
+			borderColor: "rgba(64, 224, 208, 1)",    //Turquoise
+		  }, {
+		    label: 'IR-low, unterer Grenzwert (mV, keine Schwelle)',
+			data: irlowArray, 
+			backgroundColor: "rgba(128, 128, 0, 0.5)",	
+			borderColor: "rgba(128, 128, 0, 1)",    //olive
+		  }, {
+			label: 'IR-high, oberer Grenzwert (mV, Schwelle erkannt)',
+			data: irhighArray, 
+			backgroundColor: "rgba(255, 0, 255, 0.5)",	
+			borderColor: "rgba(255, 0, 255, 1)",    //Fuchsia, Magenta
+		  }]
+		},
+		options: {
+			animation: false,
+			scales: {
+				x: {
+					type: 'linear',
+					suggestedMin: -50,
+					suggestedMax: 0,
+					count: 5,              //5 ticks for devision of x-axis
+					ticks: {
+						//fontColor: "rgba(0, 0, 0, 1)", //black
+					},
+					title: {
+						display: true,
+						text: 'erfasste IR-Messwerte',  //axis title
+						//fontColor: "rgba(0, 0, 0, 1)", //black
+					},
+				},
+				y: {
+					suggestedMin: 0,
+					suggestedMax: 2000,      //will scale to data maximum, if > suggestedMax
+					ticks: {
+						stepSize: 500
+						//fontColor: "rgba(0, 0, 0, 1)", //black
+					},
+				},
+
+			},
+			elements: {
+				line: {
+					tension: 0, // disables bezier curves
+				},
+				point: {
+					radius: 2,  // decrease point size from default = 3 
+				},
+			},
+			plugins: {
+				legend: {
+					position: 'bottom', //place legend below IRDataChart
+					align: 'start',     //place legend elements bound to the left
+					labels: {
+						boxWidth: 20, 
+					},
+				},
+			},
+		},
+	});
+	
+	var myVar = setInterval(loadIRSampleData, 2000); //update chart every 2000 milliseconds
+
+	function GetXDSliderValue(element) {
+	  var XSliderValue = document.getElementById("XSlider").value;  //-500 to -1
+	  var DSliderValue = document.getElementById("DSlider").value;  //1 to 500
+	  console.log('Adjust XSliderValue ='+XSliderValue);
+	  console.log('Adjust DSliderValue ='+DSliderValue);
+	  if (Math.abs(XSliderValue)<Math.round(DSliderValue)) {
+		XSliderValue = Math.round(-DSliderValue);
+	  }
+	  else {
+	    XSliderValue = Math.round(XSliderValue); 
+	  }
+	  IRDataChart.options.scales.x.min = Math.round(XSliderValue);
+	  IRDataChart.update(); //update IRDataChart with new data
+	  IRDataChart.options.scales.x.max = Math.round(XSliderValue + Math.round(DSliderValue));
+	  IRDataChart.update(); //update IRDataChart with new data
+	} 
+
+	function loadIRSampleData() { //fetches json data & calls dspChart() to render graph  {"speed":31,"currentspeed":167,"power":1.6711}
+	    var i, IRData, irsamplefreq, count, distance, speedmeasure, speedscale, total, totaldistance, lasttotal, lastseconds, lastdistance, lastspeed, lastspeedatscale, irsamplerecording, iraveragesample, irskipminmax, serialmonitor, irlow, irhigh;
+		var requestURL = '/irsamplerecord'; //URL of the JSON data
+		var request = new XMLHttpRequest({
+			mozSystem: true
+		}); // create http request
+		request.onreadystatechange = function() {
+			if (request.readyState == 4 && request.status == 200) {
+			  //console.log(request.responseText);
+			  IRData = JSON.parse(request.responseText); //parse JSON string to IRData object
+			  console.log(IRData);
+			  
+			  /*oritinal JSON IRSampleRecordingon definition in PiedPiperS v210, v234
+			    json2["irsamplefreq"]      = int(int(IRSampleCount[0]-IRSampleCount[1])/MainLoopFrequencySeconds);  //ir sample frequency in Hz
+				json2["count"]        = SpeedCount[0];       //railway sleeper counts
+				json2["iravg"]        = IRAverage;           //in mV
+				json2["distance"]     = float(SpeedCount[0])*SpeedCountDistance; //in m
+				json2["speedmeasure"] = Speed;               //measured speed m/s
+				json2["speedscale"]   = SpeedAtScale;        //measured speed converted to scale in km/h
+				
+				json2["total"]         = SpeedCountTotal;      //int
+				json2["totaldistance"] = float(SpeedCountTotal)*SpeedCountDistance; //in m  
+				json2["lasttotal"]    = SpeedCountLastTotal;   //int    
+				json2["lastseconds"]  = SpeedCountLastSeconds; //float   
+				json2["lastdistance"] = float(SpeedCountLastTotal)*SpeedCountDistance; //in m    
+				json2["lastspeed"]    = LastSpeed;             //float m/s
+				json2["lastspeedatscale"] = LastSpeedAtScale;  //float in km/h at model scale
+
+				json2["speedsampling"]     = int(SpeedSampling);      // SpeedSampling active =1, deactivated =0		 
+				json2["irsamplerecording"] = int(IRSampleRecording);  // IRSampleRecording active =1, deactivated =0
+				json2["iraveragesample"]   = int(IRAverageSample);    // IRAverageSample active =1, deactivated =0
+				json2["irskipminmax"]      = int(IRSkipMinMax);      // IRSkipMinMax      active =1, deactivated =0
+				json2["serialmonitor"]     = int(SerialMonitor);      // SerialMonitring   active =1, deactivated =0   
+				json2["irlow"]        = IRlow;               //ir_low_level, no sleeper detected in mV
+				json2["irhigh"]       = IRhigh;              //ir_high_level, sleeper detected in mV
+
+				JsonArray IRSampleArray = json2.createNestedArray("irsamplerecord");
+				for (int i = 0; i < 500; i++) {
+				  IRSampleArray.add(IRSampleRecord[i]);     //array of original IR sample values after linear adjustment
+				}	
+			  */
+			  
+			  //retrive and scale new data elements from IRData object
+			  irsamplefreq = IRData.irsamplefreq/100000; // number of IR samples per second /100000
+			  count = IRData.count/100000;        // number of railway sleepers detected /100000
+			  iravg = IRData.iravg/1000;          // averaged IR Signal converted from mV to V /1000
+			  distance = IRData.distance/1000;    // distance travelled, converted from m to km
+			  speedmeasure = IRData.speedmeasure; // speed over ground in m/s
+			  speedscale = IRData.speedscale/100; // speed in model scale in km/h converted to *100 km/h
+			  
+			  total = IRData.total;               // int count
+			  totaldistance = IRData.totaldistance; // in m
+			  lasttotal = IRData.lasttotal;       // int count
+			  lastseconds = IRData.lastseconds;   // in s
+			  lastdistance = IRData.lastdistance; // in m
+			  lastspeed = IRData.lastspeed;       // in m/s
+			  lastspeedatscale = IRData.lastspeedatscale; // in km/h at model scale	  
+			  
+			  speedsampling     = IRData.speedsampling;      // SpeedSampling active =1, deactivated =0, bool converted to integer, 1/0
+			  irsamplerecording = IRData.irsamplerecording;  // IRSampleRecording active =1, deactivated =0, bool converted to integer, 1/0
+			  iraveragesample   = IRData.iraveragesample;    // IRAverageSample active =1, deactivated =0, bool converted to integer, 1/0
+			  irskipminmax      = IRData.irskipminmax;       // IRSkipMinMax active =1, deactivated =0, bool converted to integer, 1/0
+              serialmonitor     = IRData.serialmonitor	     // Serial Monitor active =1, deactivated =0, bool converted to integer, 1/0		  
+			  irlow = IRData.irlow;               // ir_low_level, no sleeper detected, in mV
+			  irhigh = IRData.irhigh;             // ir_high_level, no sleeper detected, in mV
+			  
+			  if (irsamplerecording == true) {	 
+				  //updating irdata for IRDataChart
+				  N = 500;
+				  for (i = 0; i < N; i++) {
+					  irsampleArray[i] = IRData.irsamplerecord[i];
+					  irlowArray[i] =irlow;
+					  irhighArray[i] =irhigh;
+				  }  
+				  IRDataChart.update(); //update IRDataChart with new data
+			  }
+			  
+			  //update value display in text
+			  document.getElementById('SpeedSampling').innerHTML     = Math.round(speedsampling);          // integer, 1=on, 0=off
+			  document.getElementById('IRSampleRecording').innerHTML = Math.round(irsamplerecording);      // integer, 1=on, 0=off
+			  document.getElementById('IRAverageSample').innerHTML   = Math.round(iraveragesample);        // integer, 1=on, 0=off
+			  document.getElementById('IRSkipMinMax').innerHTML      = Math.round(irskipminmax);           // integer, 1=on, 0=off
+			  document.getElementById('SerialMonitor').innerHTML     = Math.round(serialmonitor);          // integer, 1=on, 0=off
+			  document.getElementById('IRlowValue').innerHTML        = Math.round(irlow);                  // in mV,    precision 0
+			  document.getElementById('IRhighValue').innerHTML       = Math.round(irhigh);                 // in mV,    precision 0
+			  
+			  document.getElementById('IRSampleFreqValue').innerHTML = Math.round(irsamplefreq*100000);    // in Hz, frequency of IR samples
+			  document.getElementById('CountValue').innerHTML        = Math.round(count*100000);           // in number of sleepers
+			  document.getElementById('IRAvgValue').innerHTML        = Math.round(iravg*100)/100;          // in V,    precision 2
+			  document.getElementById('DistanceValue').innerHTML     = Math.round(distance*1000*100)/100;  // in m,    precision 2 
+			  document.getElementById('SpeedmeasureValue').innerHTML = Math.round(speedmeasure*1000)/1000; // in m/s,  precision 3 
+			  document.getElementById('SpeedscaleValue').innerHTML   = Math.round(speedscale*100*10)/10;   // in km/h, precision 1 
+			  
+			  document.getElementById('Total').innerHTML             = total;                              // int
+			  document.getElementById('TotalDistance').innerHTML     = Math.round(totaldistance*1000)/1000;// in m,   precision 3 
+			  document.getElementById('LastTotal').innerHTML         = Math.round(lasttotal);              // int
+			  document.getElementById('LastSeconds').innerHTML       = Math.round(lastseconds*1000)/1000;  // in s,   precision 3 
+			  document.getElementById('LastDistance').innerHTML      = Math.round(lastdistance*1000)/1000; // in m,   precision 3 
+			  document.getElementById('LastSpeed').innerHTML         = Math.round(lastspeed*1000)/1000;    // in m/s, precision 3 
+			  document.getElementById('LastSpeedAtScale').innerHTML  = Math.round(lastspeedatscale);       // in km/h 
+
+			  var countreference = document.getElementById("CountReference").value; 
+			  document.getElementById('CountRelative').innerHTML     = Math.round((lasttotal/countreference)*100*10)/10; // in %, precision 1
+			  document.getElementById('CountDifference').innerHTML   = (lasttotal>countreference?"+":"") + Math.round(lasttotal-countreference); // integer,  precision 0, leading '+' sign
+			  document.getElementById('CountRelativeError').innerHTML= (lasttotal>countreference?"+":"") + Math.round((lasttotal/countreference - 1)*100*10)/10; // in %, precision 1, leading '+' sign		  
+			}
+		}
+		request.open('GET', requestURL);
+		request.send(); // send the request
+	}
+	//based on concept in https://stackoverflow.com/questions/51556002/live-update-the-charts-js-graph-on-a-web-page-using-json-data-received-from-a-re
+	//https://blog.heimetli.ch/chart-js-update.html
+	/*
+	   options: {
+		  responsive: true,
+		  legend: {
+			 display: false
+		  },
+		  tooltips: {
+			 mode: "index",
+			 intersect: false,
+		  },
+		  hover: {
+			 mode: "nearest",
+			 intersect: true
+		  },
+	*/
+	//https://gist.github.com/skhisma/5689383#file-live-update-chartjs-html
+	//https://canvasjs.com/javascript-charts/dynamic-spline-chart/
+	
+</script>
+
+<script>
+// index.html functionality for variable text updates via notify_clients()
+  var gateway = `ws://${window.location.hostname}/ws`;
+  var websocket;
+  window.addEventListener('load', onLoad);
+  function onLoad(event) {
+    initWebSocket();
+    initButton();
+  }
+  
+  function initWebSocket() {
+    console.log('Trying to open a WebSocket connection...');
+    websocket = new WebSocket(gateway);
+    websocket.onopen    = onOpen;
+    websocket.onclose   = onClose;
+    websocket.onmessage = onMessage; // <-- add this line
+  }
+  function onOpen(event) {
+    console.log('Connection opened');
+  }
+  function onClose(event) {
+    console.log('Connection closed');
+    setTimeout(initWebSocket, 2000);
+  }
+  function onMessage(event) {
+    console.log('');
+	console.log(`Received a WebSocket notification from ${event.origin}`);
+    console.log(event);
+	console.log(event.data);
+	var text = JSON.parse(event.data);
+	document.getElementById('StatusText').innerHTML = text.status;
+	document.getElementById('SpeedText').innerHTML = text.speed;
+	console.log('');
+  }
+ 
+  function initButton() {
+	document.getElementById('minus4').addEventListener('click', minus4e);
+	document.getElementById('minus1').addEventListener('click', minus1e);
+	document.getElementById('plus1').addEventListener('click', plus1e);
+	document.getElementById('plus4').addEventListener('click', plus4e);
+	document.getElementById('reverse').addEventListener('click', reversee);
+	document.getElementById('halt').addEventListener('click', halte);
+	document.getElementById('stop').addEventListener('click', stope);
+	document.getElementById('speedsamplingonoff').addEventListener('click', speedsamplingonoffe);
+	document.getElementById('irrecordingonoff').addEventListener('click', irrecordingonoffe);
+	document.getElementById('iraveragesampleonoff').addEventListener('click', iraveragesampleonoffe);
+	document.getElementById('irskipminmaxonoff').addEventListener('click', irskipminmaxonoffe);
+	document.getElementById('serialmonitoronoff').addEventListener('click', serialmonitoronoffe);
+	document.getElementById('ledonoff').addEventListener('click', ledonoffe);
+	document.getElementById('zerocounter').addEventListener('click', zerocountere);
+  }
+  function minus4e(){
+    websocket.send('--------');
+	console.log('WebSocket command sent --------');
+	delay(1000);
+  }
+  function minus1e(){
+    websocket.send('--');
+	console.log('WebSocket command sent --');
+	delay(1000);
+  }
+  function plus1e(){
+    websocket.send('++');
+	console.log('WebSocket command sent ++');
+	delay(1000);
+  }
+  function plus4e(){
+    websocket.send('++++++++');
+	console.log('WebSocket command sent ++++++++');
+   delay(1000);
+  }
+  function reversee(){
+    websocket.send('0<');
+	console.log('WebSocket command sent 0<');
+	delay(1000);
+  }
+  function halte(){
+    websocket.send('--------------------------------');
+	console.log('WebSocket command sent --------------------------------');
+	delay(1000);
+  }
+  function stope(){
+    websocket.send('00');
+	console.log('WebSocket command sent 00');
+	delay(1000);
+  }
+  function speedsamplingonoffe(){
+	    //irrecordreading = document.getElementById("irrecordingonoff");
+    if (speedsampling) { //current status of internal javascript switch for SpeedSampling
+		websocket.send('s0');
+		console.log('WebSocket command sent s0'); //general ino program switch for activating/deactivating SpeedSampling
+		speedsampling = false; //general internal javascript switch for SpeedSampling
+	}
+	else {
+		websocket.send('s1');
+		console.log('WebSocket command sent s1'); //general .ino program switch for activating/deactivating SpeedSampling
+		speedsampling = true; //general internal javascript switch for SpeedSampling
+	}
+	delay(1000);
+  }
+  function irrecordingonoffe(){
+	    //irrecordreading = document.getElementById("irrecordingonoff");
+    if (irrecordreading) { //current status of internal javascript switch for reading sample record
+		websocket.send('r0');
+		console.log('WebSocket command sent r0'); //general ino program switch for activating/deactivating IR sample record
+		irrecordreading = false; //general internal javascript switch for reading sample record
+	}
+	else {
+		websocket.send('r1');
+		console.log('WebSocket command sent r1'); //general .ino program switch for activating/deactivating IR sample record
+		irrecordreading = true; //general internal javascript switch for reading sample record
+	}
+	delay(1000);
+  }
+  function iraveragesampleonoffe(){
+    //iraveraging = document.getElementById("iraveragesampleonoff");
+    if (iraveraging) { //current internal javascript status for IR sample averaging button
+		websocket.send('a0');
+		console.log('WebSocket command sent a0'); //general .ino program switch for activating/deactivating IR sample averaging
+		iraveraging = false; //internal javascript status for IR sample averaging button
+	}
+	else {
+		websocket.send('a1');
+		console.log('WebSocket command sent a1'); //general .ino program switch for activating/deactivating IR sample averaging
+		iraveraging = true; //internal javascript status for IR sample averaging button
+	}
+	delay(1000);
+  }
+  function irskipminmaxonoffe(){
+    console.log('function irskipminmaxonoffe')
+    //irskipminmax = document.getElementById("irskipminmaxonoff");
+    if (irskippingminmax) { //current internal javascript status for skipping min max in IR sample averaging button
+		websocket.send('x0');
+		console.log('WebSocket command sent x0'); //general .ino program switch for activating/deactivating skipping min max in IR sample averaging
+		irskippingminmax = false; //internal javascript status for skipping min max in IR sample averaging button
+	}
+	else {
+		websocket.send('x1');
+		console.log('WebSocket command sent x1'); //general .ino program switch for activating/deactivating skipping min max in IR sample averaging
+		irskippingminmax = true; //internal javascript status for skipping min max in IR sample averaging button
+	}
+	delay(1000);
+  }
+  function serialmonitoronoffe(){
+    if (serialmonitor) { //current internal javascript status for IR sample averaging button
+		websocket.send('m0');
+		console.log('WebSocket command sent m0'); //general .ino program switch for activating/deactivating SerialMonitoring
+		serialmonitor = false; //internal javascript status for IR sample averaging button
+	}
+	else {
+		websocket.send('m1');
+		console.log('WebSocket command sent m1'); //general .ino program switch for activating/deactivating SerialMonitoring
+		serialmonitor = true; //internal javascript status for IR sample averaging button
+	}
+	delay(1000);
+  }
+  function ledonoffe(){
+    websocket.send('l');
+	console.log('WebSocket command sent l');
+	delay(1000);
+  }  
+  function zerocountere(){
+    websocket.send('z');
+	console.log('WebSocket command sent z');
+	delay(1000);
+  }
+  function SetPWMSliderValue(element) {
+    var PWMsliderValue = document.getElementById("pwmSlider").value;
+    websocket.send("="+PWMsliderValue); 
+    console.log('WebSocket command sent sliderValue ='+PWMsliderValue);
+    delay(1000);
+  }
+  function SetIRLowSliderValue(element) {
+	var IRLowSliderValue = document.getElementById("IRLowSlider").value;  //150 to 2500
+	document.getElementById('IRlowValue').innerHTML        = Math.round(IRLowSliderValue);
+	console.log('Adjust IRLowSliderValue ='+IRLowSliderValue);
+	websocket.send('irl='+IRLowSliderValue);
+	console.log('WebSocket command sent l'+IRLowSliderValue);
+	delay(1000);
+  } 
+  function SetIRHighSliderValue(element) {
+	var IRHighSliderValue = document.getElementById("IRHighSlider").value;  //150 to 2500
+	document.getElementById('IRhighValue').innerHTML        = Math.round(IRHighSliderValue);
+	console.log('Adjust IRHighSliderValue ='+IRHighSliderValue);
+	websocket.send('irh='+IRHighSliderValue);
+	console.log('WebSocket command sent h'+IRHighSliderValue);
+	delay(1000);
+  } 
+  
+//	function UpdateStatusLines(statustxt,speedtxt,speedleveltxt) {
+//	  document.getElementById("StatusText").innerHTML = statustxt;
+//  }
+</script>
+</body>
+</html>

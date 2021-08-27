@@ -1,11 +1,12 @@
 /* PiedPiperS
   This code is published with GNU General Public License GPL v3, 
-  Copyright (c) J. Ruppert, 2021-04, jorail [at] gmx.de
+  Copyright (c) J. Ruppert, 2021-08, jorail [at] gmx.de
   
   The program purpose is to control a model train motor with independent power supply
   e.g. from USB power bank for outdoors. Following options exist:
   a) Control fron a smartphone: ESP32 Wifi WebServer for commands from a client browser via WebSocket connection:
      https://github.com/jorail/PiedPiperS
+     including options for online power data reading and speed data sampling by IR sensor
   b) Control by a whistle: Original PiedPiper whistle Morse code signals. Works with microphone input and FFT tone 
      analysis in a Teensy 4.0 microcontroller (in this version tone sampling is deactivated for ESP32 by commenting out):
      https://github.com/jorail/PiedPiper
@@ -14,18 +15,19 @@
 
   The project is inspired by the project 'free your model train' (FYMT) proposed by Frei Softwarefreunde
   at https://freie-software.org/free-your-model-train/
-  
+
   The code and layout are developed for ESP32 (or Teensy 4.0) but can easily be modified for other micro controllers.
   Asynchronous WebServer libraries are used in combination with WebSocket connection and JSON messages.
   Sound evaluation and tone signal identification is performed by FFT analysis in the microprocessor.
   Identified client commands or Morse code commands from a switch, touch senosor or tone signals are processed to 
   commands for change of the speed level. New motor settings are transfered via pulse width modulation (PWM) output 
   to a H-bridge motor control IC.
-  
-  The idea for the FFT analysis for tone identification and part of the functions are based on 'Audio Tone Input' 
-  (toneinput.ino) by Tony DiCola, which is published with MIT License (see below) as part of the ardafruit 
-  learning guide and examples at http://learn.adafruit.com/fft-fun-with-fourier-transforms/. The corresponding 
-  function headings are marked by 'MIT License'.
+
+  Many thanks and acknowledgments to D.Meschede for support during the debugging of the PiedPiperS code.
+  The idea for the FFT analysis for tone identification in PiedPiper and part of the functions are based on 
+  'Audio Tone Input' (toneinput.ino) by Tony DiCola, which is published with MIT License (see below) 
+  as part of the ardafruit learning guide and examples at http://learn.adafruit.com/fft-fun-with-fourier-transforms/. 
+  The corresponding function headings are marked by 'MIT License'.
     
   GNU General Public License Version 3, GPLv3
     
@@ -68,117 +70,69 @@
   056 2021-02    PiedPiper_056 stable version before Server module integration
 
                  Development of ESP32 Server as ESP32_AP_AWebServer_WS_JSON_020.ino
-                 including whistle speed control for model trains, using microcontroller, FFT tone analysis, outdoor compatible with on-board USB power supply 
+                 including whistle speed control for model trains, using microcontroller, FFT tone analysis, 
+                 outdoor compatible with on-board USB power supply 
   061 2021-03-10 PiedPiperS_061 first draft of server integration (create server, before startup)   
-  062 2021-03-10 Integrate Server Module startup routines
-  063 2021-03-10 Integrate Server Module main loop
-  064 2021-03-10 First interated PiedPiperS
-  065 2021-03-10 pepare for "set value" command
-  066 2021-03-10 CLIENT_COMMAND consolidated
-  067 2021-03-11 adjust notifyClients
-  068 2021-03-11 Debugging
-  069 2021-03-11 consolidated for complete compilation
-  070 2021-03-11 Debugging
-  071 2021-03-11 Optimize and Debug Wifi WS command interpretation
-  074 2021-03-11 Debugging Client Command 
-  075 2021-03-11 First stable client command
-  076 2021-03-12 Reintegrate Morse code commands, solve timing issue for Morse Signal termination/recognition
-  077 2021-03-12 PiedPiperS consolidated and integrated version 
-  078 2021-03-12 Optimize server program code
-  079 2021-03-12 add server Info page
-  080 2021-03-12 add info website
-  081 2021-03-13 clean startup and info website
-  082 2021-03-13 clean unused server variables, add monitor website  
-  083 2021-03-13 consolidated version, 2 WLAN clients allowed
-  084 2021-03-13 Webdesign, Error MotorIC management, E-Mail, License
-  085 2021-03-13 consolidatedd running version of PiedPiperS
-  086 2021-03-14 integrate additional html websites for license, programm code download, images
-  087 2021-03-15 further web-work, static server from SPIFFS
-  088 2021-03-17 debugging, serving images from SPIFFS, optimize website layout
-  089 2021-03-18 fully running version, rewrite captive portal with full ip address, define minimum PWM display for speed level =1
-  090 2021-03-18 html optimisation, image gallery test
-  091 2021-03-19 optimize html and calls to portal, image-viewer
-  092 2021-03-19 test captive redirect for https:// => not working
-  093 2021-03-20 clean up, additional code comments and consolidation
-  094 2021-03-20 prepare for github, consolidated and running well
-  095 2021-03-21 optimize ESP32 layout and wiring, fix voltage indication, add controller status link to /monitor, enhance /parts
-  096 2021-03-22 fix image gallery viewer.html, optimise /info PWM description
-  097 2021-03-22 definition of #ifdef ToneSampling instead of commenting out FFT tone signal analysis as of PiedPiper version 056, reorganise #include libraries after #define
-  098 2021-03-22 optimise high level links and PWM description on /info /parts /viewer    
-  099 2021-03-22 optimise numbers, units in /parts reformat /viewer, PiedPiper-Project link via github.html and QR
   100 2021-03-22 consolidated version, start for github
-  101 2021-03-26 preventing false positve SignalActive readings, which resulted from spikes in the ESP32 TouchRead, by averaging valarray of multiple TouchRead
-  102 2021-03-26 add device width regulation to html websites in the code, add ESP modification detail img003 to parts.html
   103 2021-03-27 consolidated version, prepare for lok.ini branch and further development
   
   lok.ini branch in github: https://github.com/jorail/PiedPiperS/tree/lok.ini
-  104 2021-03-28 .ini reading for variable loco name in index.html, ssid and password
-  105 2021-03-29 .ini evaluation for speed_adjustment setting and fine tuning speed settings for 32 speed levels
-  106 2021-03-30 .ini editing via html textarea and saving new lok.ini in SPIFFS with backup of previous version 
-  107 2021-03-31 .ini reading for textbox
-  108 2021-03-31 modify websocket
-  113 2021-04-01 solve websocket gateway connection by soft.WifiAPIP
-  114 2021-04-02 interpretation of websocket JSON message for writing lok.ini files
-  115 2021-04-02 adding file management to /iniedit
-  118 2021-04-02 save spiffs
-  119 2021-04-02 test spiff writing
-  124 2021-04-04 adressing save inifile problems
-  127 2021-04-15 use Sting to solve json_message interpretation problems
-  131 2021-04-16 iphone access to ini.html solved by avoiding specification "java-script", inipath with "/" instead of "\" works
-  132 2021-04-17 optimise ini.html
-  134 2021-04-17 move variable declaration of iniSetup in dedicated function, which can be called for reaload
-  135 2021-04-17 ini.html problem fixed
-  136 2021-04-17 re-introduce some alert messages, working very well
-  137 2021-04-17 optimize ini.html switches
-  138 2021-04-17 clean up ini.html
-  139 2021-04-17 consolidate
-  140 2021-04-17 add LED indication for successful writing of .ini file
-  141 2021-04-17 add LED indication for loading of .ini file
-  142 2021-04-17 on /dir command output fileindex as plain text, not working
-  143 2021-04-17 on GET /dir command output fileindex as plain text   
-  145 2021-04-17 fileindex display optimised, small fixes necessary
-  146 2021-04-18 consolidated, working well
-  147 2021-04-18 add location.reload() to ini.html, add LED and debugging infor to ini.html
-  148 2021-04-18 cleanup, consolidation, fine tuning, amend code comments
-  149 2021-04-18 consolidated code version prepared for github branch lok.ini
-  150 2021-04-18 lok.ini branch upload failed
-  151 2021-04-18 additional explanation on ini.html, explain .ini save problems due to limited size of ESP32 flash memory
-  152 2021-04-19 lok.ini branch successful upload: https://github.com/jorail/PiedPiperS/tree/lok.ini
-  153 2021-04-19 editorial change for additional idea: GPIO pin 35 instead of 26 (26 is not working when wifi in use!)
-  154 2021-04-19 amend description for motor error ic input on GPIO pin 25 (25 can stay for digital input)
-  155 2021-04-20 add analog input for motor current observation at GPIO pin 35 = ADC1_CH7
-  156 2221-04-21 motor current sampling and monitoring in notify_client()
-  157 2021-04-24 motor power data transfered as JSON response to get request from smartphone
-  158 2021-04-25 add motor voltage reading and transmission in JSON
-  159 2021-04-25 add implement motor voltage reading 
-  160 2021-04-25 bakcup
-  161 2021-04-25 test motor voltage reading
-  162 2021-04-25 parametrisation of voltage analog input readings, including 1/11 kOhm voltage split, to mV 
-  163 2021-04-25 debugging mV output, MotorVoltageArray.sum() integer overflow, solved by devision by 10
-  164 2021-04-26 complete version including mV output to /powerdata
-  165 2021-04-26 complete, running
-  166 2021-04-26 add PWM data to /powerdata JSON message
-  167 2021-04-26 optimise PWM data, 0 at speed_level 0
-  168 2021-04-26 optimise powerdata display
-  169 2021-04-27 optimise /info display
-  170 2021-04-27 otimise /info and /monitor display, add buttons to power.html, working and consolidated version
-  171 2021-04-27 enhance descriptions, sketch info, link to license, parts.html, add WLAN station number display, allow 3 stations
-  172 2021-04-28 html text editing in /info
-  173 2021-04-28 html text editing in /info /license.html /project.html
-  174 2021-04-29 html text editing in captive portal and /parts.html
-  175 2021-04-30 debugging /ini.html JS function
+  178 2021-05-09 consolidated code
+   
+  speedo branch in github: https://github.com/jorail/PiedPiperS/tree/speedo, develop speed-o-meter with reflective ir detector on railway sleepers
+  216 2021-06-02 consolidated version for speedo branch
+  217 2021-06-03 adjust transmission of irsamplerecord array, toggle ir sample averaging for railway sleeper detection
+  218 2021-06-03 add adjustment for IRlow and IRhigh from irsamplerecord.html via websocket message
+  219 2021-06-03 modify effect of flag IRSampleRecording: Extension to individual data record and json2 record submission
+  220 2021-06-04 change time recording back to individual records instead of 10-fold record averaging
+  221 2021-06-05 introduce switch for SpeedSampling in .ino and irsamplerecord.html
+
+  222 2021-06-06 place SpeedSampling in interrupt function IRAverageSample
+  223 2021-06-08 debug interrupt function
+  224 2021-06-12 define IRArray without valarry but instead with global variable IRArrayPointer 
+  225 2021-06-13 manage conflict of analogReading between TimerInterrupt and MotorCurrent Sampling by locking PortMultiplexer
+                 according to https://techtutorialsx.com/2017/10/07/esp32-arduino-timer-interrupts/
+  226            consolidated
+      
+  228 2021-08-10 testing attaching ISR timer interrupt to core 0
+  229 2021-08-11 debugging void SpeedSampling. For debugging analogRead in ISR timer interrupt refer to https://www.toptal.com/embedded/esp32-audio-sampling
+  230 2021-08-16
+  
+  231 2021-08-17 using I2S AnalogReading DMA mode and ESP32 I2S example on HighFreq_ADC
+  
+  232 2021-08-17 core0 solution with normal analogRead (no ISR timer interrupt, no IRAM attribute required). 
+  235 2021-08-18 SpeedSamplingIRSensor running as parallel task on core0 (https://randomnerdtutorials.com/esp32-dual-core-arduino-ide/, https://www.digikey.de/en/maker/projects/introduction-to-rtos-solution-to-part-12-multicore-systems/369936f5671d4207a2c954c0637e7d50), IRsamplecounter
+  236 2021-08-18 optimse task and related IR recorder outputs
+  237 2021-08-18 optimse code and comments, delete ISR timer interrupt remains, ca. 6 kHz IRsensor sample frequency achieved, with main loop ca. 0.75 s and 1000 power samples/main loop
+  238 2021-08-19 consolidated
+  239 2021-08-19 optimised lok.ini parameters, ca. 5.7 kHz IRsensor sample frequency achieved, with main loop ca. 1.76 s and 2000 power samples/main loop, irlow 0.5 V irhigh 0.7 V
+  240 2021-08-19 optimise de-noising of IRsensor readings by median filter, did not work well with small number of samples for determination
+  241 2021-08-19 optimise de-noising with option to skip min and max from IRSensor reading for averaging
+  242 2021-08-19 optimise de-noising with option to skip min and max from IRSensor reading for averaging, ca. 5.6 kHz IRsensor sample frequency achieved, with main loop ca. 1.75 s and 2500 power samples/main loop, irlow 0.5 V irhigh 0.8 V
+                 §§§potential further improvment of de-noising: count sleepers only after 3 readings above/below deadband
+  243 2021-08-20 code cleaned
+  244 2021-08-21 add general switch for 'SpeedSamplingOnOff' in task on core0
 */
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION of the microprocessor setup and PWM control for the motor IC 
 ////////////////////////////////////////////////////////////////////////////////
 
-String SKETCH_INFO = "PiedPiperS.ino, Version 175, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-04-30";
+String SKETCH_INFO = "PiedPiperS.ino, Version 244, GNU General Public License Version 3, GPLv3, J. Ruppert, 2021-08-21";
 
 #define ESP32          //option to adjust code for interaction with different type of microProcessor 
                        //(default or comment out or empty, i.e. the else option in the if statement = Teensy4.0)
 #define TLE5206        //option to adjust code for interaction with different type of MotorIC        
                        //(default or comment out or empty, i.e. the else option in the if statement = L293D)
+#define  PowerSampling  //motor power sampling with ESP32
+                       //motor voltage sampling on GBIO pin 34, ADC1_Ch6, up to ca. 1.5 V on 1 kOhm resistor of 1:11 voltage split, i.e. ca. 0 to 1.5 Vdc 
+                       //motor current sampling on GBIO pin 35, ADC1_Ch7, up to ca. 0.5 A on 1 Ohm resistor, i.e. ca. 0 to 0.5 Vdc 
+#define  SpeedSampling //monitor speed on track by detecting railway sleeper passage with reflective infrared (IR) detector and ESP32
+                       //IR detecter input on GPIO pin 39, ADC1_Ch3, mode INPUT with external pullup resistor ca. 33 kOhm
+                       //IR detector signal is amplified by a transistor, to form a low (reflective ground, transistor links pin 39 to ground) 
+                       //and high voltage levels (unreflective railway sleeper, transistor inactive, ca. 1.5 V by external 33 kOhm pullup resistor) 
+                       //the external pullup resistor can be adjusted to about 27 to 47 kOhm
+                       //Reading in parallel task running on core0 results in 5 to 6 kHz sample rate.
 //#define ToneSampling //###### comment out, conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
                        //this option adjusts code for tone sampling, for use with additional electret microphone on analogue input, 
                        //sound sampling, FFT analysis and tone signal identification 
@@ -186,16 +140,13 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 175, GNU General Public License Ve
                        //https://github.com/jorail/PiedPiper
                        //it has not been thoroughly tested in combination with PiedPiperS, version 60 through version 148 and later
                        //https://github.com/jorail/PiedPiperS
-#define  MotorPowerSampling  //motor power sampling 
-                       //motor voltage sampling on GBIO pin 34, ADC1_Ch6, up to ca. 1.5 V on 1 kOhm resistor of 1:11 voltage split, i.e. ca. 0 to 1.5 Vdc 
-                       //motor current sampling on GBIO pin 35, ADC1_Ch7, up to ca. 0.5 A on 1 Ohm resistor, i.e. ca. 0 to 0.5 Vdc 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Select libraries
 ////////////////////////////////////////////////////////////////////////////////                       
+#include <valarray>
 
 #ifdef ESP32
-  #include <valarray>
   
   // Import libraries for WebServerControl module
   #include <WiFi.h> // already includes libraries #include <WiFiClient.h> and #include <WiFiAP.h>
@@ -209,16 +160,12 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 175, GNU General Public License Ve
   #include "FS.h"  //################### double chekc if really needed
   #include <SPIFFS.h>
   #include <SPIFFSIniFile.h>  
-
-
-  
 #endif
 
 #ifdef ToneSampling
   // ###### libraries conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
   // Import libraries for TrainMotorDriver module
   #define ARM_MATH_CM4
-  #include <valarray>
   #include <arduinoFFT.h>
   
   // Libraries for SoundControl module
@@ -227,8 +174,13 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 175, GNU General Public License Ve
   //#include <wavelib.h>
 #endif
 
-#ifdef MotorPowerSampling
-  #include <valarray>
+#ifdef SpeedSampling  
+  //v235, for feeding watchdog timer in task on core0, https://forum.arduino.cc/t/esp32-a-better-way-than-vtaskdelay-to-get-around-watchdog-crash/596889/13
+  #include "soc/timer_group_struct.h"
+  #include "soc/timer_group_reg.h"
+  bool TextStatusSpeedSampling = true; //amending text message for notification to clients()
+#else                       
+  bool TextStatusSpeedSampling = false;  
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -261,7 +213,6 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 175, GNU General Public License Ve
   int ANALOG_READ_RESOLUTION = 12; // Bits of resolution for the ADC. Increased to 12 bit for motro current monitoring 1 Ohm resistor and ca. 0 to 0.5 Vdc on ADC1_CH7
   int ANALOG_READ_AVERAGING = 8;   // Number of samples to average with each ADC reading. Recommanded for ESP32 =8. For Teensy 4.0 successfully tested with =16
 
-
 #else  //uP not definied, defualt for Teensy 4.0
   // input output defintions
   int input_switch  =  5;          // manual switch input: HIGH=steady state, LOW=activated
@@ -284,15 +235,24 @@ String SKETCH_INFO = "PiedPiperS.ino, Version 175, GNU General Public License Ve
 ////////////////////////////////////////////////////////////////////////////////
 
 // mainloop and monitoring
-const int MONITOR_FREQ =   10;                      // Frequency of monitoring switch Morse signal input (ca. 10 Hz or 0.1 second, defined by division of main LOOP COUNT), and MotorCurrent readings
-const int FLASH_FREQ   =   2*5059;                  // Frequency for power LED flashes while void loop running (ca. 1 to 2 seconds, defined by value for main LOOP_COUNT), default 18815 on ESP32 without WebServer, 5059 on ESP with WebServer v106
-const int FLASH_FREQ_DARK = int(FLASH_FREQ * 0.99); // flash frequency period with unlit power LED, use number close to 1.00, when redLED is used as alternative powerLEDdefault 0.99
+int MainLoopFrequency     =   5000;                  // Frequency for power LED flashes while void loop running (ca. 1 to 2 seconds, defined by value for main LoopCount), 
+                                                     // default 30000 in PiedPiper v201
+                                                     // 20000 in PiedPiper v199c exacts to 1 second MainLoopFrequency
+                                                     // 5155 = 3.6 seconds, optimised main loop in v197 and with WebServer, with MorseDecoder, adjustSpeed
+                                                     // 10000 = 1 second, optimised main loop in v197 and with WebServer, but without MorseDecoder, adjustSpeed
+                                                     // 18815 on ESP32 without WebServer; 2*5059 = 2 seconds on ESP with WebServer v106
+int MainLoopFrequencyDark = int(MainLoopFrequency * 0.995); // flash frequency period with unlit power LED, use number close to 1.00, when redLED is used as alternative powerLEDdefault 0.99
+float MainLoopFrequencySeconds = 1;                  // duration of between flashes in main loop
+std::valarray<unsigned long> Timestamp(2);           // timestamps for MainLoopFrequencySeconds, increase to Array size (11) for averaging of 10 intervals, but speed calculation will become less precise at the same time
+int MonitorFrequency      = 20;                      // Frequency of monitoring switch Morse signal input and MotorCurrent (ca. 20 Hz or 0.05 second)
+int MonitorLoopCounts     = MainLoopFrequency/MonitorFrequency; // Loop count for monitoring switch Morse signal input and MotorCurrent (ca. 20 Hz or 0.05 second, defined by division of main LOOP COUNT)
+bool SerialMonitor        = true;                    // false = switch off Serial.print functionality in main loop for preventing delays in the speed counting
 
 //MorseCodeDecoder
-const int dotMinLength   =  200; //dots are more than 100ms long and shorter than dashMinLength
-const int dashMinLength  =  800; //dashes are more than 300ms long
-const int TerminalLength = 1500; //wait after last dash/dot for termination of command
-const int   morsecode_size = 12;
+const int dotMinLength    =  200; //dots are more than 100ms long and shorter than dashMinLength
+const int dashMinLength   =  800; //dashes are more than 300ms long
+const int TerminalLength  = 1500; //wait after last dash/dot for termination of command
+const int  morsecode_size = 12;
 const char *morsecode[morsecode_size] = {".",  "..",       "...",                              "....", ".....", ".-", ".--",       ".---",             "-", "--", "---", "?"};
 const char *commands[morsecode_size]  = {"--", "--------", "--------------------------------", "0",    "0<",   "++",  "++++++++", "++++++++++++++++", "0", "00", "?",   "?"};
 const char *meaning[morsecode_size]   = {"decrease speed", "slow down", "break to halt", "fast brake and stop", "fast brake, stop, reverse direction", "increase speed", "speed up", "go fast", "fast brake and stop", "fast brake and stop", "info?", "info?"};
@@ -301,27 +261,81 @@ const char *meaning[morsecode_size]   = {"decrease speed", "slow down", "break t
 //'<'   stands for reverse of direction, which can only be done after a safe full halt, thus multiple leading '0' characters are introduced in front for train inertia
 const int MAX_CHARS      = 65;   // Max size of the input command buffer
 
-#ifdef MotorPowerSampling
-  const int MotorPowerSampleNumber = 50;
-  std::valarray<int> MotorVoltageArray(MotorPowerSampleNumber);
+#ifdef PowerSampling
+  int PowerSampleFrequency = 1000; //Frequency of monitoring power data, ca. 1000 Hz,
+  int PowerSampleLoopCounts = int(MainLoopFrequency/PowerSampleFrequency);
+  std::valarray<int> MotorVoltageArray(PowerSampleFrequency);
   const float MotorVoltageOffset = 1514.1; //linear parametrisation of stepup converter output voltage in mV with 1/11 kOhm voltage split, y = 8.8878 x + 1514.1. x= anolg reading@pin34, y= multimeter voltage in mV@stepup converter output   2021-04-25
   const float MotorVoltageSlope  = 8.8878; //linear parametrisation of stepup converter output voltage in mV from measurments 2021-04-25
-  int MotorVoltageAverage = 0;  // in volts (V)
-  std::valarray<int> MotorCurrentArray(MotorPowerSampleNumber);
+  int MotorVoltageAverage = 0;  // in millivolts (mV)
+  std::valarray<int> MotorCurrentArray(PowerSampleFrequency);
   const float MotorCurrentOffset = 133; //153     128;         //linear parametrisation of motor current readings from measurments 2021-04-23
   const float MotorCurrentSlope  = 0.91; //0.8     1.2;        //linear parametrisation of motor current readings from measurments 2021-04-23
   int MotorCurrentAverage = 0;  // in milliamperes (mA)
   float MotorPower = 0; // in Watt (W)
 #endif
 
-#ifdef ToneSampling
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// CONIFIGURATION SpeedSampling by reflective IR detector for railway sleepers and ESP32 counter
+// ///////////////////////////////////////////////////////////////////////////////////////////////
+#ifdef SpeedSampling  // 
+  bool SpeedSamplingOnOff=true;
+
+  //global variables for SpeedSampling
+  int SpeedSampleFrequency = 5000; //Frequency of monitoring IR sensor for speed sampling, ca. 15000 Hz, with averaging of 3 samples resulting effectively in 5000 Hz
+  int IRSampleAveraging = 5;  //attenuation of IR signal, ajust according to max. speed counting frequency, default 5, increase if signal is very noisy
+  int SpeedSampleLoopCounts = int(MainLoopFrequency/SpeedSampleFrequency);
+  int SpeedLEDLoopCounts    = int(SpeedSampleLoopCounts*IRSampleAveraging);
+  bool SpeedLED = true; //for switching on/off speed LED indicator in case of railway sleeper detected by reflective IR sensor
+  std::valarray<unsigned long> IRSampleCount(2);
+  std::valarray<unsigned long> SpeedCount(2);
+  std::valarray<int> SpeedCountDifference(2);
+  float SpeedCountDistance = 0.18/24; //distance of one sleeper in meters/count, i.e. from one railway sleeper to the next, 
+  //center to center, e.g. 0.18 m = 180 mm length of one piece of track devided by 24 railway sleepers on Maerklin M straight track 5106
+  float Speed = 0; // in m/s
+  float SpeedAtScale = 0; // in km/h at model scale
+  float Scale = 87; //model scale, Spur 1 = 32, H0 = 87, TT = 120, N = 160
+    
+  //global variables for core0 task SpeedSamplingIRSensor() analog readings
+  //all variables are "one-way" i.e. no shared writing on variables between interrupt and main loop
+  //task is reading from variables:
+  volatile int ir_sensor = 39; // GPIO pin 39 is depicted with 'VN' on ESP32 DevKit V1 board
+  volatile int IRlow = 600;    //IR analog signal high level threshold in mV, choose value > 150 mV due to analogue input reading offset, default 600 mV
+  volatile int IRhigh = 1100;  //IR analog signal high level threshold in mV, default 1100 mV
+  //task writes to variables:
+  volatile int IRArray[10];    //maximum of 10 for IRSampleAveraging, but only those defined by IRSampleAveraging will be in use in Interrupt Function SpeedSamplingIRSensor()
+  volatile int IRArrayPointer; // indicates next position for overwriting
+  volatile int IRAverage = 0;
+  volatile bool IRAverageSample = false; // IRAverageSample for IR sample recorder: false = raw IR signal, true = use averaged sample
+  volatile bool IRSkipMinMax = false;    // IRAverageSample for IR sample recorder: false = use averaged sample, true = skip min and max values for determining the average (introduced in version v241)
+  volatile bool SleeperDetected = true;  //start with true value, in order to avoid rising edge count at startup
+  volatile unsigned long SpeedCounter = 0;
+
+  // SpeedSampleIRSensorTask settings https://www.digikey.de/en/maker/projects/introduction-to-rtos-solution-to-part-12-multicore-systems/369936f5671d4207a2c954c0637e7d50, https://randomnerdtutorials.com/esp32-dual-core-arduino-ide/
+  TaskHandle_t SpeedSampleIRSensorTaskHandle; //Task created to setup parallel processing of analogReading of IR sensor on core0, v232
+  portMUX_TYPE analogReadMux = portMUX_INITIALIZER_UNLOCKED; //preventing analogReading conflicts between task on core0 and main loop functions on core1, compare ISR timer interrupt application in https://techtutorialsx.com/2017/10/07/esp32-arduino-timer-interrupts/
+  //void IRAM_ATTR SpeedSamplingIRSensor(); //define empty function name before task attachment (was needed in case of timer interrupt, not required for core0 parallel task)
+    
+  //IR Sample recording and assessment
+  unsigned long IRSampleCounter = 0; // counting number of effective analogReadings on IRSensor
+  bool IRSampleRecording = false;
+  int IRSampleRecord[500]; //array for display of 500 (nearly consecutive) original IRSensor samples, recorded in main loop from current values produced in parallel core0 task with similar frequency
+  int SpeedCountTotal =0;
+  int SpeedCountLastTotal =0; 
+  unsigned long SpeedCountStartMilli = 0;
+  float SpeedCountLastSeconds = 0;
+  float LastSpeed = 0; // in m/s, as of last IRSampleRecording: SpeedCountLastTotal*SpeedCountDistance/SpeedCountLastSeconds
+  float LastSpeedAtScale = 0; // in km/h at model scale
+  bool RoundMarkerDetected = false; //Detection of RoundMarker (= strech with white reflective track ground, paper or tape on track)
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // CONIFIGURATION tone signal analysis
 // ###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
 // <=######## These values can be changed to alter the behavior of the FFT tone analysis.
 // Some values relate to the spectrum display. 
 // ////////////////////////////////////////////////////////////////////////////////
-  
+#ifdef ToneSampling
   //toneLoop, parameters for tone signal detection
   int SAMPLE_RATE_HZ = 5120;             // Sample rate of the audio in hertz. Default= 9000 Hz => resolution 37 Hz; increased resolution = 5120 => resolution = 20 Hz => highest detectable frequency = 2500 Hz
   const int FFT_SIZE = 256;              // Size of the FFT.  Realistically can only be at most 256 = default: Frequency bin siez (Hz) = SAMPLE_RATE_HZ/FFT_SIZE
@@ -380,7 +394,7 @@ Tone Hertz      Tone Hertz      Tone Hertz        Tone    Hertz       Tone   Her
 #ifdef ToneSampling
   //###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
   //toneLoop
-  IntervalTimer samplingTimer;  //###TODO correct for use of code with ESP32
+  IntervalTimer samplingTimer;  //###TODO correct for use of code with ESP32, compare ISR timer interrupt application in https://techtutorialsx.com/2017/10/07/esp32-arduino-timer-interrupts/
   float samples[FFT_SIZE * 2];
   float magnitudes[FFT_SIZE];
   
@@ -391,15 +405,15 @@ Tone Hertz      Tone Hertz      Tone Hertz        Tone    Hertz       Tone   Her
 char commandBuffer[MAX_CHARS];
 
 // mainloop and monitoring
-int LOOP_COUNT = 0;            // Monitor the void loop running by flashing power LED
+int LoopCount = 0;            // Monitor the void loop running by flashing power LED
 int FLASH_COUNT = 0;
 
-int TONE_LOOP_COUNT =0; 
+int TONE_LoopCount =0; 
 int TONE_ACTIVE_COUNT =0;  
 String speed_command = "";     // variable for parsing the execution of a morse command
 int speed_wait_countdown = 0;  // loop count for delay of next step of speed adjustment, set to 0 for immediate execution of new speed_command
 int speed_level = 0;           // speed_level for PWD output to motor
-int max_speed_level = 32;      // maximum speed level, default =32 in odrder to get smooth speed increase/decrease, adjust speed_wait_loops and number of *commands speed adjust symbols in appropriately 
+int max_speed_level = 32;      // maximum speed level, default =32 in odrder to get smooth speed increase/decrease, adjust SpeedAdjustmentFrequency and number of *commands speed adjust symbols in appropriately 
                                // (max_speed_level=16 as simplified method up to version 028 with half the number of command symbols)
 bool speed_direction = true;   // true=forward, false=backward
 
@@ -408,8 +422,8 @@ float motor_voltage_supply   = 9.5;                 // indicate motor voltage su
 float motor_voltage_start = 6.0;                    // equivalent voltage for first speed level PWM setting
 float speedoffset = 1- ((motor_voltage_supply - motor_voltage_start)/(max_speed_level - 1) * max_speed_level / motor_voltage_supply) ; 
 // offset of pulse width modulation (PWM) for speed_level "0" as ratio of maximum pulse width, default 0.60 @ 9.5 V dc, 0.50 @ 10 Vdc, 0.30 @ 12Vdc, default 0.25 @ 16Vdc
-int speed_frequency = 16;                            // frequency of speed adjustment per FLASH_FREQ in main loop
-int speed_wait_loops = FLASH_FREQ / speed_frequency; // Number of loops for delay of next step of speed adjustment, default = ca. 0.5 seconds
+int SpeedAdjustmentFrequency = 5;                   // frequency of speed adjustment per MainLoopFrequency in main loop, default = 5, ca. 0.2 seconds
+int speed_wait_loops = MonitorFrequency / SpeedAdjustmentFrequency; // Number of monitoring loops for delay of next step of speed adjustment, default = ca. 0.5 seconds = SpeedAdjustmentFrequency =2
 
 // variables from whistle004.ino, partially obsolete?
 int Intensity = 0;
@@ -491,7 +505,6 @@ void printErrorMessage(uint8_t e, bool eol = true) {
   if (eol)
     Serial.println();
 }
-
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -522,7 +535,7 @@ void captivePortalTarget(AsyncWebServerRequest *request) {
       response->printf("Es k&ouml;nnen immer nur drei WLAN-Nutzer (Stations) gleichzeitig mit dem WLAN-Netzwerk (AccessPoint) Verbindung aufnehmen. </p>"); 
       response->printf("<h2><a href='http://%s/'>Loksteuerung</a> &nbsp;&nbsp; <a href='http://%s/info'>weitere Informationen</a></h2>", WiFi.softAPIP().toString().c_str(), WiFi.softAPIP().toString().c_str());
       response->printf("<div><a href='http://%s/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>", WiFi.softAPIP().toString().c_str());      
-      response->printf("<p>Viel Spa&szlig; beim Ausprobieren, Jo</p><br>");
+      response->printf("<p>Viel Spa&szlig; beim Zugfahren und Ausprobieren! Jo</p><br>");
       response->printf("<p>Laufender c++/arduino <b><a href='/license.html'>Sketch</a></b> ist: </p>");
       response->printf("<p>%s</p>", SKETCH_INFO.c_str());
       response->printf("<p>%i WLAN-Nutzer <br>(Stations connected to Access Point)</p>", WiFi.softAPgetStationNum());
@@ -553,7 +566,7 @@ class CaptiveRequestHandler : public AsyncWebHandler {
       response->printf("Es k&ouml;nnen immer nur drei WLAN-Nutzer (Stations) gleichzeitig mit dem WLAN-Netzwerk (AccessPoint) Verbindung aufnehmen. </p>"); 
       response->printf("<h2><a href='http://%s/'>Loksteuerung</a> &nbsp;&nbsp; <a href='http://%s/info'>weitere Informationen</a></h2>", WiFi.softAPIP().toString().c_str(), WiFi.softAPIP().toString().c_str());
       response->printf("<div><a href='http://%s/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>", WiFi.softAPIP().toString().c_str());      
-      response->printf("<p>Viel Spa&szlig; beim Ausprobieren, Jo</p><br>");
+      response->printf("<p>Viel Spa&szlig; beim Zugfahren und Ausprobieren! Jo</p><br>");
       response->printf("<p>Laufender c++/arduino <b><a href='/license.html'>Sketch</a></b> ist: </p>");
       response->printf("<p>%s</p>", SKETCH_INFO.c_str());
       response->printf("<p>%i WLAN-Nutzer <br>(Stations connected to Access Point)</p>", WiFi.softAPgetStationNum());
@@ -600,47 +613,98 @@ String client_message ="Bereit..."; //intial command message on index.html
 
 //Evaluate Websocket Message
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
-    AwsFrameInfo *info = (AwsFrameInfo*)arg;
-    if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-        Serial.println("+ WebSocket message received with following data in client_message: "); //echo received message for test and monitoring
-        data[len] = 0; // null termination for char data
-        client_message = (char*)data;
-        Serial.println(client_message); //echo received message for test and monitoring
-        //ws.textAll(client_message);   //echo websocket received message for test and debugging
-        
-        if (client_message[0]=='=' || client_message[0]=='+' || client_message[0]=='-' || client_message[0]=='0' || client_message[0]=='?' || client_message[0]=='<') {
-          CLIENT_COMMAND(client_message.c_str()); //compilation type problem solved by .c_str()       
-        }
-        else if (client_message[0]=='{') {
-          Serial.println("+ { at start of client_message indicates JSON syntax for interpretation in function INI_ACTION()" ); //echo received message for test and monitoring 
+  AwsFrameInfo *info = (AwsFrameInfo*)arg;
+  if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
+    Serial.println("+ WebSocket message received with following data in client_message: "); //echo received message for test and monitoring
+    data[len] = 0; // null termination for char data
+    client_message = (char*)data;
+    Serial.println(client_message); //echo received message for test and monitoring
+    //ws.textAll(client_message);   //echo websocket received message for test and debugging
+    
+    if (client_message[0]=='=' || client_message[0]=='+' || client_message[0]=='-' || client_message[0]=='0' || client_message[0]=='?' || client_message[0]=='<') {
+      CLIENT_COMMAND(client_message.c_str()); //compilation type problem solved by .c_str()       
+    }
+    else if (client_message[0]=='l') { //toggle speed indicator LED from speed.html
+      SpeedLED = !SpeedLED;
+      if (!SpeedLED) {
+        digitalWrite(greenLED, LOW);    // shut off LED, when indication is switched off 
+      }
+    }
+    else if (client_message[0]=='s' && client_message[1]=='1') { //speedsampling on from irsamplerecorder.html
+      SpeedSamplingOnOff = true;
+    }
+    else if (client_message[0]=='s' && client_message[1]=='0') { //speedsampling off from irsamplerecorder.html
+      SpeedSamplingOnOff = false;
+    }
+    else if (client_message[0]=='r' && client_message[1]=='1') { //irrecording on from irsamplerecorder.html
+      IRSampleRecording = true;
+    }
+    else if (client_message[0]=='r' && client_message[1]=='0') { //irrecording off from irsamplerecorder.html
+      IRSampleRecording = false;
+    }
+    else if (client_message[0]=='a' && client_message[1]=='1') { //IR average sample on from irsamplerecorder.html
+      IRAverageSample = true;
+    }
+    else if (client_message[0]=='a' && client_message[1]=='0') { //IR average sample off from irsamplerecorder.html
+      IRAverageSample = false;
+    }
+    else if (client_message[0]=='x' && client_message[1]=='1') { //IR average sample with skipping of min max values on from irsamplerecorder.html
+      IRSkipMinMax = true;
+    }
+    else if (client_message[0]=='x' && client_message[1]=='0') { //IR average sample with skipping of min max values off from irsamplerecorder.html
+      IRSkipMinMax = false;
+    }
+    else if (client_message[0]=='m' && client_message[1]=='1') { //Switch on Serial monitoring with Serial.print output in MonitorGlobalVariables on from irsamplerecorder.html
+      SerialMonitor = true;
+    }
+    else if (client_message[0]=='m' && client_message[1]=='0') { //Switch off Serial monitor for complete speed counting and preventing delay in main loop 
+      SerialMonitor = false;
+    }
+    else if (client_message[0]=='i' && client_message[1]=='r' && client_message[2]=='l' && client_message[3]=='=') { 
+      //adjust IRlow setting from irsamplerecorder.html, start reading client message at position [4] for new number in mV
+      IRlow = atoi(&client_message[4]);
+    }
+    else if (client_message[0]=='i' && client_message[1]=='r' && client_message[2]=='h' && client_message[3]=='=') { 
+      //adjust IRlow setting from irsamplerecorder.html, start reading client message at position [4] for new number in mV
+      IRhigh = atoi(&client_message[4]);
+    }
+    else if (client_message[0]=='z') { //zero speed counter
+      SpeedCount[0] = 0;
+      SpeedCount[1] = 0;
+      SpeedCountDifference[0] = 0;
+      SpeedCountDifference[1] = 0;
+      SpeedCounter  = 0;
+    }
+    else if (client_message[0]=='{') {
+      Serial.println("+ { at start of client_message indicates JSON syntax for interpretation in function INI_ACTION()" ); //echo received message for test and monitoring 
 //          AsyncResponseStream *response = request->beginResponseStream("application/javascript");
 //          response->printf("      window.alert(\'JSON client_message identified: %s\');  ", client_message.c_str());
 //          request->send(response);
-            INI_ACTION(data);
-        }
+        INI_ACTION(data);
+    }
 //          writeIni (&client_message.c_str());
-        
-        else if (client_message[0]=='#') {
-          Serial.println("+ sign '#' identified comment in client_message: ");
-          Serial.println(client_message);
-          Serial.println();
+    
+    else if (client_message[0]=='#') {
+      Serial.println("+ sign '#' identified comment in client_message: ");
+      Serial.println(client_message);
+      Serial.println();
 //          AsyncResponseStream *response = request->beginResponseStream("application/javascript");
 //          response->printf("      window.alert(\'comment with # character at start of client_message identified: %s\');  ", client_message.c_str());
 //          request->send(response);
-        }
-        else {
-          Serial.println("charcter at start of client_message not identified :" ); //echo received message for test and monitoring 
+    }
+    else {
+      Serial.println("charcter at start of client_message not identified :" ); //echo received message for test and monitoring 
 //          AsyncResponseStream *response = request->beginResponseStream("application/javascript");
 //          response->printf("      window.alert(\'character at start of client_message not identified: %s\');  ", client_message.c_str());
 //          request->send(response);
-        }       
-    }
+    }       
+  }
 }
 
 // manage action on .ini file
 void INI_ACTION(uint8_t *data) {
   String json_message = (char*)data;
-  const size_t capacity = JSON_OBJECT_SIZE(3) + json_message.length();
+  const size_t capacity = JSON_OBJECT_SIZE(3) + json_message.length() + 128;
   Serial.print("+ sizeof JSON message, capacity of jsondoc: ");  
   Serial.print(sizeof(json_message));   
   Serial.print(" : ");   
@@ -685,7 +749,7 @@ void INI_ACTION(uint8_t *data) {
     Serial.println(inipath);  
     Serial.print("+ restart program and load with new .ini file ...");
     delay (1000);
-    ESP.restart(); // LED flash indication at restart
+    ESP.restart(); // LED flash indication at restart   §§§§§§§§§§§§§§§§§§§§§§§§ not working properly
     return;
   }
 
@@ -720,7 +784,6 @@ void writeFile(fs::FS &fs, const char * path, const char * message){
 
 // Send WebSocket Message as JSON Document to all clients
 void notifyClients() {
-  Serial.print ("Notify clients! ");
   // Compute the capacity for the JSON document,
   // which is used to exchange status information 
   // and commands via WebSocket
@@ -735,10 +798,14 @@ void notifyClients() {
   else {
     TextStatus="Rückwärts &nbsp;";
   }
-  TextStatus = TextStatus + String(speed_level*5)+" km/h &nbsp;" + String(MotorPower, 1) + " Watt";
+  if(TextStatusSpeedSampling) { //TextStatus in case of #ifdef SpeedSampling
+    TextStatus = TextStatus + String(int(SpeedAtScale))+" km/h &nbsp;" + String(MotorPower, 1) + " Watt";
+  }
+  else { //TextStatus in case of !#ifdef Speedsampling
+    TextStatus = TextStatus + String(speed_level*5)+" km/h &nbsp;" + String(MotorPower, 1) + " Watt";
+  }
   json["status"] = TextStatus;
-  Serial.print(" speed_level: ");
-  Serial.print(speed_level);
+ 
   String TextSpeed ="";
   for (int i = 0;  i< speed_level/2; ++i) {
     if (speed_direction) {
@@ -748,16 +815,22 @@ void notifyClients() {
       TextSpeed =  TextSpeed + " <";
     }  
   }
-  Serial.print(" | TextSpeed: ");
-  Serial.print(TextSpeed);
+
   json["speed"] = TextSpeed;
   json["command"] = client_message; 
   char data[size];
   size_t len = serializeJson(json, data);
   ws.textAll(data, len);
-  Serial.print(" | WebSocket text to all:");
-  data[len] = 0;
-  Serial.println((char*)data);
+  if (SerialMonitor) {
+    Serial.print ("Notify clients! ");
+    Serial.print(" speed_level: ");
+    Serial.print(speed_level);
+    Serial.print(" | TextSpeed: ");
+    Serial.print(TextSpeed);
+    Serial.print(" | WebSocket text to all:");
+    data[len] = 0;
+    Serial.println((char*)data);    
+  }
 }
 
 // Adjust index.html variables at start or reload
@@ -857,29 +930,110 @@ void iniSetup() {
 
   //voltage settings, adjustment of default values by reading values from .ini
   if (ini.getValue("voltage", "supply", buffer, bufferLen)) {motor_voltage_supply = atof(buffer);}
-  else {Serial.println("note: .ino default voltage supply");}
+  else {Serial.print("= motor_voltage_supply: .ino default used= "); Serial.println(motor_voltage_supply);}
+  
   if (ini.getValue("voltage", "start", buffer, bufferLen)) {motor_voltage_start = atof(buffer);}
-  else {Serial.println("note: .ino default voltage start");}
+  else {Serial.print("= motor_voltage_start: .ino default used= "); Serial.println(motor_voltage_start);}
   speedoffset = 1- ((motor_voltage_supply - motor_voltage_start)/(max_speed_level - 1) * max_speed_level / motor_voltage_supply) ; 
+  
   // offset of pulse width modulation (PWM) for speed_level "0" as ratio of maximum pulse width, default 0.60 @ 9.5 V dc, 0.50 @ 10 Vdc, 0.30 @ 12Vdc, default 0.25 @ 16Vdc
+ 
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  //SpeedSampling parameter adjustment of default values by reading values from .ini
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  //float SpeedCountDistance = 0.18/24; //distance of one sleeper in meters/count, i.e. from one railway sleeper to the next, 
+  //center to center, e.g. 0.18 m = 180 mm length of one piece of track devided by 24 railway sleepers on Maerklin M straight track 5106
+  if (ini.getValue("speedsampling", "speedcountdistance", buffer, bufferLen)) {SpeedCountDistance = atof(buffer)/1000;}   //conversion /1000 from .ini file in mm/count to SpeedCountDistance m/count
+  else {Serial.print("= SpeedCountDistance: .ino default used= "); Serial.println(SpeedCountDistance);}
+  
+  //float Scale = 87; //model scale, Spur 1 = 32, H0 = 87, TT = 120, N = 160
+  if (ini.getValue("speedsampling", "scale", buffer, bufferLen)) {Scale = atof(buffer);}
+  else {Serial.print("= Scale: .ino default used= "); Serial.println(Scale);}
+  
+  //int IRlow = 500; //IR analog signal high level threshold in mV, choose value > 150 mV due to analogue input reading offset  
+  if (ini.getValue("speedsampling", "irlow", buffer, bufferLen)) {IRlow = int(atof(buffer)*1000);}   //conversion *1000 from .ini file in volts to IRlow in mV
+  else {Serial.print("= IRlow: .ino default voltage for speedsampling= "); Serial.println(IRlow);}
+  
+  //int IRhigh = 800; //IR analog signal high level threshold in mV
+  if (ini.getValue("speedsampling", "irhigh", buffer, bufferLen)) {IRhigh = int(atof(buffer)*1000);} //conversion *1000 from .ini file in volts to IRhigh in mV
+  else {Serial.print("= IRhigh: .ino default voltage for speedsampling= "); Serial.println(IRhigh);}
+  
+  //int MainLoopFrequency = 30000 Frequency for main LoopCount
+  if (ini.getValue("loopfrequency", "mainloop", buffer, bufferLen)) {MainLoopFrequency = atoi(buffer);}   
+  else {Serial.print("= MainLoopFrequency: .ino default used= "); Serial.println(MainLoopFrequency);}
+  
+  //int MonitorFrequency
+  if (ini.getValue("loopfrequency", "monitor", buffer, bufferLen)) {MonitorFrequency = atoi(buffer);}   
+  else {Serial.print("= MonitorFrequency: .ino default used for status, morse code and command sampling= "); Serial.println(MonitorFrequency);}
+    
+  if (ini.getValue("loopfrequency", "powersampling", buffer, bufferLen)) {
+    PowerSampleFrequency = atoi(buffer);
+    std::valarray<int> MotorVoltageArray(PowerSampleFrequency);
+    std::valarray<int> MotorCurrentArray(PowerSampleFrequency);
+  }   
+  else {Serial.print("= PowerSampleFrequency: .ino default used for power data sampling= "); Serial.println(PowerSampleFrequency);}  
+ 
+  if (ini.getValue("loopfrequency", "speedsampling", buffer, bufferLen)) {
+    SpeedSampleFrequency = atoi(buffer);
+    Serial.print("+ Set SpeedSampleFrequency from .ini file: MainLoopFrequency= ");
+    Serial.print(MainLoopFrequency);
+    Serial.print(" | samplefrequency= ");
+    Serial.print(atoi(buffer));
+    if (SpeedSampleFrequency == 0) { //prevent division by 0 in main loop, if 
+      Serial.println("- SpeedSampleFrequency = 0! Check lok.ini 'samplefrequency' settings! SpeedSampleFrequency set =1000; "); 
+      SpeedSampleFrequency=1000; 
+    } 
+  }   
+  else {Serial.print("= SpeedSampleFrequency: .ino default used for IR senosr speedsampling= "); Serial.println(SpeedSampleFrequency);}
+  
+  //int IRSampleAveraging = 3;  //attenuation of IR signal, ajust according to max. speed counting frequency
+  if (ini.getValue("speedsampling", "averaging", buffer, bufferLen)) {
+    IRSampleAveraging = atoi(buffer);
+    if (IRSampleAveraging >10) {IRSampleAveraging = 10;}  //maximum of 10 for IRSampleAveraging defined by sizeof(IRArray)
+    //volatile int IRArray[10]; //no redifinition of maximum needed   //maximum of 10 for IRSampleAveraging, but only those defined by IRSampleAveraging will be in use in Interrupt Function SpeedSamplingIRSensor()
+  }   
+  else {Serial.print("= IRSampleAveraging: .ino default used for spike avaraging during speedsampling= "); Serial.println(IRSampleAveraging);}
+  
+  //bool SpeedLED = true; for switching on/off speed LED indicator in case of railway sleeper detected by reflective IR sensor
+  if (ini.getValue("speedsampling", "speedled", buffer, bufferLen)) {SpeedLED = atoi(buffer);}  //1/0 switch for led indication at startup
+  else {Serial.print("= SpeedLED: .ino default setting for SpeedLED used for indication of speedsampling= ");Serial.println(SpeedLED);} 
 
   //speed adjustment, adjustment of default values by reading values from .ini
-  if (ini.getValue("speed", "adjustment_frequency", buffer, bufferLen)) {
-    speed_frequency = atoi(buffer);
-    Serial.print("+ .ini speed_frequency = ");
-    Serial.println(speed_frequency);
+  if (ini.getValue("loopfrequency", "speedadjustment", buffer, bufferLen)) {
+    SpeedAdjustmentFrequency = atoi(buffer);
+    Serial.print("+ .ini SpeedAdjustmentFrequency= ");
+    Serial.println(SpeedAdjustmentFrequency);
   }
-  else {Serial.println("note: .ino default speed adjustment frequency");}
-  speed_wait_loops = FLASH_FREQ / speed_frequency; // Number of loops for delay of next step of speed adjustment, default = ca. 0.5 seconds
+  else {Serial.print("= SpeedAdjustmentFrequency: .ino default used= "); Serial.println(SpeedAdjustmentFrequency);}
 
   // add reading pinout definition from .ini file belwo here ###################
 
-  Serial.println("+ end of .ini program setup");
+  SetupLoopCounts();
+  
+  Serial.println("+ end of .ini setup of program variables and main loop frequencies");
   Serial.println();
   ini.close(); // close .ini file after reading
 
 //end of iniSetup()
 #endif
+}
+void SetupLoopCounts() {
+  #ifdef SpeedSampling
+    if(SpeedSampleFrequency<1) {SpeedSampleFrequency=1;}  
+    SpeedSampleLoopCounts = int(MainLoopFrequency/SpeedSampleFrequency);
+    SpeedLEDLoopCounts    = int(SpeedSampleLoopCounts*IRSampleAveraging);
+  #endif
+  #ifdef PowerSampling
+    if(PowerSampleFrequency<1) {PowerSampleFrequency=1;}  
+    PowerSampleLoopCounts = int(MainLoopFrequency/PowerSampleFrequency);
+  #endif
+  if(MonitorFrequency<1) {MonitorFrequency=1;}  
+  MonitorLoopCounts       = int(MainLoopFrequency/MonitorFrequency);
+  MainLoopFrequencyDark   = int(MainLoopFrequency * 0.995);
+
+  if(SpeedAdjustmentFrequency<1) {SpeedAdjustmentFrequency=1;} 
+  speed_wait_loops = int (MonitorFrequency / SpeedAdjustmentFrequency); // Number of monitoring loops for delay of next step of speed adjustment, default = ca. 0.5 seconds       §§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -892,7 +1046,7 @@ void setup() {
 #ifdef ESP32 
   setCpuFrequencyMhz(80); //reduce CPU frequency for power saving
   Serial.begin(115200);   // Set up serial port.
-  delay(3000); //wait 3 seconds at startup in order to alliviate start-up brown-out cycle in case of power supply problems
+  delay(5000); //wait 3 seconds at startup in order to alliviate start-up brown-out cycle in case of power supply problems
   iniSetup();  //reading principal parameters from lok.ini file at start-up
 #endif
 
@@ -900,10 +1054,7 @@ void setup() {
 // SETUP check for brownout
 ////////////////////////////////////////////////////////////////////////////////
   
-  pinMode(input_switch, INPUT);  
- 
 #ifdef ESP32 
-
   // check for brownout or other startup reason
   esp_reset_reason_t reset_reason = esp_reset_reason();
   Serial.println();
@@ -945,19 +1096,30 @@ void setup() {
   pinMode(POWER_LED_PIN, OUTPUT);
   pinMode(redLED, OUTPUT);
   pinMode(greenLED, OUTPUT);
-  
-  digitalWrite(POWER_LED_PIN, LOW);
+  digitalWrite(POWER_LED_PIN, HIGH); // light power LED during startup
   digitalWrite(redLED, HIGH);
   digitalWrite(greenLED, HIGH);
-  for (int i = 0; i < reset_reason;i++) {
+    for (int i = 0; i < reset_reason;i++) { // flash green/blue LED according to reset reason during startup
     digitalWrite(greenLED, LOW);
     delay(480);
     digitalWrite(greenLED, HIGH);
     delay(20);
   }
 
+  // Set up ADC input and audio input.
+  pinMode(input_switch, INPUT);  //touch input for morse code signals and error handling
+  pinMode(motor_voltage, INPUT); //voltage on 1:11 split at output of step-up converter
+  pinMode(motor_current, INPUT); //voltage on 1 Ohm resistor in front of motor IC
+  pinMode(ir_sensor, INPUT);     //reflective infra red seonsor analog input with external pullup ca. 33 kOhm
+  pinMode(AUDIO_INPUT_PIN, INPUT);
+  pinMode(LIGHT_INPUT_PIN, INPUT);
+  analogReadResolution(ANALOG_READ_RESOLUTION); 
+  //analogReadAveraging(ANALOG_READ_AVERAGING);  //#####TODO test if adjustment to ESP analog input reading commands is functioning
+  //analogSetCycles(ANALOG_READ_AVERAGING);      //#####TODO test if adjustment to ESP analog input reading commands is functioning
+
   /*
-  //disable this section, when startup should speed up and not wait for user confirmation by touch input signal 
+  //Wait for user confirmation by touch input signal at startup
+  //disable this section, when startup should speed up 
   while (!(touchRead(input_switch) < input_switch_level)) { //wait for touch signal at startup in order to alliviate start-up brown-out cycle
     Serial.print("Waiting for startup signal at GPIO pin ");
     Serial.print(input_switch);
@@ -969,14 +1131,6 @@ void setup() {
     digitalWrite(greenLED, HIGH);
   }
   */
-
-  // Set up ADC and audio input.
-  pinMode(AUDIO_INPUT_PIN, INPUT);
-  pinMode(LIGHT_INPUT_PIN, INPUT);
-  pinMode(motor_current, INPUT);
-  analogReadResolution(ANALOG_READ_RESOLUTION); 
-  //analogReadAveraging(ANALOG_READ_AVERAGING);  //#####TODO test if adjustment to ESP analog input reading commands is functioning
-  //analogSetCycles(ANALOG_READ_AVERAGING);      //#####TODO test if adjustment to ESP analog input reading commands is functioning
 
 #else  //mP not definied, defualt for Teensy 4.0
   // Set up serial port.
@@ -995,7 +1149,6 @@ void setup() {
   pinMode(LIGHT_INPUT_PIN, INPUT);
   analogReadResolution(ANALOG_READ_RESOLUTION);
   analogReadAveraging(ANALOG_READ_AVERAGING);
-  
 #endif
 
 #if defined(ESP32) && defined(TLE5206) //motor IC, TLE5206 is using only 2 input signals but offers an error flag output
@@ -1139,10 +1292,12 @@ void setup() {
       response->printf("<p> </p>");   
       response->printf("<table style=\"width:100%%\">");
       response->printf("<tr><th>LED ANZEIGEN</th></tr>"); 
-      response->printf("<tr><td>Programm&shy;schleife l&auml;uft</td>  <td>Oranger Blitz etwa alle 2 Skunden nach</td></tr>"); 
-      response->printf("<tr><td> </td>  <td>%i Hauptprogrammschleifen</td></tr>", FLASH_FREQ);  
-      response->printf("<tr><td> </td>  <td>%i mal Steuerbefehle beobachten</td></tr>", FLASH_FREQ/MONITOR_FREQ);
-      response->printf("<tr><td> </td>  <td>bis zu %i mal Geschwindigkeit anpassen</td></tr>", FLASH_FREQ/speed_wait_loops);       
+      response->printf("<tr><td>Programm&shy;schleife l&auml;uft</td>  <td>Oranger Blitz alle %.2f Sekunden nach</td></tr>", MainLoopFrequencySeconds); 
+      response->printf("<tr><td> </td>  <td>%i Hauptprogrammschleifen</td></tr>", MainLoopFrequency);  
+      response->printf("<tr><td> </td>  <td>%i mal Steuerbefehle beobachten</td></tr>", MonitorFrequency);
+      response->printf("<tr><td> </td>  <td>bis zu %i mal Geschwindigkeit anpassen</td></tr>", MonitorFrequency / speed_wait_loops); //=SpeedAdjustmentFrequency
+      response->printf("<tr><td>St&ouml;rung</td>  <td>rote und blaue LED schnelles Blinken, wenn die Ver&shy;sorg&shy;ungs&shy;span&shy;nung nicht aufrecht gehalten werden kann, Fehler am Motor-IC</td></tr>");
+      response->printf("<tr><td> </td>  <td>rote und blaue LED unterbrochen, warte auf Freigabe nach St&ouml;rung durch Ber&uuml;hren des TOUCH4-Kontakts am Pin D13</td></tr>");
       response->printf("<tr><td>Info zur Richtung</td>  <td>blaue LED = vorw&auml;rts = 1</td></tr>"); 
       response->printf("<tr><td> </td>  <td>rote LED = r&uuml;ckw&auml;rts = 0</td></tr>"); 
       response->printf("<tr><td>Info zur Geschwin&shy;digkeit</td>  <td>0 bis 16 kurze LED-Blitze</td></tr>");
@@ -1156,14 +1311,13 @@ void setup() {
       response->printf("<tr><td> </td>  <td>blaue LED = aktives Tonsignal, wenn Signal&shy;str&auml;rke der gemitttelten FFTs im Frequenz&shy;fenster > THRESHOLD2</td></tr>");    
       response->printf("</table>");     
       response->printf("<p> </p>"); 
-      response->printf("<h2><a href='/power.html'>Leistungsaufnahme des Lokmotors</a></h2>");     
+      response->printf("<h2><a href='/power.html'>Leistungsaufnahme des Lokmotors</a></h2>");  
+      response->printf("<h2><a href='/speed.html'>Geschwindigkeit der Lokomotive</a></h2>");    
       response->printf("<h2><a href='/monitor'>Info zu Programmvariablen</a></h2>");
       response->printf("<p> </p>");
-      //response->printf("<h2><a href='http://%s'>Loksteuerung</a></h2>", WiFi.softAPIP().toString().c_str());
       response->printf("<div><a href='/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:95%%'></a></div>");
       response->print("</body></html>");
       request->send(response);
-      //request->send(SPIFFS, "/lok.png", "image/png");
   });
 
   // Route to load status info and instruction
@@ -1200,11 +1354,15 @@ void setup() {
       response->printf("<p>%s</p>", SKETCH_INFO.c_str());
       response->printf("<p>%i WLAN-Nutzer (Stations connected to Access Point)</p>", WiFi.softAPgetStationNum());
       response->printf("<p> </p>"); 
+      response->printf("<h2><a href='/monitor'>Aktualisieren: Sende '?'</a></h2>");
       response->printf("<table style=\"width:100%%\">");    
       response->printf("<tr><th>Hauptprogramm</th></tr>"); 
-      response->printf("<tr><td>Programmschleife</td>  <td>%i von %i</td></tr>", LOOP_COUNT, FLASH_FREQ);  
-      response->printf("<tr><td>Geschwindigkeit</td>  <td>Sturfe %i, Richtung %i, %s</td></tr>", speed_level, speed_direction, speed_direction ? "vorw&auml;rts" : "r&uuml;ckw&auml;rts");   
-      response->printf("<tr><td>Geschwindigkeit</td>  <td>"); 
+      response->printf("<tr><td>Programmschleife</td>    <td>%i von %i</td></tr>", LoopCount, MainLoopFrequency);  
+      response->printf("<tr><td>Geschw. messen</td>      <td>%i von %i</td></tr>", int((IRSampleCount[0]-IRSampleCount[1]) * LoopCount / MainLoopFrequency), int(IRSampleCount[0]-IRSampleCount[1]));  //int(LoopCount/SpeedSampleLoopCounts), SpeedSampleFrequency);       
+      response->printf("<tr><td>Leistung messen</td>     <td>%i von %i</td></tr>", int(LoopCount/PowerSampleLoopCounts), PowerSampleFrequency);   
+      response->printf("<tr><td>Status, Steuerung</td >  <td>%i von %i</td></tr>", int(LoopCount/MonitorLoopCounts), MonitorFrequency);  
+      response->printf("<tr><td>Geschwindigkeit</td>     <td>Sturfe %i, Richtung %i, %s</td></tr>", speed_level, speed_direction, speed_direction ? "vorw&auml;rts" : "r&uuml;ckw&auml;rts");   
+      response->printf("<tr><td>Geschwindigkeit</td>     <td>"); 
         for (int i = 1; i <= max_speed_level; ++i) {
           if (i <= speed_level) {
             if (speed_direction) {
@@ -1220,6 +1378,13 @@ void setup() {
         }    
       response->printf("</td></tr>"); 
       response->printf("<tr><td>Fahrbefehl</td>  <td>%s</td></tr>",speed_command.c_str()); 
+      #ifdef SpeedSampling
+        response->printf("<tr><td>IR-Sensor f&uuml;r Geschwind&shy;ig&shy;keits&shy;messung erfassen</td> <td>%i</td></tr>",SpeedSamplingOnOff);  
+        response->printf("<tr><td>IR-Rekorder f&uuml;r Mess&shy;wert&shy;anzeige</td> <td>%i</td></tr>",IRSampleRecording);  
+        response->printf("<tr><td>IR-Mittelwert bilden</td>    <td>%i</td></tr>", IRAverageSample*IRSampleAveraging);  
+        response->printf("<tr><td>   ohne Min-Max-Werte</td>   <td>%i</td></tr>", IRSkipMinMax*(-2));  
+        response->printf("<tr><td>Ausgaben f&uuml; serielles Monitoring</td>    <td>%i</td></tr>", SerialMonitor);                   
+      #endif
       #ifdef ESP32
         response->printf("<tr><td>ESP32 PIN f&uuml;r den Ber&uuml;hr&shy;ungs&shy;sensor</td>    <td>%i</td></tr>",input_switch);  
         response->printf("<tr><td>Ber&uuml;hrungssensor Eingabewert</td>    <td>%i</td></tr>",touchRead(input_switch));
@@ -1235,22 +1400,23 @@ void setup() {
        response->printf("<tr><td>Motorstatus</td>  <td>%s</td></tr>",motor_ok ? "ok" : "!!! ST&Ouml;RUNG am MotorIC !!! Elektrische oder mechanische St&ouml;rung beseitigen und danach erneut freigeben?");
       #endif   
       response->printf("<tr><td>Tonsignal</td>  <td>%s</td></tr>",tone_signal ? "aktiv" : "nicht aktiv");
-      response->printf("<tr><td>Ton-Programm-z&auml;hler </td>  <td>%i</td></tr>",TONE_LOOP_COUNT); 
-      TONE_LOOP_COUNT =0; 
+      response->printf("<tr><td>Ton-Programm-z&auml;hler </td>  <td>%i</td></tr>",TONE_LoopCount); 
+      TONE_LoopCount =0; 
       response->printf("<tr><td>Ton-Aktivit&auml;ts-z&auml;hler </td>  <td>%i</td></tr>",TONE_ACTIVE_COUNT); 
       TONE_ACTIVE_COUNT =0;  
       response->printf("</table>");     
-      response->printf("<p> </p>");      
-      response->printf("<h2><a href='/monitor'>Aktualisieren: Sende '?'</a></h2>");
+      response->printf("<p> </p>");
+      response->printf("<h2><a href='/info'>Infos zur Loksteuerung</a></h2>");      
       response->printf("<h2><a href='/lok.ini'>Programmeinstellung: lok.ini</a></h2>");
       response->printf("<h2><a href='/power.html'>Leistungsaufnahme des Lokmotors</a></h2>");
+      response->printf("<h2><a href='/speed.html'>Geschwindigkeit der Lokomotive</a></h2>");
+      response->printf("<h2><a href='/irsamplerecord.html'>IR-Datenrekorder</a></h2>");   
       response->printf("<div><a href='/'><img src=\"/lok.png\" alt='Loksteuerung' style='width:100%%'></a></div>");
       response->printf("<p> </p>");      
       response->printf("<p><a href='/ini.html' style=\"color: gray; font-size: 1.0rem;\">Programmeinstellungen in lok.ini anpassen</a></p>");
       response->printf("<p> </p>");
       response->print("</body></html>");
       request->send(response);
-      request->send(SPIFFS, "/lok.png", "image/png");
   });
 
   // Route to load status info and instruction
@@ -1353,7 +1519,6 @@ void setup() {
       response->printf("meist durch ein erneutes Laden behoben werden. Hierzu einfach den <b>Reload-Knopf im Browser</b> nutzen.</p> ");
       response->printf("</body></html>");  
       request->send(response);
-      request->send(SPIFFS, "/lok.png", "image/png");
   });
 
   // display fileindex of ESP32 SPIFFS, equal to ESP32 sketch data folder upload
@@ -1404,7 +1569,6 @@ void setup() {
 
   // Route to serve speed and power data
   server.on("/powerdata", HTTP_GET, [](AsyncWebServerRequest *request){
-    Serial.print ("Send power data! ");
     // Compute the capacity for the JSON document,
     // which is used to exchange status information 
     // and commands via WebSocket
@@ -1424,14 +1588,116 @@ void setup() {
     json["power"]   = MotorPower;          //in W
     char data[size];
     size_t len = serializeJson(json, data);
-    //ws.textAll(data, len);
     request->send(200, "text/plain", data);  //reply to get requrest instead of websocket  
-    Serial.print(" | WebSocket power data to all:");
-    data[len] = 0;
-    Serial.println((char*)data);
+    if (SerialMonitor) {
+      Serial.print ("Send power data! ");
+      Serial.print(" | Reply to Get /powerdata:");
+      data[len] = 0;
+      Serial.println((char*)data);
+    }
   });
-  
+#endif
 
+#ifdef SpeedSampling
+    // Route to serve speed and power data
+  server.on("/speeddata", HTTP_GET, [](AsyncWebServerRequest *request){
+    Serial.print ("Send speed data! ");
+    // Compute the capacity for the JSON document,
+    // which is used to exchange status information 
+    // and commands via WebSocket
+    // adjust according to members in JSON document, 
+    // see https://arduinojson.org/v6/assistant/
+    const uint8_t size = 248; //JSON_OBJECT_SIZE(12);
+    StaticJsonDocument<size> json;
+    json["speed"]        = speed_level;         //0 to 32
+    if (speed_level > 0) {
+      json["pwm"]        = ((float(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)*100 ; //in % 
+    }
+    else {
+      json["pwm"]        = 0;
+    }
+    json["voltage"]      = MotorVoltageAverage; //in mV
+    json["current"]      = MotorCurrentAverage; //in mA
+    json["power"]        = MotorPower;          //in W
+    json["count"]        = SpeedCount[0];       //railway sleeper counts
+    json["iravg"]        = IRAverage;           //in mV
+    json["distance"]     = float(SpeedCount[0])*SpeedCountDistance; //in m
+    json["speedmeasure"] = Speed;               //measured speed m/s
+    json["speedscale"]   = SpeedAtScale;        //measured speed converted to scale in km/h
+    
+    json["speedled"]     = int(SpeedLED);       //indicate SleeperDetected at green/blue LED
+    json["irlow"]        = IRlow;               //ir_low_level, no sleeper detected in mV
+    json["irhigh"]       = IRhigh;              //ir_high_level, sleeper detected in mV
+    
+    char data[size];
+    size_t len = serializeJson(json, data);
+    request->send(200, "text/plain", data);  //reply to get requrest instead of websocket  
+    if (SerialMonitor) {
+      Serial.print(" | Reply to Get /speeddata:");
+      data[len] = 0;
+      Serial.println((char*)data);
+    }
+  });  
+
+  server.on("/irsamplerecord", HTTP_GET, [](AsyncWebServerRequest *request){
+    // Compute the capacity for the JSON document,
+    // which is used to exchange status information 
+    // and commands via WebSocket
+    // adjust according to members in JSON document, 
+    // see https://arduinojson.org/v6/assistant/
+/*
+    int json2size = 300; //JSON_OBJECT_SIZE(16);
+    if (IRSampleRecording) {
+      json2size= 10000;  //JSON_OBJECT_SIZE(16);  JSON_ARRAY_SIZE(500)
+    }
+*/ 
+    const size_t size= 10000; 
+    DynamicJsonDocument json2(size);
+    json2["speedsampling"]     = int(SpeedSamplingOnOff);// SpeedSampling active =1, deactivated =0
+    json2["irsamplerecording"] = int(IRSampleRecording); // IRSampleRecording active =1, deactivated =0
+    json2["iraveragesample"]   = int(IRAverageSample);   // IRAverageSample   active =1, deactivated =0
+    json2["irskipminmax"]      = int(IRSkipMinMax);      // IRSkipMinMax      active =1, deactivated =0
+    json2["serialmonitor"]     = int(SerialMonitor);     // SerialMonitring   active =1, deactivated =0   
+    json2["irlow"]             = IRlow;                  //ir_low_level, no sleeper detected in mV
+    json2["irhigh"]            = IRhigh;                 //ir_high_level, sleeper detected in mV
+    
+    json2["irsamplefreq"]      = int(int(IRSampleCount[0]-IRSampleCount[1])/MainLoopFrequencySeconds);  //ir sample frequency in Hz
+    json2["count"]             = SpeedCount[0];       //railway sleeper counts
+    json2["iravg"]             = IRAverage;           //in mV
+    json2["distance"]          = float(SpeedCount[0])*SpeedCountDistance; //in m
+    json2["speedmeasure"]      = Speed;               //measured speed m/s
+    json2["speedscale"]        = SpeedAtScale;        //measured speed converted to scale in km/h
+    
+    json2["total"]             = SpeedCountTotal;     //int
+    json2["totaldistance"]     = float(SpeedCountTotal)*SpeedCountDistance; //in m  
+    json2["lasttotal"]         = SpeedCountLastTotal; //int    
+    json2["lastseconds"]       = SpeedCountLastSeconds; //float   
+    json2["lastdistance"]      = float(SpeedCountLastTotal)*SpeedCountDistance; //in m    
+    json2["lastspeed"]         = LastSpeed;           //float m/s
+    json2["lastspeedatscale"]  = LastSpeedAtScale; //float in km/h at model scale
+
+    if (IRSampleRecording) {
+      JsonArray IRSampleArray = json2.createNestedArray("irsamplerecord");
+      for (int i = (LoopCount % (500)); i < 500; i++) {
+        IRSampleArray.add(IRSampleRecord[i]);     //second older half of array of raw or averaged IR sample values after linear adjustment
+      }
+      for (int i = 0; i < (LoopCount % (500)); i++) {
+        IRSampleArray.add(IRSampleRecord[i]);     //first new half of array of raw or averaged IR sample values after linear adjustment
+      }
+    }
+    char data[size];
+    size_t len = serializeJson(json2, data);
+    request->send(200, "text/plain", data);  //reply to get requrest instead of websocket  
+    if(SerialMonitor) {
+      Serial.print ("+Switch to send IR sample recording! ");
+      Serial.print(" | Reply to Get /irsamplerecordingon with json data:");
+      data[len] = 0;
+      Serial.println((char*)data);          
+    }
+  });  
+#endif
+
+#ifdef ESP32
   // Serve files in directory "/data/" when request url starts with "/"
   // Request to the root or none existing files will try to server the defualt
   // file name "index.htm" if exists
@@ -1452,23 +1718,119 @@ void setup() {
 
   // Start server
   server.begin();
+#endif
 
+#ifdef SpeedSampling
+  //v236, setup parallel task for SpeedSamplingIRSensor analog readings attached to core0
+  xTaskCreatePinnedToCore(
+      SpeedSamplingIRSensor,          // Function to implement the analogRead task on core 0 
+      "SpeedSamplinigSetupInterrupt", // Name of the task
+      1024,                           // Stack size in words, minimum 1024, ca. 680 byte effectively used, 344 unused, see uxTaskGetStackHighWaterMark(SpeedSampleIRSensorTaskHandle)
+      NULL,                           // Task input parameter
+      0,                              // Priority of the task
+      &SpeedSampleIRSensorTaskHandle, // Task handle
+      0);                             // Core where the task should run
 #endif
 
   //finish startup
   digitalWrite(greenLED, LOW);
   digitalWrite(redLED, LOW);
   delay(500);
-  Serial.print("Startup ");
+  Serial.print("+ Startup ");
   Serial.println(SKETCH_INFO);
+  Serial.print("+ Reset reason code= ");
+  Serial.println(reset_reason);
+  Serial.print("+ Monitoring frequency= ");
+  Serial.println(MonitorFrequency);
+  Serial.println("+ Startup finished, start running main loop....");
   Serial.println();
-  for (int i = 0; i < reset_reason;i++) {
-    digitalWrite(greenLED, HIGH);
-    delay(20);
-    digitalWrite(greenLED, LOW);
-    delay(480);
+}
+//end of setup() function
+
+#ifdef SpeedSampling
+// Sampling IR signal for detecting railway sleepers from ADC1_Ch3 = GPIO pin 39, transient voltage between low and medium high level = ca. 2500 mV 
+// implemented as of v232: running as parallel task on core0 with one tick delay, https://randomnerdtutorials.com/esp32-dual-core-arduino-ide/, 
+// https://www.digikey.de/en/maker/projects/introduction-to-rtos-solution-to-part-12-multicore-systems/369936f5671d4207a2c954c0637e7d50
+
+void SpeedSamplingIRSensor( void * pvParameters ) {  // Task SpeedSamplingIRSensor running on core0
+  //Serial.print("+ SpeedSamplingIRSensor: "); 
+  IRSampleCounter=0;
+  for(;;) { 
+    // feed watchdogtimer on core0; https://forum.arduino.cc/t/esp32-a-better-way-than-vtaskdelay-to-get-around-watchdog-crash/596889/13
+    TIMERG0.wdt_wprotect=TIMG_WDT_WKEY_VALUE; // write enable
+    TIMERG0.wdt_feed=1;                       // feed WDT
+    TIMERG0.wdt_wprotect=0;                   // write protect
+
+    if (SpeedSamplingOnOff) {
+      if(IRAverageSample) { //averaged IR signal for SleeperDetection  
+        IRArrayPointer++;
+        if (IRArrayPointer >= IRSampleAveraging) {IRArrayPointer =0;}
+        portENTER_CRITICAL_ISR(&analogReadMux); //prevent TimerInterrupt conflict with other analogReadings
+        IRArray[IRArrayPointer] = int(analogRead(ir_sensor)*0.816 +143); //approximate conversion to mV, parameterised 12.5.2021
+        portEXIT_CRITICAL_ISR(&analogReadMux);
+        if(IRSampleCounter>4000000000) {IRSampleCounter=0;} //overflow portection
+        IRSampleCounter++;
+  
+        if(IRSkipMinMax) {
+          //v241, determine and skip min max values from average
+          IRAverage = 0;
+          int max_v=0;    //mV
+          int min_v=3300; //mV 
+          for (int i=0; i<IRSampleAveraging; i++) {
+            if (IRArray[i]<min_v) {min_v = IRArray[i];}
+            if (IRArray[i]>max_v) {max_v = IRArray[i];}    
+            IRAverage = IRAverage + IRArray[i];
+          }
+          IRAverage -= min_v; //skip min
+          IRAverage -= max_v; //skip max
+          IRAverage = int(IRAverage/(IRSampleAveraging-2));  //skip min and max means sample number-2
+        }
+        else {
+          //v216 to v239, normal arithmetic mean averageing of all IR samples 
+          IRAverage = 0;
+          for (int i=0; i<IRSampleAveraging; i++) {
+            IRAverage = IRAverage + IRArray[i];
+          }
+          IRAverage = int(IRAverage/IRSampleAveraging);
+        }
+  
+        //assess IR average for detection of railway sleepters      
+        if (IRAverage < IRlow) {      //below low level threshold
+          if (SleeperDetected) {      //falling edge IR signal detected
+            SleeperDetected = false;  // reset status
+          }
+        }   
+        else if (IRAverage > IRhigh) {// above high level threshold detected
+           if (!SleeperDetected) {    // rising edge IR signal detected
+             SleeperDetected = true;  // set status
+             ++SpeedCounter;          // increase counter +1
+          }
+        }   
+      }
+      else { //use individual IR signal for SleeperDetection, no shift of Valarray IRArray requierd 
+        portENTER_CRITICAL_ISR(&analogReadMux); //prevent TimerInterrupt conflict with other analogReadings    
+        IRArray[0] = int(analogRead(ir_sensor)*0.816 +143); //approximate conversion to mV, parameterised 12.5.2021    
+        IRSampleCounter++;
+        portEXIT_CRITICAL_ISR(&analogReadMux);   
+  
+        //assess IR individual sample for detection of railway sleepters     
+        if (IRArray[0] < IRlow) {      //below low level threshold
+          if (SleeperDetected) {       //falling edge IR signal detected
+            SleeperDetected = false;   // reset status
+          }
+        }   
+        else if (IRArray[0] > IRhigh) {// above high level threshold detected
+           if (!SleeperDetected) {     // rising edge IR signal detected
+             SleeperDetected = true;   // set status
+             ++SpeedCounter;           // increase counter +1
+          }
+        }
+      }
+    }
+    else {delay(100);} //empty loop in case SpeedSamplingOnOff is false
   }
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1478,94 +1840,118 @@ void setup() {
 
 void loop() {
 
-#ifdef ESP32  
-  // DNS Server and WebSocket management
-  dnsServer.processNextRequest();
-  ws.cleanupClients();
-#endif
-  
   // Indicate void loop i.e. program is running by frequent flashes
-  ++LOOP_COUNT;
-  if (LOOP_COUNT == FLASH_FREQ_DARK) {
-    digitalWrite(POWER_LED_PIN, HIGH);
+  ++LoopCount;
+  if (LoopCount == MainLoopFrequencyDark) {
+    digitalWrite(POWER_LED_PIN, HIGH);  //light power LED after dark phase of main loop
   }
-  if (LOOP_COUNT >= FLASH_FREQ) {
-    digitalWrite(POWER_LED_PIN, LOW);
-    monitor_global_variables();
-    LOOP_COUNT = 0;
-  }
+  if (LoopCount >= MainLoopFrequency) {
+    digitalWrite(POWER_LED_PIN, LOW);   //shut off power LED at end of main loop
 
-#ifdef ToneSampling
-  //###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
-  // Calculate FFT if a full sample is available.
-  if (samplingIsDone()) {
-    // Run FFT on sample data.
+    Timestamp = Timestamp.shift(-1); 
+    Timestamp[0] = millis(); //add current time reference as timestamp
+    MainLoopFrequencySeconds = float(Timestamp[0]-Timestamp[1]) /1000; 
+
+    #ifdef SpeedSampling
+    if (SpeedSamplingOnOff) {
+      SpeedCalculation();  
+    }
+    #endif
     
-    arm_cfft_radix4_instance_f32 fft_inst;
-    arm_cfft_radix4_init_f32(&fft_inst, FFT_SIZE, 0, 1);
-    arm_cfft_radix4_f32(&fft_inst, samples);
-    // Calculate magnitude of complex numbers output by the FFT.
-    arm_cmplx_mag_f32(samples, magnitudes, FFT_SIZE);
-    
-    
-    // Detect tone sequence.
-    toneLoop();
-
-    // Restart audio sampling.
-    samplingBegin();
-  }
-#endif
-
-  // Parse any pending commands.
-  parserLoop();
-
-  if (LOOP_COUNT % MONITOR_FREQ == 0) {
-
-    #if defined(ESP32) && defined(TLE5206) //motor IC TLE5206 offers a comprehensive error flag output
-      if (!digitalRead(error_motoric)) {   //TLE5206 error indicated if error_motoric = LOW
-        motor_set(0);                      //emergency break
-        speed_level = 0;
-        motor_ok =0;
-        IndicateMotorError();
-      }
+    #ifdef PowerSampling
+      PowerCalculation();
     #endif
 
+    notifyClients(); //send program status incl. statusText with powerdata and speeddata 
+    if (SerialMonitor) {
+      parserLoop(); // Parse any pending commands from serial port
+      monitor_global_variables(); //Serial print of program variables  
+    }
+    
+    LoopCount = 0;
+  }
+
 ////////////////////////////////////////////////////////////////////////////////
-// MAIN LOOP - MotorPowerSampling
-////////////////////////////////////////////////////////////////////////////////
-    #ifdef MotorPowerSampling
-      if (LOOP_COUNT % (10*MONITOR_FREQ) == 0) {
-        MotorPowerLoop();        
-      }
-      if (LOOP_COUNT % (200*MONITOR_FREQ) == 0) {
-        Serial.print("MotorPowerSampling: motor voltage (mV) = ");
-        Serial.print(MotorVoltageAverage); 
-        if (MotorVoltageAverage < 3000) {
-          MotorVoltageAverage = motor_voltage_supply*1000; // replace missing Motor voltage analog reading by preset motor_voltage_supply value from .ini reading
-        Serial.print(" | missing analog reading replaced by preset value motor_voltage_supply (V) = ");
-        Serial.print(MotorVoltageAverage); 
+// MAIN LOOP - SpeedSampling 
+////////////////////////////////////////////////////////////////////////////////         
+  //if (LoopCount % (SpeedSampleLoopCounts) == 0) {  //disabled for similar frequency as core0 SpeedSamplingIRSensor task and fastest response of IR-Recorder
+    
+    #ifdef SpeedSampling
+    if (SpeedSamplingOnOff) {
+      //SpeedSamplingIRSensor(); //deactivated, as SpeedSamplingIRSensor() is running in parallel task on core0 as of v233 and after or alternatively triggerd by ESP32 TimerInterrupt in version v222 to v231, see end of setup loop
+      if (IRSampleRecording) {
+        // devide LoopCount to streches of 500 data points
+        if(!IRAverageSample) { //raw IR signal for sample record
+          IRSampleRecord[LoopCount % (500)] = IRArray[0]; //copy individual IR sample value from parallel task readings to recorder
         }
-        Serial.print(" | motor current (mA) = ");
-        Serial.print(MotorCurrentAverage); 
-        MotorPower = float(MotorCurrentAverage)/1000*(motor_voltage_supply-float(MotorCurrentAverage)/1000);  //accounting voltage drop at 1 Ohm measuring resistor
-        Serial.print(" | motor power (W) = ");
-        Serial.print(String(MotorPower, 1));  
-        Serial.print(" | ");       
-        notifyClients(); 
-      }      
-    #endif
+        else {  // use averaged IR signal for sample record
+          IRSampleRecord[LoopCount % (500)] = IRAverage; //copy averaged IR samples value from parallel task readings to recorder
+        }
+      }
+    }
+    #endif 
+
+  //}
+
+////////////////////////////////////////////////////////////////////////////////
+// MAIN LOOP - PowerSampling - Monitoring
+////////////////////////////////////////////////////////////////////////////////
+  #ifdef PowerSampling 
+    if (LoopCount % (PowerSampleLoopCounts) == 0) { 
+      MotorVoltagCurrentSampling();     
+  #endif
+  
+      if (LoopCount % MonitorLoopCounts == 0) {
+        #if defined(ESP32) && defined(TLE5206) //motor IC TLE5206 offers a comprehensive error flag output
+          if (!digitalRead(error_motoric)) {   //TLE5206 error indicated if error_motoric = LOW
+            motor_set(0);                      //emergency break
+            speed_level = 0;
+            motor_ok =0;
+            IndicateMotorError();
+          }
+        #endif   
+        #ifdef SpeedSampling
+          if(SpeedLED){
+            digitalWrite(greenLED, SleeperDetected);    // indicate detection of railway sleeper, when activated in /speed.html           
+          }
+        #endif
+        // evaluate manual switch digital reading (or any alternative digital HIGH/LOW signal) for MorseCode
+        MorseCodeDecoder();
     
-    // evaluate manual switch digital reading (or any alternative digital HIGH/LOW signal) for MorseCode
-    MorseCodeDecoder();
-  }
+        // use speed_command information 1. for motor speed adjustment and 2. for motor PWM setting
+        if (!speed_command.equals("")) {
+            //Serial.print("Speed_command_received. Speed_wait_countdown = "); //### for Serial monitoring ###
+            //Serial.println(speed_wait_countdown);                            //### for Serial monitoring ###
+            if (speed_wait_countdown <= 0) {   
+              adjustSpeed();
+            }
+          --speed_wait_countdown;
+        }
+      } // end of monitoring loop 
+       
+  #ifdef PowerSampling 
+    } // end of PowerSampling loop     
+  #endif
+ 
+////////////////////////////////////////////////////////////////////////////////
+// MAIN LOOP - Monitoring - ToneSampling
+////////////////////////////////////////////////////////////////////////////////  
+  #ifdef ToneSampling
+    //###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
+    // Calculate FFT if a full sample is available.
+    if (samplingIsDone()) {
+      // Run FFT on sample data.
+      arm_cfft_radix4_instance_f32 fft_inst;
+      arm_cfft_radix4_init_f32(&fft_inst, FFT_SIZE, 0, 1);
+      arm_cfft_radix4_f32(&fft_inst, samples);
+      // Calculate magnitude of complex numbers output by the FFT.
+      arm_cmplx_mag_f32(samples, magnitudes, FFT_SIZE);
+      toneLoop(); // Detect tone sequence.
+      samplingBegin(); // Restart audio sampling.
+    }
+  #endif    
 
-  // use speed_command information for motor 1. speed adjustment and 2. motor PWM setting
-  if (!speed_command.equals("")) {
-    adjustSpeed();
-  }
-
-  // end of main loop
-}
+} // end of main loop
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1573,41 +1959,73 @@ void loop() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef MotorPowerSampling
+#ifdef SpeedSampling
+
+  void SpeedCalculation() {
+    //save current values as reference values for next evaluation of the differential
+    IRSampleCount = IRSampleCount.shift(-1); 
+    IRSampleCount[0]=IRSampleCounter;
+    SpeedCount = SpeedCount.shift(-1); 
+    SpeedCountDifference = SpeedCountDifference.shift(-1); 
+    SpeedCount[0]=SpeedCounter;
+    SpeedCountDifference[0]=int(SpeedCount[0]-SpeedCount[1]);
+    Speed = float(SpeedCountDifference[0]) * SpeedCountDistance / MainLoopFrequencySeconds;  
+    SpeedAtScale = Speed*Scale*3600/1000; // conversion from m/s to scale m/s to scale km/h  
+    
+    //IRSampleRecording commands for SpeedCounting
+    SpeedCountTotal = SpeedCountTotal + SpeedCount[0]-SpeedCount[1]; 
+    if (RoundMarkerDetected) {
+      if (SpeedCountDifference[0] > SpeedCountDifference[1]) {RoundMarkerDetected = false;}
+    }
+    else {
+      // no speed, very low speed < 50% compared to previous interval or long white/reflective stripe on rail
+      if (2*SpeedCountDifference[0] < SpeedCountDifference[1]) {
+        if (SerialMonitor) {Serial.println("Indication of RoundMarker found!");}
+        RoundMarkerDetected = true;  
+        SpeedCountLastTotal = SpeedCountTotal;
+        SpeedCountTotal = 0;
+        SpeedCountLastSeconds = float(millis() - SpeedCountStartMilli)/1000; //convert last record in millis to seconds
+        SpeedCountStartMilli = millis();
+        LastSpeed = SpeedCountLastTotal * SpeedCountDistance / SpeedCountLastSeconds; //calculate speed of last record
+        LastSpeedAtScale = LastSpeed*Scale*3600/1000; // conversion from m/s to scale m/s to scale km/h 
+      }
+    }
+  } //end of SpeedCalculation  
+#endif
+
+#ifdef PowerSampling
 // Sampling motor current from ADC1_Ch7 = GPIO pin 35 as voltage at 1 Ohm resistor in grounding to motor IC
-  void MotorPowerLoop() {
+  void MotorVoltagCurrentSampling() {
     MotorVoltageArray = MotorVoltageArray.shift(-1);
-    MotorCurrentArray = MotorCurrentArray.shift(-1);
-    
-    int MotorVoltageRead     = analogRead(motor_voltage); 
-    MotorVoltageArray[0]     = int(sq((float(MotorVoltageRead) * MotorVoltageSlope + MotorVoltageOffset)/10)); //devision by 10 in order to fit MotorVoltageArray.sum in integer range      
-    MotorVoltageAverage      = 10 * int(sqrt(MotorVoltageArray.sum()/MotorVoltageArray.size()) ); //True-RMS calculation, multiply by 10 for original value  
-    
+    MotorCurrentArray = MotorCurrentArray.shift(-1);   
+    //linear parametrisation of analog reading, squared for True-RMS average calculation
+    portENTER_CRITICAL(&analogReadMux); //prevent conflict with analogReading in TimerInterrupt
+    //§§§§§§§§§§§§§§§§§§ Potential for integrating the analog readings in SpeedSamplingIRSensor task on core0, but works nicely here on core1 in v236, integration could render ADCMux obsolete 
+    MotorVoltageArray[0] = int(sq((float(analogRead(motor_voltage)) * MotorVoltageSlope + MotorVoltageOffset)/10)); //devision by 10 in order to fit MotorVoltageArray.sum in integer range      
+    MotorCurrentArray[0] = int(sq(float(analogRead(motor_current)) * MotorCurrentSlope + MotorCurrentOffset));  
+    portEXIT_CRITICAL(&analogReadMux);
+  }
+
+  void PowerCalculation() {
+    MotorVoltageAverage = 10 * int(sqrt(MotorVoltageArray.sum()/MotorVoltageArray.size()) ); //True-RMS calculation, multiply by 10 for original value
+    if (MotorVoltageAverage < 3000) {MotorVoltageAverage = int(motor_voltage_supply * 1000);} // replace missing Motor voltage analog reading by preset motor_voltage_supply value from .ini reading
     if (speed_level > 0) {
-      //linear parametrisation of analog reading, squared for True-RMS average calculation
-      int MotorCurrentRead   = analogRead(motor_current);
-      if (MotorCurrentRead   > 5) { //threshold on analog reading offset
-        MotorCurrentArray[0] = int(sq(float(MotorCurrentRead) * MotorCurrentSlope + MotorCurrentOffset)); 
-      }
-      else {
-        MotorCurrentArray[0] = 0;
-      }
-      //averaging and linear parametrisation of ADC readings to motor current in mA
-      MotorCurrentAverage    = int(sqrt(MotorCurrentArray.sum()/MotorCurrentArray.size()) ); //True-RMS calculation 
+      MotorCurrentAverage    = int(sqrt(MotorCurrentArray.sum()/MotorCurrentArray.size()) ); //True-RMS calculation
     }
     else {
       MotorCurrentAverage =0; 
     }
-  }
+    MotorPower = float(MotorCurrentAverage)/1000*(MotorVoltageAverage - float(MotorCurrentAverage))/1000; //accounting voltage drop at 1 Ohm measuring resistor for effective MotorPower
+  } 
 #endif
 
-#ifdef ToneSampling
 ////////////////////////////////////////////////////////////////////////////////
 // SPECTRUM DISPLAY FUNCTIONS (J Ruppert 2020, built on principles by Tony DiCola, Copyright 2013, MIT License)
 //###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
 ///////////////////////////////////////////////////////////////////////////////
+#ifdef ToneSampling
   void toneLoop() {
-    ++TONE_LOOP_COUNT;
+    ++TONE_LoopCount;
     tone_array = tone_array.shift(-1);
     int lowBin = frequencyToBin(TONE_LOWS[tonePosition] - TONE_ERROR_MARGIN_HZ);
     int highBin = frequencyToBin(TONE_HIGHS[tonePosition] + TONE_ERROR_MARGIN_HZ);
@@ -1636,7 +2054,7 @@ void loop() {
       digitalWrite(greenLED, HIGH);
   
       //monitor clarity of active tone signal, comment out for faster processing
-      if (TONE_LOOP_COUNT % 8 == 0) {
+      if (TONE_LoopCount % 8 == 0) {
          Serial.print  ("Average tone_array= ");
          Serial.print  (tone_array.sum()/tone_array.size());
          Serial.print  (" Tone_array: ");
@@ -1675,10 +2093,11 @@ void loop() {
   // ###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
   void samplingCallback() {
     // Read from the ADC and store the sample data
+    portENTER_CRITICAL(&analogReadMux); //prevent conflict with analogReading in TimerInterrupt
     samples[sampleCounter] = (float32_t)analogRead(AUDIO_INPUT_PIN);
-    
     // disabled light level reading
     // light_level = analogRead(LIGHT_INPUT_PIN);
+    portEXID_CRITICAL(&analogReadMux);
     
     // Complex FFT functions require a coefficient for the imaginary part of the input.
     // Since we only have real data, set this coefficient to zero.
@@ -1863,163 +2282,157 @@ void CLIENT_COMMAND (const char* command) {  //const char * commandstrpointer = 
 ////////////////////////////////////////////////////////////////////////////////
 
 void adjustSpeed() {
-  // Serial.print("Speed_command_received. Speed_wait_countdown = "); //### for monitoring ###
-  // Serial.println(speed_wait_countdown);                            //### for monitoring ###
-  if (speed_wait_countdown <= 0) {
-    Serial.print("Adjust speed: ");
-    Serial.print(speed_command.charAt(0)); //evaluate first speed_command character
-    Serial.print(" | ");
+  Serial.print("Adjust speed: ");
+  Serial.print(speed_command.charAt(0)); //evaluate first speed_command character
+  Serial.print(" | ");
 
-    //evaluate first speed_command character here: speed_command.charAt(0)
-    switch (char(speed_command.charAt(0))) {
-      case '0':        //fast brake, speed_level =0
+  //evaluate first speed_command character here: speed_command.charAt(0)
+  switch (char(speed_command.charAt(0))) {
+    case '0':        //fast brake, speed_level =0
+      speed_level = 0;
+      digitalWrite(redLED, HIGH);
+      digitalWrite(greenLED, HIGH);
+      Serial.print("fast brake, speed level set to 0 | ");
+      delay(1000);
+      break;
+    case '-':        //decrease speed
+      --speed_level;
+      if (speed_level < 0) {
         speed_level = 0;
-        digitalWrite(redLED, HIGH);
+        break;
+      }
+      digitalWrite(redLED, HIGH);
+      Serial.print("speed level decreased - | ");
+      delay(200);
+      break;
+    case '+':        //increase speed
+      ++speed_level;
+      if (speed_level > max_speed_level) {
+        speed_level = max_speed_level;
+        break;
+      }
+      digitalWrite(greenLED, HIGH);
+      Serial.print("speed level increased + | ");
+      delay(200);
+      break;
+    case '<':        //reverse direction
+      speed_direction = !speed_direction;
+      if (speed_direction) {
         digitalWrite(greenLED, HIGH);
-        Serial.print("fast brake, speed level set to 0 | ");
-        delay(1000);
-        break;
-      case '-':        //decrease speed
-        --speed_level;
-        if (speed_level < 0) {
-          speed_level = 0;
-          break;
-        }
+        delay (200);
+        digitalWrite(greenLED, LOW);
         digitalWrite(redLED, HIGH);
-        Serial.print("speed level decreased - | ");
-        delay(200);
-        break;
-      case '+':        //increase speed
-        ++speed_level;
-        if (speed_level > max_speed_level) {
-          speed_level = max_speed_level;
-          break;
-        }
+        delay (200);
+        digitalWrite(redLED, LOW);
         digitalWrite(greenLED, HIGH);
-        Serial.print("speed level increased + | ");
-        delay(200);
-        break;
-      case '<':        //reverse direction
-        speed_direction = !speed_direction;
+        delay (200);
+        digitalWrite(greenLED, LOW);
+        delay (200);
+        digitalWrite(greenLED, HIGH);
+        delay (600);
+        Serial.print("direction reversed forward >>> | ");
+      }
+      else {
+        digitalWrite(redLED, HIGH);
+        delay (200);
+        digitalWrite(redLED, LOW);
+        digitalWrite(greenLED, HIGH);
+        delay (200);
+        digitalWrite(greenLED, LOW);
+        digitalWrite(redLED, HIGH);
+        delay (200);
+        digitalWrite(redLED, LOW);
+        delay (200);
+        digitalWrite(redLED, HIGH);
+        delay (600);
+        Serial.println("direction reversed backward <<< | ");
+      }
+      break;
+    case 'r': //light red LED
+      digitalWrite(redLED, HIGH);
+      delay (1800);
+      digitalWrite(redLED, LOW);
+      Serial.print("light red LED very long flash | ");
+      break;
+    case 'g': //light green (or blue) LED
+      digitalWrite(greenLED, HIGH);
+      delay (1800);
+      digitalWrite(greenLED, LOW);
+      Serial.print("light green/blue LED very long flash | ");
+      break;
+    case '?': //info
+      #ifdef ESP32
+        notifyClients();  // Send current speed_level information via Wifi WebSocket to clients, additional early call for updating index.html
+      #endif
+      InfoText(); //print info text to serial monitor
+              
+      //indicate motor direction by green and red LED long flash
+      if (speed_direction) {
+        digitalWrite(greenLED, HIGH);
+        delay(1500);
+        digitalWrite(greenLED, LOW);
+      }
+      else {
+        digitalWrite(redLED, HIGH);
+        delay(1500);
+        digitalWrite(redLED, LOW);
+      }
+      delay(100);
+
+      //indicate motor speed by green or red LED short flashes
+      for (int i = 0; i < speed_level/2; ++i) {
+        delay(480);
         if (speed_direction) {
           digitalWrite(greenLED, HIGH);
-          delay (200);
-          digitalWrite(greenLED, LOW);
-          digitalWrite(redLED, HIGH);
-          delay (200);
-          digitalWrite(redLED, LOW);
-          digitalWrite(greenLED, HIGH);
-          delay (200);
-          digitalWrite(greenLED, LOW);
-          delay (200);
-          digitalWrite(greenLED, HIGH);
-          delay (600);
-          Serial.print("direction reversed forward >>> | ");
-        }
-        else {
-          digitalWrite(redLED, HIGH);
-          delay (200);
-          digitalWrite(redLED, LOW);
-          digitalWrite(greenLED, HIGH);
-          delay (200);
-          digitalWrite(greenLED, LOW);
-          digitalWrite(redLED, HIGH);
-          delay (200);
-          digitalWrite(redLED, LOW);
-          delay (200);
-          digitalWrite(redLED, HIGH);
-          delay (600);
-          Serial.println("direction reversed backward <<< | ");
-        }
-        break;
-      case 'r': //light red LED
-        digitalWrite(redLED, HIGH);
-        delay (1800);
-        digitalWrite(redLED, LOW);
-        Serial.print("light red LED very long flash | ");
-        break;
-      case 'g': //light green (or blue) LED
-        digitalWrite(greenLED, HIGH);
-        delay (1800);
-        digitalWrite(greenLED, LOW);
-        Serial.print("light green/blue LED very long flash | ");
-        break;
-      case '?': //info
-        #ifdef ESP32
-          notifyClients();  // Send current speed_level information via Wifi WebSocket to clients, additional early call for updating index.html
-        #endif
-        InfoText(); //print info text to serial monitor
-                
-        //indicate motor direction by green and red LED long flash
-        if (speed_direction) {
-          digitalWrite(greenLED, HIGH);
-          delay(1500);
+          delay(20);
           digitalWrite(greenLED, LOW);
         }
-        else {
+        if (!speed_direction) {
           digitalWrite(redLED, HIGH);
-          delay(1500);
+          delay(20);
           digitalWrite(redLED, LOW);
         }
-        delay(100);
+      }    
+      delay (1000);
+      Serial.println();
+      break;
+    default:
+      // if nothing else matches, do the default
+      digitalWrite(greenLED, HIGH);
+      digitalWrite(redLED, HIGH);
+      delay (200);
+      digitalWrite(greenLED, LOW);
+      digitalWrite(redLED, LOW);
+      delay (200);
+      digitalWrite(greenLED, HIGH);
+      digitalWrite(redLED, HIGH);
+      delay (200);
+      digitalWrite(greenLED, LOW);
+      digitalWrite(redLED, LOW);
+      delay (200);
+      digitalWrite(greenLED, HIGH);
+      digitalWrite(redLED, HIGH);
+      delay (200);
+      Serial.println("unknown command ??? no change of speed");
+      break;
+  } // end of switch case
 
-        //indicate motor speed by green or red LED short flashes
-        for (int i = 0; i < speed_level/2; ++i) {
-          delay(480);
-          if (speed_direction) {
-            digitalWrite(greenLED, HIGH);
-            delay(20);
-            digitalWrite(greenLED, LOW);
-          }
-          if (!speed_direction) {
-            digitalWrite(redLED, HIGH);
-            delay(20);
-            digitalWrite(redLED, LOW);
-          }
-        }    
-        delay (1000);
-        Serial.println();
-        break;
-      default:
-        // if nothing else matches, do the default
-        digitalWrite(greenLED, HIGH);
-        digitalWrite(redLED, HIGH);
-        delay (200);
-        digitalWrite(greenLED, LOW);
-        digitalWrite(redLED, LOW);
-        delay (200);
-        digitalWrite(greenLED, HIGH);
-        digitalWrite(redLED, HIGH);
-        delay (200);
-        digitalWrite(greenLED, LOW);
-        digitalWrite(redLED, LOW);
-        delay (200);
-        digitalWrite(greenLED, HIGH);
-        digitalWrite(redLED, HIGH);
-        delay (200);
-        Serial.println("unknown command ??? no change of speed");
-        break;
-    } // end of switch case
+  //switch_ok = digitalRead(input_switch);  // (no condition and value not used after version 029)
+  //motor_ok = digitalRead(error_motoric);  // (no condition and value not used after version 029)
+  
+  // forward new speed_level to motor set
+  motor_set(speed_level);
 
-    //switch_ok = digitalRead(input_switch);  // (no condition and value not used after version 029)
-    //motor_ok = digitalRead(error_motoric);  // (no condition and value not used after version 029)
-    
-    // forward new speed_level to motor set
-    motor_set(speed_level);
-
-    #ifdef ESP32
-      notifyClients();  // Send current speed_level information via Wifi WebSocket to clients
-    #endif
-    
-    // prepare for next round of speed_command
-    speed_wait_countdown = speed_wait_loops;
-    digitalWrite(greenLED, LOW);
-    digitalWrite(redLED, LOW);
-    speed_command.remove(0, 1); //ersase first charcter of speed_command, i.e. the command, which was just executed
-
-  } //end of speed wait countdown loop
-  --speed_wait_countdown;
-}
+  #ifdef ESP32
+    notifyClients();  // Send current speed_level information via Wifi WebSocket to clients
+  #endif
+  
+  // prepare for next round of speed_command
+  speed_wait_countdown = speed_wait_loops;
+  digitalWrite(greenLED, LOW);
+  digitalWrite(redLED, LOW);
+  speed_command.remove(0, 1); //ersase first charcter of speed_command, i.e. the command, which was just executed
+} 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Info Text Layout
@@ -2059,11 +2472,11 @@ void InfoText(){
   Serial.println("Adjustment of motor direction:    green/red/green + green LED flash = forward = 1;  red/green/red + red LED flash = backward = 0;");
   Serial.println("Tone signal detected:             Single FFT with frequency window > THRESHOLD1: red LED; averaged FFTs frequency windows > THRESHOLD2: green LED = tone signal active");  
   Serial.print  ("Program loop frequencies:         orange flash after ");     
-  Serial.print  (FLASH_FREQ);
+  Serial.print  (MainLoopFrequency);
   Serial.print  (" main loop cycles, "); 
-  Serial.print  (FLASH_FREQ/MONITOR_FREQ);
+  Serial.print  (MainLoopFrequency/MonitorFrequency);
   Serial.print  (" times monitoring for input activity, "); 
-  Serial.print  (FLASH_FREQ/speed_wait_loops);
+  Serial.print  (MonitorFrequency/ speed_wait_loops); //=SpeedAdjustmentFrequency
   Serial.println(" steps for speed adjustment");
   Serial.print  ("Motor speed setting:              ");     
   Serial.print  (max_speed_level);
@@ -2112,7 +2525,6 @@ void motor_set (int v) {
         Serial.println(0);    
     }
 
-  
   #elif defined(ESP32) && !defined(TLE5206) // for ESP32 in combination with L293D Motor IC
       if (v > 0 && v <= max_speed_level) {  // speed level 1 to max_speed_level (default=32), not stopped, motor running
                                             //for L293D and start with exact speedoffset at speed_level 1 use: ledcWrite(pwmChannel1, ((static_cast<float>(v)/max_speed_level) * (1 - speedoffset) + speedoffset)* 256);
@@ -2230,7 +2642,7 @@ void IndicateMotorError() {
 
 void monitor_global_variables() {
   Serial.print("Loop count: ");
-  Serial.print(LOOP_COUNT);
+  Serial.print(LoopCount);
   Serial.print("! Restart at 0.");
   Serial.print(" Speed_level: ");
   Serial.print(speed_level);
@@ -2269,14 +2681,6 @@ void monitor_global_variables() {
   Serial.print(" | motor_ok= ");
   Serial.print(motor_ok);
   
-  //disabled light_level reading
-  //Serial.print(analogRead(LIGHT_INPUT_PIN));  
-  //int light_level = analogRead(LIGHT_INPUT_PIN);  
-  //Serial.print(" | light_level= ");
-  //Serial.print(light_level);  
-  //Serial.print(" | light_signal= ");
-  //Serial.print(light_signal);  
-
   #ifdef ESP32
     Serial.print(" | GPIO pin ");
     Serial.print(input_switch);
@@ -2284,35 +2688,87 @@ void monitor_global_variables() {
     Serial.print(touchRead(input_switch));
   #endif
 
+  #ifdef SpeedSampling
+    Serial.print(" | IRSampling: avg mV= ");Serial.print(IRAverage); 
+    Serial.print(" | Detected= "); Serial.print(SleeperDetected); 
+    Serial.print(" | Count= "); Serial.print(SpeedCount[0]);
+    /* //for debugging of sleeper detection, counting an speed calculation
+    Serial.print(" | SpeedCount[1] = ");
+    Serial.print(SpeedCount[1]);
+    Serial.print(" | Timestamp[0] = ");
+    Serial.print(Timestamp[0]);
+    Serial.print(" | Timestamp[1] = ");
+    Serial.print(Timestamp[1]);
+    Serial.print(" | Numerator = ");
+    Serial.print(float(SpeedCount[0]-SpeedCount[1])*SpeedCountDistance);
+    Serial.print(" | Denominator = ");
+    Serial.print(float(Timestamp[0]-Timestamp[1])/1000);
+    */
+    /* //for debugging of RoundMarkerDetection
+    Serial.print(" | SpeedCountDifference[0]= ");
+    Serial.print(SpeedCountDifference[0]);
+    Serial.print(" | SpeedCountDifference[1]= ");
+    Serial.print(SpeedCountDifference[1]);
+    Serial.print(" | RoundMarkerDetected= ");
+    Serial.print(RoundMarkerDetected);    
+    */
+    Serial.print(" | CountDist= "); Serial.print(SpeedCountDistance);
+    Serial.print(" | Distance (m)= "); Serial.print(SpeedCount[0]*SpeedCountDistance);
+    Serial.print(" | Time (s)= "); Serial.print(Timestamp[0]/1000);  //convert millis to seconds    
+    Serial.print(" | Speed (m/s)= "); Serial.print(Speed);       
+    Serial.print(" | Speed at scale (km/h)= "); Serial.print(SpeedAtScale);          
+  #endif
+
+  #ifdef PowerSampling
+    Serial.print(" | PowerSampling: voltage (mV)= ");
+    Serial.print(MotorVoltageAverage); 
+    Serial.print(" | current (mA)= ");
+    Serial.print(MotorCurrentAverage);         
+    Serial.print(" | power (W)= ");
+    Serial.print(String(MotorPower, 1));  
+    Serial.print(" | "); 
+  #endif 
+
   #ifdef ToneSampling
     Serial.print(" | tone_signal= ");
     Serial.print(tone_signal);
     Serial.print(" | Tone_loop_count= ");
-    Serial.print(TONE_LOOP_COUNT);
-    TONE_LOOP_COUNT =0; 
+    Serial.print(TONE_LoopCount);
+    TONE_LoopCount =0; 
     Serial.print(" | Tone_signal_activ= ");
     Serial.print(TONE_ACTIVE_COUNT);
     TONE_ACTIVE_COUNT =0;
+    /*
+    Serial.print("##### Monitor Point for ToneSampling - Signal Active? #####");
+    Serial.print(" SignalActive: ");
+    Serial.print(SignalActive);
+    Serial.print(" , SignalTerminated: ");
+    Serial.print(SignalTerminated);
+    Serial.print(" , SignalDuration: ");
+    Serial.print(SignalDuration);
+    Serial.print(" , currentSignal: ");
+    Serial.print(currentSignal);
+    Serial.print(" , TerminationLengt: ");
+    Serial.print(TerminalLength);
+    Serial.println();
+    */
   #endif
+
+  //disabled light_level reading
+  //portENTER_CRITICAL(&analogReadMux); //prevent conflict with analogReading in TimerInterrupt
+  //Serial.print(analogRead(LIGHT_INPUT_PIN));  
+  //int light_level = analogRead(LIGHT_INPUT_PIN); 
+  //portEXIT_CRITICAL(&analogReadMux);
+  //Serial.print(" | light_level= ");
+  //Serial.print(light_level);  
+  //Serial.print(" | light_signal= ");
+  //Serial.print(light_signal);  
 
   Serial.print(" | SignalActive= ");
   Serial.print(SignalActive);     
-  Serial.println( " | send '?' for info");
+  Serial.print( " | send '?' for info");
 
-  /*
-  Serial.print("##### Monitor Point Signal Active 1 #####");
-  Serial.print(" SignalActive: ");
-  Serial.print(SignalActive);
-  Serial.print(" , SignalTerminated: ");
-  Serial.print(SignalTerminated);
-  Serial.print(" , SignalDuration: ");
-  Serial.print(SignalDuration);
-  Serial.print(" , currentSignal: ");
-  Serial.print(currentSignal);
-  Serial.print(" , TerminationLengt: ");
-  Serial.print(TerminalLength);
   Serial.println();
-  */
 }
 
 #ifdef ToneSampling
@@ -2413,28 +2869,26 @@ void parserLoop() {
 #endif
 
 void parseCommand(char* command) {
-
-#ifdef ToneSampling
-  //###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
-  if (strcmp(command, "GET MAGNITUDES") == 0) {
-    for (int i = 0; i < FFT_SIZE; ++i) {
-      Serial.println(magnitudes[i]);
+  #ifdef ToneSampling
+    //###### conditional for tone sampling, will be needed for FFT tone signal analysis in PiedPiper
+    if (strcmp(command, "GET MAGNITUDES") == 0) {
+      for (int i = 0; i < FFT_SIZE; ++i) {
+        Serial.println(magnitudes[i]);
+      }
     }
-  }
-  else if (strcmp(command, "GET SAMPLES") == 0) {
-    for (int i = 0; i < FFT_SIZE * 2; i += 2) {
-      Serial.println(samples[i]);
+    else if (strcmp(command, "GET SAMPLES") == 0) {
+      for (int i = 0; i < FFT_SIZE * 2; i += 2) {
+        Serial.println(samples[i]);
+      }
     }
-  }
-  else if (strcmp(command, "GET FFT_SIZE") == 0) {
-    Serial.println(FFT_SIZE);
-  }
-  
-  GET_AND_SET(SAMPLE_RATE_HZ)
-  GET_AND_SET(TONE_ERROR_MARGIN_HZ)
-  GET_AND_SET(TONE_WINDOW_MS)
-  GET_AND_SET(TONE_THRESHOLD1_DB)
-  GET_AND_SET(TONE_THRESHOLD2_DB)
-#endif
-
+    else if (strcmp(command, "GET FFT_SIZE") == 0) {
+      Serial.println(FFT_SIZE);
+    }
+    
+    GET_AND_SET(SAMPLE_RATE_HZ)
+    GET_AND_SET(TONE_ERROR_MARGIN_HZ)
+    GET_AND_SET(TONE_WINDOW_MS)
+    GET_AND_SET(TONE_THRESHOLD1_DB)
+    GET_AND_SET(TONE_THRESHOLD2_DB)
+  #endif
 }
