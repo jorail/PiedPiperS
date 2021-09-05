@@ -20,7 +20,8 @@ at https://freie-software.org/free-your-model-train/
 
 The code and layout are developed for ESP32 (or Teensy 4.0) but can easily be modified for other micro controllers.
 Asynchronous WebServer libraries are used in combination with WebSocket connection and JSON messages.
-Sound evaluation and tone signal identification is performed by FFT analysis in the microprocessor.
+
+PiedPiper Sound evaluation and tone signal identification is performed by FFT analysis in the microprocessor.
 Identified client commands or Morse code commands from a switch, touch senosor or tone signals are processed to 
 commands for change of the speed level. New motor settings are transfered via pulse width modulation (PWM) output 
 to a H-bridge motor control IC.
@@ -30,8 +31,9 @@ The idea for the FFT analysis for tone identification and part of the functions 
 learning guide and examples at http://learn.adafruit.com/fft-fun-with-fourier-transforms/. The corresponding 
 function headings are marked by 'MIT License'.
 
-Further explanations for the PiedPiperS project including the electrical layout and images of the resulting 
-circuit and wiring as well of its testing and application are provided in the [/docs](docs/) folder.
+PiedPiperS building instructions make use of an ESP32 microprocessor. The PDF (https://github.com/jorail/PiedPiperS/blob/main/PiedPiperS_Instruction.pdf) 
+includes the electrical circuit layout and images of the resulting circuit design and wiring as well as testing of the application application.
+Further explanations for the PiedPiperS project, additional photos and demonstration in short videos are provided in the [/docs](docs/) folder.
 
 The microprocessor functions and interaction with the integrated circuit (IC) used as motor driver (TLE5206-2S or L293D) are 
 modified or selectd by the initial #define statements. Corresponding sections of c++ code are used or omitted during compilation, 
@@ -125,7 +127,7 @@ by commenting out the two corresponding lines at the start of the source code be
 	
 	#define  SpeedSampling //monitor speed on track by detecting railway sleeper passage with reflective infrared (IR) detector and ESP32
 	
-Version 244 including theses options for power and speed measurements has been successfully finalised in branch 'speedo' and merged to Github PiedPiperS 'main' 
+Version 244 including theses options for power and speed measurements has been successfully finalised and tested in branch 'speedo' and merged to Github PiedPiperS 'main' 
 without source code conflicts on 2021-08-27: https://github.com/jorail/PiedPiperS 
 
 Please feel invited to pass your comments on github or via e-mail, if you have any suggestions for further improvement or
