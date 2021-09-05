@@ -32,7 +32,7 @@ learning guide and examples at http://learn.adafruit.com/fft-fun-with-fourier-tr
 function headings are marked by 'MIT License'.
 
 PiedPiperS facilitates train control from a website in the browser of a smart phone. It make use of an ESP32 microprocessor with built in WiFi. 
-The [/jorail/PiedPiperS/blob/main/PiedPiperS_Instruction.pdf] (building instructions (PDF))
+The [https://github.com/jorail/PiedPiperS/blob/main/PiedPiperS_Instruction.pdf] (building instructions) (https://github.com/jorail/PiedPiperS/blob/main/PiedPiperS_Instruction.pdf)
 include the electrical circuit layout, modification of the ESP32 Development Kit V1 and images of the resulting circuit design, wiring, 
 testing, mounting of the complete setup. Further explanations for the PiedPiperS project, its application, additional photos and 
 demonstration in short videos are provided in the [/docs](docs/) folder.
