@@ -31,7 +31,8 @@ The idea for the FFT analysis for tone identification and part of the functions 
 learning guide and examples at http://learn.adafruit.com/fft-fun-with-fourier-transforms/. The corresponding 
 function headings are marked by 'MIT License'.
 
-PiedPiperS building instructions make use of an ESP32 microprocessor. The PDF (https://github.com/jorail/PiedPiperS/blob/main/PiedPiperS_Instruction.pdf) 
+PiedPiperS uses train control from a website in the browser of a smart phone. It make use of an ESP32 microprocessor with built in WiFi. 
+The building instructions PDF (https://github.com/jorail/PiedPiperS/blob/main/PiedPiperS_Instruction.pdf) 
 includes the electrical circuit layout and images of the resulting circuit design and wiring as well as testing of the application application.
 Further explanations for the PiedPiperS project, additional photos and demonstration in short videos are provided in the [/docs](docs/) folder.
 
