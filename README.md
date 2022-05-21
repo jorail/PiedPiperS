@@ -1,6 +1,10 @@
 # PiedPiperS
 Smartphone HTML control for model trains, using ESP32 microcontroller, WiFi access point, asynchronous webserver, WebSocket and JSON, outdoor compatible with on-board USB power supply 
 
+<a href="docs/PiedPiperS_244_2021_09_05.pdf" target="_blank">
+<img src="docs/PiedPiperS_245_2022_02_06.jpg" width="100%">
+</a>
+
 The program purpose is to control a model train motor with independent power supply e.g. from USB power bank for outdoors. 
 Following options exist:
 
