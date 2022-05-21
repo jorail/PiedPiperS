@@ -1,8 +1,11 @@
 # PiedPiperS
 Smartphone HTML control for model trains, using ESP32 microcontroller, WiFi access point, asynchronous webserver, WebSocket and JSON, outdoor compatible with on-board USB power supply 
 
-<a href="docs/PiedPiperS_244_2021_09_05.pdf" target="_blank">
-<img src="docs/PiedPiperS_245_2022_02_06.jpg" width="80%">
+<a href="docs/PiedPiperS_244_2021_09_05.pdf" target="_blank" download>
+<img src="docs/PiedPiperS_245_2022_02_06.jpg" width="70%">
+</a>
+<a href="docs/PiedPiperS_QR.jpg" download>
+<img src="docs/PiedPiperS_QR.jpg" width="30%">
 </a>
 
 The program purpose is to control a model train motor with independent power supply e.g. from USB power bank for outdoors. 
@@ -25,7 +28,7 @@ at https://freie-software.org/free-your-model-train/
 The code and layout are developed for ESP32 (or Teensy 4.0) but can easily be modified for other micro controllers.
 Asynchronous WebServer libraries are used in combination with WebSocket connection and JSON messages.
 
-<a href="docs/PiedPiper_56.pdf">
+<a href="docs/PiedPiper_56.pdf" download>
 <img src="docs/PiedPiper_056.jpg" width="100%">
 </a>
 
@@ -39,7 +42,7 @@ The idea for the FFT analysis for tone identification and part of the functions 
 learning guide and examples at http://learn.adafruit.com/fft-fun-with-fourier-transforms/. The corresponding 
 function headings are marked by 'MIT License'.
 
-<a href="docs/PiedPiperS_244_2021_09_05.pdf">
+<a href="docs/PiedPiperS_244_2021_09_05.pdf" download>
 <img src="docs/PiedPiperS_095_indoor_9466.JPG" width="100%">
 </a>
 
@@ -49,6 +52,13 @@ include the electrical circuit layout, modification of the ESP32 Development Kit
 testing, mounting of the complete setup. Further explanations for the PiedPiperS project, its application, additional photos and 
 demonstration in short videos are provided in the [/docs](docs/) folder.
 
+<a href="docs/PiedPiperS_173_circuit.jpg" download>
+<img src="docs/PiedPiperS_173_circuit_small.jpg" width="50%">
+</a>
+<a href="PiedPiperS\data\image\001.jpg" download>
+<img src="PiedPiperS\data\image\001.jpg" width="50%">
+</a>
+
 The microprocessor functions and interaction with the integrated circuit (IC) used as motor driver (TLE5206-2S or L293D) are 
 modified or selectd by the initial #define statements. Corresponding sections of c++ code are used or omitted during compilation, 
 as needed for the defined microprocessor and circuit layout. 
@@ -57,7 +67,7 @@ This also applies for the Tone Sampling functions, which originate from the Pied
 (see sister repository https://github.com/jorail/PiedPiper ).
 Code sections between #ifdef ToneSampling ... #endif are not used, if ToneSampling is not defined in the beginning (or commented out).
 
-The PiedPiperS c++ code is stored as PiedPiperS.ino file in a subfolder named PiedPiperS. So it is ready for use 
+The PiedPiperS c++ code is stored as <a href="PiedPiperS\data\PiedPiperS.ino" "PiedPiperS.ino"> file in a subfolder named PiedPiperS. So it is ready for use 
 with ESP32 and many other microcontrollers and for compilation with Arduino IDE. Additional files and .html websites for the Web Server 
 are stored in the sub-subfolder [/PiedPiperS/data](PiedPiperS/data/). This [/data](PiedPiperS/data/) folder is ready for transfer to ESP32 SPIFFS with Arduinio IDE. 
 It includes a picuture file lok.png, which is used for identification of the locomotive and as button on the websites for changing from the control panel 
@@ -79,6 +89,13 @@ for SPIFFS on the ESP32, you can delete in your copy of the repository the last 
 the .zip file or .pdf file in the [/data](PiedPiperS/data/) folder for reducing the size of the SPIFFS upload without any significant 
 impact on the structure and principle functioning of the code and html websites.
 
+<a href="docs/PiedPiperS_access.JPG">
+<img src="docs/PiedPiperS_access.JPG" width="30%">
+</a>
+<a href="docs/PiedPiperS_095_index_html.JPG">
+<img src="docs/PiedPiperS_095_index_html.JPG" width="30%">
+</a>	
+	
 After connecting to the Wifi you can always open the train control by typing the standard IP address:
 http://192.168.4.1 This address for the initial request is also provided as QR code in the [/data](PiedPiperS/data/) folder. 
 
@@ -105,6 +122,13 @@ The current and voltage measurements require the addition of 4 measuring resisto
 converted to display the power consumption of the motor online on the control panel. A dedicated /powerdata panel displays a chart.js diagram with
 joint trends of speed settings, voltage, current and power use. Data is requrested every second by get requrests and the servers response is sent as JSON message. 
 
+<a href="docs/PiedPiperS_168_powerdata.jpg">
+<img src="docs/PiedPiperS_168_powerdata.jpg" width="50%">
+</a>
+<a href="docs/PiedPiperS_191_reflective_IR_detector_circuit_analog_input.jpg">
+<img src="docs/PiedPiperS_191_reflective_IR_detector_circuit_analog_input.jpg" width="50%">
+</a>
+	
 Optional, PiedPiPerS branch 'speedo', version 191, https://github.com/jorail/PiedPiperS/tree/speedo: 
 Speed measurement from optical reading of passing railroad sleepers
 Black or dark railway sleepers of the model railroad track are equally spaced. A reflective infrared (IR) sensor is used as sensor for their detection and 
@@ -149,6 +173,6 @@ new applications for PiedPiperS.
 
 Have fun with it and invite other to play with it together... Jo
 
-<a href="PiedPiperS_244e.mov">
+<a href="PiedPiperS_244e.mov" download>
 <img src="docs/PiedPiperS_244b.jpg" width="100%">
 </a>
