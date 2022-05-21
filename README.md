@@ -40,7 +40,7 @@ learning guide and examples at http://learn.adafruit.com/fft-fun-with-fourier-tr
 function headings are marked by 'MIT License'.
 
 <a href="docs/PiedPiperS_244_2021_09_05.pdf">
-<img src="PiedPiperS_095_indoor_9466.JPG" width="100%">
+<img src="docs/PiedPiperS_095_indoor_9466.JPG" width="100%">
 </a>
 
 PiedPiperS facilitates train control from a website in the browser of a smart phone. It make use of an ESP32 microprocessor with built in WiFi. 
@@ -149,7 +149,6 @@ new applications for PiedPiperS.
 
 Have fun with it and invite other to play with it together... Jo
 
-
 <a href="PiedPiperS_244e.mov">
-<img src="PiedPiperS_244b.jpg" width="100%">
+<img src="docs/PiedPiperS_244b.jpg" width="100%">
 </a>
