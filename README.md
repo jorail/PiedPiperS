@@ -2,8 +2,8 @@
 Smartphone HTML control for model trains, using ESP32 microcontroller, WiFi access point, asynchronous webserver, WebSocket and JSON, outdoor compatible with on-board USB power supply 
 
 <a href="docs/PiedPiperS_244_2021_09_05.pdf" target="_blank" download>
-<img src="docs/PiedPiperS_245_2022_02_06.jpg" width="60%">
-</a>  <a href="docs/PiedPiperS_QR.jpg" download>
+<img src="docs/PiedPiperS_245_2022_02_06.jpg" width="65%">
+</a>   <a href="docs/PiedPiperS_QR.jpg" download>
 <img src="docs/PiedPiperS_QR.jpg" width="30%">
 </a>
 
@@ -52,9 +52,9 @@ testing, mounting of the complete setup. Further explanations for the PiedPiperS
 demonstration in short videos are provided in the [/docs](docs/) folder.
 
 <a href="docs/PiedPiperS_173_circuit.jpg" download>
-<img src="docs/PiedPiperS_173_circuit_small.jpg" width="45%">
+<img src="docs/PiedPiperS_173_circuit_small.jpg" width="47%">
 </a>  <a href="PiedPiperS\data\image\001.jpg" download>
-<img src="PiedPiperS\data\image\001.jpg" width="45%">
+<img src="PiedPiperS\data\image\001.jpg" width="47%">
 </a>
 
 The microprocessor functions and interaction with the integrated circuit (IC) used as motor driver (TLE5206-2S or L293D) are 
@@ -88,7 +88,7 @@ the .zip file or .pdf file in the [/data](PiedPiperS/data/) folder for reducing 
 impact on the structure and principle functioning of the code and html websites.
 
 <a href="docs/PiedPiperS_access.JPG">
-<img src="docs/PiedPiperS_access.JPG" width="30%">
+<img src="docs/PiedPiperS_access.JPG" width="40%">
 </a>  <a href="docs/PiedPiperS_095_index_html.JPG">
 <img src="docs/PiedPiperS_095_index_html.JPG" width="30%">
 </a>	
@@ -122,7 +122,7 @@ joint trends of speed settings, voltage, current and power use. Data is requrest
 <a href="docs/PiedPiperS_168_powerdata.jpg">
 <img src="docs/PiedPiperS_168_powerdata.jpg" width="30%">
 </a>  <a href="docs/PiedPiperS_191_reflective_IR_detector_circuit_analog_input.jpg">
-<img src="docs/PiedPiperS_191_reflective_IR_detector_circuit_analog_input.jpg" width="40%">
+<img src="docs/PiedPiperS_191_reflective_IR_detector_circuit_analog_input.jpg" width="50%">
 </a>
 	
 Optional, PiedPiPerS branch 'speedo', version 191, https://github.com/jorail/PiedPiperS/tree/speedo: 
