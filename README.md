@@ -2,7 +2,7 @@
 Smartphone HTML control for model trains, using ESP32 microcontroller, WiFi access point, asynchronous webserver, WebSocket and JSON, outdoor compatible with on-board USB power supply 
 
 <a href="docs/PiedPiperS_244_2021_09_05.pdf" target="_blank">
-<img src="docs/PiedPiperS_245_2022_02_06.jpg" width="100%">
+<img src="docs/PiedPiperS_245_2022_02_06.jpg" width="50%">
 </a>
 
 The program purpose is to control a model train motor with independent power supply e.g. from USB power bank for outdoors. 
@@ -25,19 +25,23 @@ at https://freie-software.org/free-your-model-train/
 The code and layout are developed for ESP32 (or Teensy 4.0) but can easily be modified for other micro controllers.
 Asynchronous WebServer libraries are used in combination with WebSocket connection and JSON messages.
 
+<a href="docs/PiedPiper_56.pdf">
+<img src="docs/PiedPiper_056.jpg" width="100%">
+</a>
+
 PiedPiper Sound evaluation and tone signal identification is performed by FFT analysis in the microprocessor.
 Identified client commands or Morse code commands from a switch, touch senosor or tone signals are processed to 
 commands for change of the speed level. New motor settings are transfered via pulse width modulation (PWM) output 
 to a H-bridge motor control IC.
 
-<a href="docs/PiedPiper_56.pdf">
-<img src="docs/PiedPiper_056.jpg" width="100%">
-</a>
-
 The idea for the FFT analysis for tone identification and part of the functions are based on 'Audio Tone Input' 
 (toneinput.ino) by Tony DiCola, which is published with MIT License as part of the ardafruit 
 learning guide and examples at http://learn.adafruit.com/fft-fun-with-fourier-transforms/. The corresponding 
 function headings are marked by 'MIT License'.
+
+<a href="docs/PiedPiperS_244_2021_09_05.pdf">
+<img src="PiedPiperS_095_indoor_9466.JPG" width="100%">
+</a>
 
 PiedPiperS facilitates train control from a website in the browser of a smart phone. It make use of an ESP32 microprocessor with built in WiFi. 
 The building instructions (https://github.com/jorail/PiedPiperS/blob/main/PiedPiperS_Instruction.pdf)
@@ -145,3 +149,7 @@ new applications for PiedPiperS.
 
 Have fun with it and invite other to play with it together... Jo
 
+
+<a href="PiedPiperS_244e.mov">
+<img src="PiedPiperS_244b.jpg" width="100%">
+</a>
