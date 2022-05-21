@@ -88,9 +88,9 @@ the .zip file or .pdf file in the [/data](PiedPiperS/data/) folder for reducing 
 impact on the structure and principle functioning of the code and html websites.
 
 <a href="docs/PiedPiperS_access.JPG">
-<img src="docs/PiedPiperS_access.JPG" width="35%">
+<img src="docs/PiedPiperS_access.JPG" width="50%">
 </a>  <a href="docs/PiedPiperS_095_index_html.JPG">
-<img src="docs/PiedPiperS_095_index_html.JPG" width="45%">
+<img src="docs/PiedPiperS_095_index_html.JPG" width="42%">
 </a>	
 	
 After connecting to the Wifi you can always open the train control by typing the standard IP address:
@@ -175,6 +175,6 @@ Have fun with it and invite other to play with it together... Jo
 	
 <a href="archive/add_images/010.jpg">
 <img src="archive/add_images/010.jpg" width="54%">
-</a>  <a href="archive/add_images/009old.jpg">
+</a>   <a href="archive/add_images/009old.jpg">
 <img src="archive/add_images/009old.jpg" width="43%">
 </a>
