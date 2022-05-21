@@ -2,9 +2,9 @@
 Smartphone HTML control for model trains, using ESP32 microcontroller, WiFi access point, asynchronous webserver, WebSocket and JSON, outdoor compatible with on-board USB power supply 
 
 <a href="docs/PiedPiperS_244_2021_09_05.pdf" target="_blank" download>
-<img src="docs/PiedPiperS_245_2022_02_06.jpg" width="64%">
+<img src="docs/PiedPiperS_245_2022_02_06.jpg" width="63%">
 </a>   <a href="docs/PiedPiperS_QR.jpg" download>
-<img src="docs/PiedPiperS_QR.jpg" width="33%">
+<img src="docs/PiedPiperS_QR.jpg" width="35%">
 </a>
 
 The program purpose is to control a model train motor with independent power supply e.g. from USB power bank for outdoors. 
@@ -52,9 +52,9 @@ testing, mounting of the complete setup. Further explanations for the PiedPiperS
 demonstration in short videos are provided in the [/docs](docs/) folder.
 
 <a href="docs/PiedPiperS_173_circuit.jpg" download>
-<img src="docs/PiedPiperS_173_circuit_small.jpg" width="40%">
+<img src="docs/PiedPiperS_173_circuit_small.jpg" width="45%">
 </a>  <a href="PiedPiperS\data\image\001.jpg" download>
-<img src="PiedPiperS\data\image\001.jpg" width="57%">
+<img src="PiedPiperS\data\image\001.jpg" width="53%">
 </a>
 
 The microprocessor functions and interaction with the integrated circuit (IC) used as motor driver (TLE5206-2S or L293D) are 
@@ -88,9 +88,9 @@ the .zip file or .pdf file in the [/data](PiedPiperS/data/) folder for reducing 
 impact on the structure and principle functioning of the code and html websites.
 
 <a href="docs/PiedPiperS_access.JPG">
-<img src="docs/PiedPiperS_access.JPG" width="45%">
+<img src="docs/PiedPiperS_access.JPG" width="40%">
 </a>  <a href="docs/PiedPiperS_095_index_html.JPG">
-<img src="docs/PiedPiperS_095_index_html.JPG" width="30%">
+<img src="docs/PiedPiperS_095_index_html.JPG" width="45%">
 </a>	
 	
 After connecting to the Wifi you can always open the train control by typing the standard IP address:
@@ -120,9 +120,9 @@ converted to display the power consumption of the motor online on the control pa
 joint trends of speed settings, voltage, current and power use. Data is requrested every second by get requrests and the servers response is sent as JSON message. 
 
 <a href="docs/PiedPiperS_168_powerdata.jpg">
-<img src="docs/PiedPiperS_168_powerdata.jpg" width="40%">
+<img src="docs/PiedPiperS_168_powerdata.jpg" width="33%">
 </a>  <a href="docs/PiedPiperS_191_reflective_IR_detector_circuit_analog_input.jpg">
-<img src="docs/PiedPiperS_191_reflective_IR_detector_circuit_analog_input.jpg" width="55%">
+<img src="docs/PiedPiperS_191_reflective_IR_detector_circuit_analog_input.jpg" width="65%">
 </a>
 	
 Optional, PiedPiPerS branch 'speedo', version 191, https://github.com/jorail/PiedPiperS/tree/speedo: 
@@ -174,7 +174,7 @@ Have fun with it and invite other to play with it together... Jo
 </a>  
 	
 <a href="archive/add_images/010.jpg">
-<img src="archive/add_images/010.jpg" width="55%">
+<img src="archive/add_images/010.jpg" width="54%">
 </a>  <a href="archive/add_images/009old.jpg">
-<img src="archive/add_images/009old.jpg" width="42%">
+<img src="archive/add_images/009old.jpg" width="44%">
 </a>
