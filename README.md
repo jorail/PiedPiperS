@@ -30,6 +30,10 @@ Identified client commands or Morse code commands from a switch, touch senosor o
 commands for change of the speed level. New motor settings are transfered via pulse width modulation (PWM) output 
 to a H-bridge motor control IC.
 
+<a href="docs/PiedPiper_56.pdf">
+<img src="docs/PiedPiper_056.jpg" width="100%">
+</a>
+
 The idea for the FFT analysis for tone identification and part of the functions are based on 'Audio Tone Input' 
 (toneinput.ino) by Tony DiCola, which is published with MIT License as part of the ardafruit 
 learning guide and examples at http://learn.adafruit.com/fft-fun-with-fourier-transforms/. The corresponding 
