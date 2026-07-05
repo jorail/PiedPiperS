@@ -28,8 +28,8 @@ The code and layout are developed for ESP32 (or Teensy 4.0) but can easily be mo
 Asynchronous WebServer libraries are used in combination with WebSocket connection and JSON messages.
 
 A highly integrated implementation is developed in PiedPiperS v259 for a very small ESP32-C3-zero micro processor, use of an 
-ordinary USB powerbank, especially its internal LiPo battery and charge controller, ready to use step-up booster MT3608 and
-H-bridge motor driver DRV8871. All electronics can be fitted into the second wagon of a small railcar VT98.
+ordinary USB powerbank, especially its internal Li-Ion battery and charge controller, ready to use step-up booster MT3608 and
+H-bridge motor driver DRV8871. All electronics can be fitted into the second wagon of a small railcar VT98. PiedPiperS v263 is made for ESP32-C3-SuperMini and includes Option 1 for PowerSampling.
 
 <a href="docs/PiedPiperS_v259_in_VT98_railcar.jpg" download>
 <img src="docs/PiedPiperS_v259_in_VT98_railcar.jpg" width="100%">
