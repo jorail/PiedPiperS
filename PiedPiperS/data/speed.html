@@ -1,0 +1,414 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>ESP32 Analog Input Reading JSON Message 2021-05-31 Version 211</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8"/>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" type="text/css" href="control.css">
+  <style> h3 {margin: 0 0 0 0;} div {margin: 0 1% 0 1%;} 
+  table {vertical-align: top; padding: 2%; border-collapse: collapse;} tr {border-bottom: 2pt solid #ddd;} 
+  tr:last-child { border-bottom: none; } td {padding-left: 2%;} </style>
+  <script charset="utf-8" src="/chart.min.js"></script>
+</head>
+<body onload="loadChart();">
+    <h3>Geschwindigkeit der Lokomotive</h3>
+	<p style= "margin: 0 0 0 0;" > <span id="StatusText">%STATE%</span> &nbsp; </p>
+	<p style= "margin: 0 0 0 0; text-align: left;" > &nbsp; &nbsp; &nbsp; <span id="SpeedText">%SPEED%</span> &nbsp; </p>
+	<div><input type="range" onchange="GetPWMSliderValue(this)" id="pwmSlider" min="0" max="32" value="%SLIDERVALUE%" step="1" class="slider"></div>
+    <div class="container">
+		  <canvas id="SpeedChart" width="92%" height="100"></canvas> 
+    </div><br>
+	<table style= "width: 96%; text-align: left; font-size: 1.0rem; margin: 0 2% 0 2%;" >
+	<tr><td>Z&auml;hler</td>             <td><span id="CountValue">%CountValue%</span></td>               <td><small>Schwellen</small></td></tr>
+	<tr><td>IR-Signal</td>               <td><span id="IRAvgValue">%IRAvgValue%</span></td>               <td>V</td></tr>
+	<tr><td>Fahrstrecke</td>             <td><span id="DistanceValue">%DistanceValue%</span></td>         <td>m</td></tr>
+	<tr><td>Geschwindigkeit</td>         <td><span id="SpeedmeasureValue">%SpeadmeasureValue%</span></td> <td>m/s</td></tr>
+	<tr style="border-bottom: 4pt double #ddd;">
+	<td><b>Modellgeschwin&shy;dig&shy;keit</b></td><td><span id="SpeedscaleValue" style="font-weight:bold;">%SpeadscaleValue%</span></td><td><b>km/h</b></td></tr>
+	<!--<tr><td>&nbsp;</td></tr>-->
+	<tr><td>letzter Fahrbefehl</td>      <td><span id="LastCommand" >%COMMAND%</span></td>                <td>&nbsp;</td></tr>
+	<tr><td>Geschwindigkeitsstufe</td>   <td><span id="SpeedValue"  >%SpeedValue%</span></td>             <td>von 32</td></tr>
+	<tr><td>Pulsweite (PWM)</td>         <td><span id="PWMValue"    >%PWMValue%</span></td>               <td>%</td></tr>
+	<tr><td>Versorgungsspannung</td>     <td><span id="VoltageValue">%VoltageValue%</span></td>           <td>V</td></tr>
+	<tr><td>effektiver Motorstrom</td>   <td><span id="CurrentValue">%CurrentValue%</span></td>           <td>mA&nbsp;<small>TRMS</small></td></tr>
+	<tr style="border-bottom: 4pt double #ddd;">
+	<td><b>Leistungsaufnahme</b></td>    <td><span id="PowerValue" style="font-weight:bold;">%PowerValue%</span></td><td><b>W&nbsp;&nbsp;&nbsp;<small>TRMS</small></b></td></tr>
+	<!--<tr><td>&nbsp;</td></tr>-->
+	<tr><td>LED-Anzeige</td>             <td><span id="SpeedLEDValue">%SpeedLEDValue%</span></td>         <td>1/0</td></tr>
+	<tr><td>IR-low</td>                  <td><span id="IRlowValue">%IRlowValue%</span></td>               <td>V</td></tr>
+	<tr><td>IR-high</td>                 <td><span id="IRhighValue">%IRhighValue%</span></td>             <td>V</td></tr>
+	</table>
+	<br>
+	<div><button id="minus4" class="button red4">- - - -</button>    <button id="minus1" class="button red1">-</button>    <button id="plus1" class="button blue1">+</button>    <button id="plus4" class="button blue4">++++</button></div>
+	<div><button id="reverse" class="button orange">< ></button>     <button id="halt" class="button redlong">Halten</button>   <button id="stop" class="button darkred">Stopp!</button></div> 
+	<br>
+	<div><button id="ledonoff" class="button orange" style="width: 45%; font-size: 1.7rem;">LED an/aus</button>     <button id="zerocounter" class="button darkred" style="width: 45%; font-size: 1.7rem;">Null-stellen</button></div>
+	<br>
+	<div><a href="/"><img src="/lok" alt="Loksteuerung" style="width:95%"></a></div>
+	<h2 style="font-size: 1.2rem; margin: 5% 5%;"><a href="/irsamplerecord.html"> IR-Datenrecorder</a></h2>
+<script>
+    // SpeedChart initialisation, formatting, data collection from JSON and handling, intervall updating
+	var countArray = [];
+	var iravgArray = [];
+	var distanceArray = [];
+	var speedmeasureArray = [];
+	var speedscaleArray = [];
+
+	var speedArray = [];
+	var pwmArray = [];
+	var voltageArray = [];
+	var currentArray = [];
+	var powerArray = [];
+	var labelsArray = [];
+	var N = 60;
+	for (i = 0; i < N; i++) {
+	  countArray.push(0);
+	  iravgArray.push(0);
+	  distanceArray.push(0);
+	  speedmeasureArray.push(0);
+	  speedscaleArray.push(0);
+	  
+	  speedArray.push(0);
+	  pwmArray.push(0);
+	  voltageArray.push(0);
+	  currentArray.push(0);
+	  powerArray.push(0);
+	  labelsArray.push(i-N);
+	}
+	
+	//display SpeedChart
+	Chart.defaults.color = "rgba(0, 0, 0, 1)"; //black text color
+	Chart.defaults.font.size = 14;
+	var ctx = document.getElementById('SpeedChart').getContext('2d');
+	var SpeedChart = new Chart(ctx, {
+		type: 'line',
+		data: {
+		  labels: labelsArray,  //x-axis is defined as 'category' axis not as linear value axis, this allows for a simplified single dimension array in the data structure, ok for indicating 60 seconds
+		  datasets: [{
+			label: 'Zähler (*100.000 Schwellen)  ',  // /100,000
+			data: countArray,    //single dimension array in the data structure
+			backgroundColor: "rgba(0, 255, 0, 0.5)", 
+			borderColor: "rgba(0, 255, 0, 1)",  //lime
+		  }, {
+		    label: 'IR-Signal (mV)',
+			data: iravgArray, 
+			backgroundColor: "rgba(64, 224, 208, 0.5)",	
+			borderColor: "rgba(64, 224, 208, 1)",    //Turquoise
+		}, {
+		    label: 'Fahrstrecke (km)  ',  // /1000
+			data: distanceArray, 
+			backgroundColor: "rgba(128, 128, 0, 0.5)",	
+			borderColor: "rgba(128, 128, 0, 1)",    //olive
+		  }, {
+			label: 'Geschwindigkeit (m/s)',
+			data: speedmeasureArray, 
+			backgroundColor: "rgba(255, 0, 255, 0.5)",	
+			borderColor: "rgba(255, 0, 255, 1)",    //Fuchsia, Magenta
+		  }, {
+			label: 'Modellgeschw. (*100 km/h)     ',  // /100
+			data: speedscaleArray, 
+			backgroundColor: "rgba(138, 43, 226, 0.5)",	
+			borderColor: "rgba(138, 43, 226, 1)",    //BlueViolet			
+		  }, {
+		  
+			label: 'Geschwindigkeitsstufe (*100 %)        ',
+			data: speedArray,    //single dimension array in the data structure
+			backgroundColor: "rgba(255, 165, 0, 0.5)", 
+			borderColor: "rgba(255, 165, 0, 1)",  //yellow
+	      }, {
+		    label: 'Pulsweite (*100 %)   ',
+			data: pwmArray, 
+			backgroundColor: "rgba(0, 165, 255, 0.5)",	
+			borderColor: "rgba(0, 165, 255, 1)",    //light blue
+		  }, {
+			label: 'Spannung (*10 V) ',
+			data: voltageArray, 
+			backgroundColor: "rgba(0, 0, 255, 0.5)",	
+			borderColor: "rgba(0, 0, 255, 1)",    //dark blue
+		  }, {
+			label: 'eff. Motorstrom (A)   ',
+			data: currentArray, 
+			backgroundColor: "rgba(255, 0, 0, 0.5)",	
+			borderColor: "rgba(255, 0, 0, 1)",    //red				
+		  }, {
+			label: 'Leistungsaufnahme (W)',
+			data: powerArray,
+			backgroundColor: "rgba(60, 179, 113, 0.5)",	
+			borderColor: "rgba(60, 179, 113, 1)", //green			
+		  }]
+		  // no chart display for speedled status, ir_low_level, ir_high_level
+		},
+		options: {
+			animation: false,
+			scales: {
+				x: {
+					type: 'linear',
+					suggestedMin: -60,
+					suggestedMax: 0,
+					count: 6,              //6 ticks for devision of x-axis
+					ticks: {
+						//fontColor: "rgba(0, 0, 0, 1)", //black
+					},
+					title: {
+						display: true,
+						text: 'Sekunden',  //axis title
+						//fontColor: "rgba(0, 0, 0, 1)", //black
+					},
+				},
+				y: {
+					suggestedMin: 0,
+					suggestedMax: 2,      //will scale to data maximum, if > suggestedMax
+					ticks: {
+						stepSize: 1
+						//fontColor: "rgba(0, 0, 0, 1)", //black
+					},
+				},
+
+			},
+			elements: {
+				line: {
+					tension: 0, // disables bezier curves
+				},
+				point: {
+					radius: 2,  // decrease point size from default = 3 
+				},
+			},
+			plugins: {
+				legend: {
+					position: 'bottom', //place legend below SpeedChart
+					align: 'start',     //place legend elements bound to the left
+					labels: {
+						boxWidth: 20, 
+					},
+				},
+			},
+		},
+	});
+	
+	var myVar = setInterval(loadChart, 1000); //update chart every 1000 milliseconds
+
+	function loadChart() { //fetches json data & calls dspChart() to render graph  {"speed":31,"currentspeed":167,"power":1.6711}
+	  var motorData, count, distance, speedmeasure, speedscale, speed, pwm, voltage, current, power;
+	  var requestURL = '/speeddata'; //URL of the JSON data
+	  var request = new XMLHttpRequest({
+		mozSystem: true
+	  }); // create http request
+	  request.onreadystatechange = function() {
+		if (request.readyState == 4 && request.status == 200) {
+		  //console.log(request.responseText);
+		  motorData = JSON.parse(request.responseText); //parse JSON string to motorData object
+		  console.log(motorData);
+		  /*oritinal JSON motor /speeddata definition in PiedPiperS v187 
+		    json["speed"]        = speed_level;         //0 to 32
+			json["pwm"]          = ((float(speed_level)/max_speed_level) * (1 - speedoffset) + speedoffset)*100 ; //in % 
+			json["voltage"]      = MotorVoltageAverage; //in mV
+			json["current"]      = MotorCurrentAverage; //in mA
+			json["power"]        = MotorPower;          //in W
+			
+			json["count"]        = SpeedCount[0];       //railway sleeper counts
+			json["iravg"]        = IRAverage;           //averaged IR Signal in mV
+			json["distance"]     = SpeedCount[0]*SpeedCountDistance; //in m
+			json["speedmeasure"] = Speed;               //measured speed m/s
+			json["speedscale"]   = SpeedAtScale;        //measured speed converted to scale in km/h	
+
+			json["speedled"]     = int(SpeedLED);       //indicate SleeperDetected at green/blue LED
+			json["irlow"]        = IRlow;               //ir_low_level, no sleeper detected in mV
+			json["irhigh"]       = IRhigh;              //ir_high_level, sleeper detected in mV
+		  */
+		  //retrive and scale new data elements from motorData object
+		  count = motorData.count/100000;        // number of railway sleepers detected /100000
+		  iravg = motorData.iravg/1000;          // averaged IR Signal converted from mV to V /1000
+		  distance = motorData.distance/1000;    // distance travelled, converted from m to km
+		  speedmeasure = motorData.speedmeasure; // speed over ground in m/s
+		  speedscale = motorData.speedscale/100; // speed in model scale in km/h converted to *100 km/h
+		  
+		  speed = motorData.speed/32;            // 0 to full speed, range 0 to 1
+		  pwm = motorData.pwm/100;               // 0 to full pulse width, range 0 to 1
+		  voltage = motorData.voltage/10000;     // 0 to measured_voltage in mV, diveded by 10000, range 0 to 1.6 (*10 V)
+		  current = motorData.current/1000;      // A (Ampere) instead of mA, range 0 to 0.5
+		  power = motorData.power;               // W (Watt), unchanged, range 0 to 5 (10)
+		  
+		  speedled = motorData.speedled;         // speed led indication for sleeper detecte, bool converted to integer, 1/0
+		  irlow = motorData.irlow/1000;          // ir_low_level, no sleeper detected, converted from mV to V /1000
+		  irhigh = motorData.irhigh/1000;        // ir_high_level, no sleeper detected, converted from mV to V /1000
+		  
+		  //updating speeddata for SpeedChart
+		  countArray.shift();
+		  countArray.push(count);
+		  iravgArray.shift();
+		  iravgArray.push(count);
+		  distanceArray.shift();
+		  distanceArray.push(distance);
+		  speedmeasureArray.shift();
+		  speedmeasureArray.push(speedmeasure);
+		  speedscaleArray.shift();
+		  speedscaleArray.push(speedscale);
+		  //updating powerdata for SpeedChart
+		  speedArray.shift();
+		  speedArray.push(speed);
+		  pwmArray.shift();
+		  pwmArray.push(pwm);
+		  voltageArray.shift();
+		  voltageArray.push(voltage);
+		  currentArray.shift();
+		  currentArray.push(current);
+		  powerArray.shift();
+		  powerArray.push(power);
+		  SpeedChart.update(); //update SpeedChart with new data
+		  
+		  //update value display in text
+		  document.getElementById('CountValue').innerHTML        = Math.round(count*100000);           // in number of sleepers
+		  document.getElementById('IRAvgValue').innerHTML        = Math.round(iravg*100)/100;          // in V,    precision 2
+		  document.getElementById('DistanceValue').innerHTML     = Math.round(distance*1000*100)/100;  // in m,    precision 2 
+		  document.getElementById('SpeedmeasureValue').innerHTML = Math.round(speedmeasure*1000)/1000; // in m/s,  precision 3 
+		  document.getElementById('SpeedscaleValue').innerHTML   = Math.round(speedscale*100*10)/10;   // in km/h, precision 1 
+		  
+		  document.getElementById('SpeedValue').innerHTML        = speed*32;                           // 0 to 32
+		  document.getElementById('PWMValue').innerHTML          = Math.round(pwm*100);                // in % 
+		  document.getElementById('VoltageValue').innerHTML      = Math.round(voltage*10*10)/10;       // in V,   precision 1 
+		  document.getElementById('CurrentValue').innerHTML      = Math.round(current*1000*1000)/1000; // in mA,  precision 3 
+		  document.getElementById('PowerValue').innerHTML        = Math.round(power*100)/100;          // in W,   precision 2 
+
+		  document.getElementById('SpeedLEDValue').innerHTML     = Math.round(speedled);               // integer, 1=on, 0=off
+		  document.getElementById('IRlowValue').innerHTML        = Math.round(irlow*100)/100;          // in V,    precision 2
+		  document.getElementById('IRhighValue').innerHTML       = Math.round(irhigh*100)/100;         // in V,    precision 2
+		}
+	  }
+	  request.open('GET', requestURL);
+	  request.send(); // send the request
+	}
+	//based on concept in https://stackoverflow.com/questions/51556002/live-update-the-charts-js-graph-on-a-web-page-using-json-data-received-from-a-re
+	//https://blog.heimetli.ch/chart-js-update.html
+	/*
+	   options: {
+		  responsive: true,
+		  legend: {
+			 display: false
+		  },
+		  tooltips: {
+			 mode: "index",
+			 intersect: false,
+		  },
+		  hover: {
+			 mode: "nearest",
+			 intersect: true
+		  },
+	*/
+	//https://gist.github.com/skhisma/5689383#file-live-update-chartjs-html
+	//https://canvasjs.com/javascript-charts/dynamic-spline-chart/
+	
+</script>
+
+<script>
+// index.html functionality for variable text updates via notify_clients()
+  var gateway = `ws://${window.location.hostname}/ws`;
+  var websocket;
+  window.addEventListener('load', onLoad);
+  function onLoad(event) {
+    initWebSocket();
+    initButton();
+  }
+  
+  function initWebSocket() {
+    console.log('Trying to open a WebSocket connection...');
+    websocket = new WebSocket(gateway);
+    websocket.onopen    = onOpen;
+    websocket.onclose   = onClose;
+    websocket.onmessage = onMessage; // <-- add this line
+  }
+  function onOpen(event) {
+    console.log('Connection opened');
+  }
+  function onClose(event) {
+    console.log('Connection closed');
+    setTimeout(initWebSocket, 2000);
+  }
+  function onMessage(event) {
+    console.log('');
+	console.log(`Received a WebSocket notification from ${event.origin}`);
+    console.log(event);
+	console.log(event.data);
+	var text = JSON.parse(event.data);
+	document.getElementById('StatusText').innerHTML = text.status;
+	document.getElementById('SpeedText').innerHTML = text.speed;
+	document.getElementById('LastCommand').innerHTML = text.command; // <-- adjust this line to text.command;
+	console.log('');
+  }
+  function initButton() {
+	document.getElementById('minus4').addEventListener('click', minus4e);
+	document.getElementById('minus1').addEventListener('click', minus1e);
+	document.getElementById('plus1').addEventListener('click', plus1e);
+	document.getElementById('plus4').addEventListener('click', plus4e);
+	document.getElementById('reverse').addEventListener('click', reversee);
+	document.getElementById('halt').addEventListener('click', halte);
+	document.getElementById('stop').addEventListener('click', stope);
+	document.getElementById('ledonoff').addEventListener('click', ledonoffe);
+	document.getElementById('zerocounter').addEventListener('click', zerocountere);
+  }
+  function minus4e(){
+    websocket.send('--------');
+	console.log('WebSocket command sent --------');
+	//document.getElementById('LastCommand').innerHTML = 'sent: ----';
+	delay(1000);
+  }
+  function minus1e(){
+    websocket.send('--');
+	console.log('WebSocket command sent --');
+	//document.getElementById('LastCommand').innerHTML = 'sent: -';
+	delay(1000);
+  }
+  function plus1e(){
+    websocket.send('++');
+	console.log('WebSocket command sent ++');
+	//document.getElementById('LastCommand').innerHTML = 'sent: +';
+	delay(1000);
+  }
+  function plus4e(){
+    websocket.send('++++++++');
+	console.log('WebSocket command sent ++++++++');
+	//document.getElementById('LastCommand').innerHTML = 'sent ++++';
+   delay(1000);
+  }
+  function reversee(){
+    websocket.send('0<');
+	console.log('WebSocket command sent 0<');
+	//document.getElementById('LastCommand').innerHTML = 'sent 0<';
+	delay(1000);
+  }
+  function halte(){
+    websocket.send('--------------------------------');
+	console.log('WebSocket command sent --------------------------------');
+	//document.getElementById('LastCommand').innerHTML = 'sent ----------------';
+	delay(1000);
+  }
+  function stope(){
+    websocket.send('00');
+	console.log('WebSocket command sent 00');
+	//document.getElementById('LastCommand').innerHTML = 'sent 00';
+	delay(1000);
+  }
+  function ledonoffe(){
+    websocket.send('l');
+	console.log('WebSocket command sent l');
+	//document.getElementById('LastCommand').innerHTML = 'sent l';
+	delay(1000);
+  }
+  function zerocountere(){
+    websocket.send('z');
+	console.log('WebSocket command sent z');
+	//document.getElementById('LastCommand').innerHTML = 'sent z';
+	delay(1000);
+  }
+  function GetPWMSliderValue(element) {
+    var sliderValue = document.getElementById("pwmSlider").value;
+    websocket.send("="+sliderValue); 
+    console.log('WebSocket command sent sliderValue ='+sliderValue);
+    //document.getElementById('LastCommand').innerHTML = 'sent sliderValue = '+sliderValue;
+    delay(1000);
+  }
+//	function UpdateStatusLines(statustxt,speedtxt,speedleveltxt) {
+//	  document.getElementById("StatusText").innerHTML = statustxt;
+//  }
+</script>
+</body>
+</html>
