@@ -2,7 +2,7 @@ PiedPiperS Version Track
 
 PiedPiperS
   This code is published with GNU General Public License GPL v3, 
-  Copyright (c) J. Ruppert, 2021-08, jorail [at] gmx.de
+  Copyright (c) J. Ruppert, 2026-06, jorail [at] gmx.de
   
   The program purpose is to control a model train motor with independent power supply
   e.g. from USB power bank for outdoors. Following options exist:
@@ -16,7 +16,7 @@ PiedPiperS
   d) SerialMonitor input commands by typing letters, connection via USB
 
   The project is inspired by the project 'free your model train' (FYMT) proposed by Frei Softwarefreunde
-  at https://freie-software.org/free-your-model-train/
+  at https://freie-software.org/?Projekte___Free_Your_Model_Train
 
   The code and layout are developed for ESP32 (or Teensy 4.0) but can easily be modified for other micro controllers.
   Asynchronous WebServer libraries are used in combination with WebSocket connection and JSON messages.
@@ -67,6 +67,27 @@ PiedPiperS
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
     THE SOFTWARE.
 
+  ;PlatformIO Project Configuration File
+
+      [env:ESP32C3_SuperMini] ;works also for ESP32C3_Zero
+      platform = espressif32
+      board = esp32-c3-devkitm-1
+
+      framework = arduino
+      upload_protocol = esptool
+      monitor_speed = 115200
+
+      build_flags = 
+      ;   -D CORE_DEBUG_LEVEL=3             ;comment out as not working with platformio
+        -D ARDUINO_USB_MODE=1             ;use this with ESP32-S3 or ESP32-C3
+        -D ARDUINO_USB_CDC_ON_BOOT=1      ;use this with ESP32-S3 or ESP32-C3
+
+      lib_deps = 
+        esp32async/AsyncTCP@^3.4.9
+        esp32async/ESPAsyncWebServer@^3.9.0
+        bbx10/DNSServer@^1.1.0
+        bblanchon/ArduinoJson@^7.4.2
+        yurilopes/SPIFFSIniFile@^1.0.0
 
   Version track:
   056 2021-02    PiedPiper_056 stable version before Server module integration
@@ -110,12 +131,16 @@ PiedPiperS
   097 2021-03-22 definition of #ifdef ToneSampling instead of commenting out FFT tone signal analysis as of PiedPiper version 056, reorganise #include libraries after #define
   098 2021-03-22 optimise high level links and PWM description on /info /parts /viewer    
   099 2021-03-22 optimise numbers, units in /parts reformat /viewer, PiedPiper-Project link via github.html and QR
+  
   100 2021-03-22 consolidated version, start for github
+  
   101 2021-03-26 preventing false positve SignalActive readings, which resulted from spikes in the ESP32 TouchRead, by averaging valarray of multiple TouchRead
   102 2021-03-26 add device width regulation to html websites in the code, add ESP modification detail img003 to parts.html
+  
   103 2021-03-27 consolidated version, prepare for lok.ini branch and further development
   
   lok.ini branch in github: https://github.com/jorail/PiedPiperS/tree/lok.ini
+  
   104 2021-03-28 .ini reading for variable loco name in index.html, ssid and password
   105 2021-03-29 .ini evaluation for speed_adjustment setting and fine tuning speed settings for 32 speed levels
   106 2021-03-30 .ini editing via html textarea and saving new lok.ini in SPIFFS with backup of previous version 
@@ -172,9 +197,11 @@ PiedPiperS
   174 2021-04-29 html text editing in captive portal and /parts.html
   175 2021-04-30 debugging /ini.html JS function
   176 2021-05-07 html text /info amended for LED indication in case of motor IC error
+  
   178 2021-05-09 consolidated code
-   
+  
   speedo branch in github: https://github.com/jorail/PiedPiperS/tree/speedo, develop speed-o-meter with reflective ir detector on railway sleepers
+  
   180 2021-05-09 use D15 as input
   181 2021-05-10 apply ESP32 pulse counter, driver/pcnt.h library included, test counting, successful, but glitches on logical high level
   182 2021-05-10 apply pulse counter filter https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/pcnt.html#filtering-pulses
@@ -206,9 +233,11 @@ PiedPiperS
   213 2021-06-01 html formatting
   214 2021-06-01 round count reference value in irsamplerecord.html, move IRSampleRecording commands to void SpeedCalculation, adjust threshold for RoundMarkerDetected flag
   215 2021-06-02 debug RoundMarkerDetection by introducint valarray SpeedCountDifference, debug samplerecorderonoff toggle by absolute websocket command 'r1'=on, 'r0'=off    
+  
   216 2021-06-02 consolidated version for speedo branch
   
   speedo branch in github: https://github.com/jorail/PiedPiperS/tree/speedo, develop speed-o-meter with reflective ir detector on railway sleepers, debugging incomplete sleeper counting
+  
   217 2021-06-03 adjust transmission of irsamplerecord array, toggle ir sample averaging for railway sleeper detection
   218 2021-06-03 add adjustment for IRlow and IRhigh from irsamplerecord.html via websocket message
   219 2021-06-03 modify effect of flag IRSampleRecording: Extension to individual data record and json2 record submission
@@ -229,9 +258,9 @@ PiedPiperS
   
   speedo branch in github: https://github.com/jorail/PiedPiperS/tree/speedo, develop speed-o-meter with reflective ir detector on railway sleepers, complete sleeper counting by parallel task on core0
   232 2021-08-17 core0 solution with normal analogRead (no ISR timer interrupt, no IRAM attribute required)
-  235 2021-08-18 SpeedSamplingIRSensor running as parallel task on core0, IRsamplecounter
+  235 2021-08-18 SpeedSamplingIRSensor running as parallel task on core0(https://randomnerdtutorials.com/esp32-dual-core-arduino-ide/, https://www.digikey.de/en/maker/projects/introduction-to-rtos-solution-to-part-12-multicore-systems/369936f5671d4207a2c954c0637e7d50), IRsamplecounter
   236 2021-08-18 optimse task and related IR recorder outputs
-  237 2021-08-18 optimse code and comments, delete ISR timer interrupt remains, ca. 6 kHz IRsensor sample frequency achieved, with main loop ca. 0.75 s and 1000 power samples/main 
+  237 2021-08-18 optimse code and comments, delete ISR timer interrupt remains, ca. 6 kHz IRsensor sample frequency achieved, with main loop ca. 0.75 s and 1000 power samples/main loop
   238 2021-08-19 consolidated
   239 2021-08-19 optimised lok.ini parameters, ca. 5.7 kHz IRsensor sample frequency achieved, with main loop ca. 1.76 s and 2000 power samples/main loop, irlow 0.5 V irhigh 0.7 V
   240 2021-08-19 optimise de-noising of IRsensor readings by median filter, did not work well with small number of samples for determination
@@ -241,3 +270,30 @@ PiedPiperS
   243 2021-08-20 code cleaned
   244 2021-08-21 add general switch for 'SpeedSamplingOnOff' in task on core0 
   244 2021-08-27 merged to Github PiedPiperS 'main' 2021-08-27: https://github.com/jorail/PiedPiperS 
+
+  track control, use of infrared reflective sensor TCRT5000 for reading commands from barcodes at the track
+  245 2022-02-20 instantanuous speed measurement from railway sleeper interval (draft)
+  246 2022-02-25 track commands from bar code
+  247 2022-02-26 further optimisation
+  248 2022-04-02 debugging
+  249 2025-09    backukp
+  
+  250 2025-11-18 adjust for ESP32-C3-super-mini pinout and debugging
+  251 2025-11-23 first successful running via PlatformIO, serial monitor setting baud rate and ARDUINO settings in platformio.ini:
+                  monitor_speed = 115200 ;set baud rate according to serial port setup in program
+                  build_flags = ;required in platformio for serial monitor to work properly
+                    -D ARDUINO_USB_MODE=1
+                    -D ARDUINO_USB_CDC_ON_BOOT=1
+                  SPIFFS upload see: https://randomnerdtutorials.com/esp32-vs-code-platformio-spiffs/, move data folder to project top level
+  252 2025-11-23 option to invert LED output by XOR logic with bool invertLED
+  253 2025-11-23 switch to ESP32 C3 super mini and L293D motor IC 
+  254 2025-11    same but for ESP32 devkit v1 and TLE5206 motor IC
+  255 2026-01-01 same for ESP32 C3 super mini and DRV8871 motor IC with motor_speed=0 implemented as "break", i.e. HIGH pwm=255 on both motor 1 and motor 2 outputs
+  256 2026-01-10 option to invertDirection via .ini file, (toggles) the logic of th motor output via XOR function 1=invert, 0=normal, leave as is
+  257 2026-01-10 ESP32 C3 zero with NeoPixel LED
+  258 2026-01-11 ledWrite function for normal digialWrite or neopixelWrite output
+  259 2026-01-17 train light output on GPIO 6 and 7 with changig polarity, allowing white/red light switch depending on direction
+  260 2026-01-31 add support for ESP32Cam module
+  261 2026-02-13 add Video, see https://RandomNerdTutorials.com/esp32-cam-video-streaming-web-server-camera-home-assistant/ 
+  262 2026-06-30 ESP32-C3-supermini incl. PowerSampling with analogReadMilliVolts
+  263 2026-07-04 Update of infos and images on html pages																										   
