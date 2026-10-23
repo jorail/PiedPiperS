@@ -31,14 +31,15 @@ A highly integrated implementation is developed in PiedPiperS v268/267 and v259 
 ordinary USB powerbank, especially its internal Li-Ion battery and charge controller, ready to use step-up booster MT3608 and
 H-bridge motor drivers DRV8833 or DRV8871. All electronics can be fitted into the second wagon of a small railcar VT98. 
 
-PiedPiperS v268/267 was developed for the Free Your Model Train (FYMT) and use during a Campus Week project in 2026: 
+PiedPiperS v268/267 was developed as a condensed version for the Free Your Model Train (FYMT) project and for its use during a Campus Week project in 2026: 
 
 https://github.com/jorail/FYMT_PiedPiperS_CampusWoche
 
 <a href="https://github.com/jorail/FYMT_PiedPiperS_CampusWoche" download>
-<img width="100%" alt="grafik" src="https://github.com/user-attachments/assets/4f0e59e3-1c3b-4a19-9f4b-934b5eb77655" />
+<img width="110%" alt="grafik" src="https://github.com/user-attachments/assets/4f0e59e3-1c3b-4a19-9f4b-934b5eb77655" />
 </a>
-
+ 
+ 
 <a href="docs/PiedPiperS_v259_in_VT98_railcar.jpg" download>
 <img src="docs/PiedPiperS_v259_in_VT98_railcar.jpg" width="100%">
 </a>
