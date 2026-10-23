@@ -27,13 +27,21 @@ at https://freie-software.org/free-your-model-train/
 The code and layout are developed for ESP32 (or Teensy 4.0) but can easily be modified for other micro controllers.
 Asynchronous WebServer libraries are used in combination with WebSocket connection and JSON messages.
 
-A highly integrated implementation is developed in PiedPiperS v259 for a very small ESP32-C3-zero micro processor, use of an 
+A highly integrated implementation is developed in PiedPiperS v268/267 and v259 for a very small ESP32-C3-zero micro processor, use of an 
 ordinary USB powerbank, especially its internal Li-Ion battery and charge controller, ready to use step-up booster MT3608 and
-H-bridge motor driver DRV8871. All electronics can be fitted into the second wagon of a small railcar VT98. PiedPiperS v263 is made for ESP32-C3-SuperMini and includes Option 1 for PowerSampling.
+H-bridge motor drivers DRV8833 or DRV8871. All electronics can be fitted into the second wagon of a small railcar VT98. 
 
 <a href="docs/PiedPiperS_v259_in_VT98_railcar.jpg" download>
 <img src="docs/PiedPiperS_v259_in_VT98_railcar.jpg" width="100%">
 </a>
+
+PiedPiperS v268/267 was developed for the Free Your Model Train (FYMT) and use during a Campus Week project in 2026: 
+
+<a href="https://github.com/jorail/FYMT_PiedPiperS_CampusWoche" download>
+<img width="100%" alt="grafik" src="https://github.com/user-attachments/assets/4f0e59e3-1c3b-4a19-9f4b-934b5eb77655" />
+</a>
+
+PiedPiperS v263 is made for ESP32-C3-SuperMini and includes Option 1 for PowerSampling.
 
 A early version of PiedPiper v56 allowed for sound evaluation and tone signal identification, which is performed by FFT analysis in the microprocessor.
 
